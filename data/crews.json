@@ -1,0 +1,52 @@
+[
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "테스트",
+    "description": "테스트",
+    "location": {
+      "lat": 37.5665,
+      "lng": 126.978
+    },
+    "instagram": "@테스트",
+    "created_at": "2024-12-30T12:50:18.085Z",
+    "updated_at": "2024-12-30T12:50:18.085Z"
+  },
+  {
+    "id": "ab8ffab5-4ef6-4365-b654-31f0b6547c4f",
+    "name": "111",
+    "description": "1111",
+    "location": {
+      "lat": 37.5665,
+      "lng": 126.978
+    },
+    "instagram": "1111",
+    "created_at": "2024-12-30T12:52:21.147Z",
+    "updated_at": "2024-12-30T12:52:21.147Z"
+  },
+  {
+    "id": "99859931-a263-44ed-b84c-2d32bd17cb75",
+    "name": "123123",
+    "description": "3123",
+    "location": {
+      "lat": 37.4499303,
+      "lng": 127.1373339,
+      "address": "경기도 성남시 수정구 시민로255번길 20-2"
+    },
+    "instagram": "테스트",
+    "created_at": "2024-12-30T12:52:42.300Z",
+    "updated_at": "2024-12-30T12:52:42.300Z"
+  },
+  {
+    "id": "60576250-c361-4ea2-af5d-784b7bd096bf",
+    "name": "1111",
+    "description": "444",
+    "location": {
+      "lat": 36.018075,
+      "lng": 129.339563,
+      "address": "경상북도 포항시 남구 대잠동"
+    },
+    "instagram": "444",
+    "created_at": "2024-12-30T12:54:22.046Z",
+    "updated_at": "2024-12-30T12:54:22.046Z"
+  }
+]
