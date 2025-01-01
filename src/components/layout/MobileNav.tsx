@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MapPinned, Trophy, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { EXTERNAL_LINKS } from "@/lib/constants";
 
 interface MobileNavProps {
   children: React.ReactNode;
@@ -20,13 +21,15 @@ export function MobileNav({ children }: MobileNavProps) {
             <MapPinned className='h-5 w-5' />
             <span className='text-xs'>크루</span>
           </Link>
-          <Link
-            href='/competitions'
+          <a
+            href={EXTERNAL_LINKS.RUNNING_EVENTS}
+            target='_blank'
+            rel='noopener noreferrer'
             className='flex flex-col items-center justify-center space-y-1'
           >
             <Trophy className='h-5 w-5' />
             <span className='text-xs'>대회</span>
-          </Link>
+          </a>
           <Sheet>
             <SheetTrigger className='flex flex-col items-center justify-center space-y-1'>
               <Menu className='h-5 w-5' />

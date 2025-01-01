@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+// import { EXTERNAL_LINKS } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,23 +16,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // const RUNNING_EVENTS = "http://www.marathon.pe.kr/schedule_index.html";
   return (
-    <html lang='ko' suppressHydrationWarning>
+    <html lang='ko'>
       <body className={inter.className}>
         <div className='min-h-screen bg-background'>
           <nav className='border-b'>
-            <div className='container flex h-14 items-center'>
+            <div className='pl-4 flex h-14 items-center'>
               <Link href='/' className='font-bold'>
-                러닝 크루 맵
+                RunHouseMap
               </Link>
-              <div className='ml-auto flex items-center space-x-4'>
-                <a
-                  href='/running-events'
-                  className='text-foreground/60 hover:text-foreground'
-                >
-                  러닝대회 일정
-                </a>
-              </div>
             </div>
           </nav>
           <main>{children}</main>

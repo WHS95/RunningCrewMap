@@ -59,6 +59,12 @@ export default function Home() {
       return;
     }
 
+    const geoOptions = {
+      timeout: 1000, // 1초 timeout
+      maximumAge: 0, // 캐시된 위치 정보를 사용하지 않음
+      enableHighAccuracy: false, // 높은 정확도가 필요하지 않음
+    };
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setCenter({
@@ -68,9 +74,13 @@ export default function Home() {
         setIsLoading(false);
       },
       () => {
-        // 위치 정보 가져오기 실패 시 기본값 사용
+        // 위치 정보 가져오기 실패 또는 timeout 시 기본값 사용
+        console.log(
+          "위치 정보를 가져올 수 없어 기본 위치(서울시청)를 사용합니다."
+        );
         setIsLoading(false);
-      }
+      },
+      geoOptions
     );
   }, []);
 
