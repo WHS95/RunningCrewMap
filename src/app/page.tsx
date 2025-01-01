@@ -89,6 +89,7 @@ export default function Home() {
     const loadCrews = async () => {
       try {
         const data = await crewService.getAllCrews();
+        console.log("data", data);
         setCrews(data);
       } catch (error) {
         console.error("Failed to load crews:", error);
