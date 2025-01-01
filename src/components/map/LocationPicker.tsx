@@ -168,7 +168,7 @@ const LocationPicker = ({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder='주소를 입력하세요'
-            className='flex-1 px-3 py-2 border border-gray-300 rounded-md'
+            className='flex-1 px-3 py-2 border border-gray-300 rounded-md text-black'
             onKeyPress={(e) => e.key === "Enter" && searchAddress()}
           />
           <button
@@ -188,14 +188,16 @@ const LocationPicker = ({
                   className='p-2 hover:bg-gray-100 cursor-pointer'
                   onClick={() => handleLocationSelect(result)}
                 >
-                  <div className='font-semibold'>{result.roadAddress}</div>
-                  <div className='text-sm text-gray-600'>
+                  <div className='font-semibold text-black'>
+                    {result.roadAddress}
+                  </div>
+                  <div className='text-sm text-gray-800'>
                     {result.jibunAddress}
                   </div>
                 </div>
               ))
             ) : (
-              <div className='p-2 text-gray-500'>검색 결과가 없습니다.</div>
+              <div className='p-2 text-gray-800'>검색 결과가 없습니다.</div>
             )}
           </div>
         )}

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       id: uuidv4(),
       ...data,
       created_at: now,
-      updated_at: now,
+      //   updated_at: now,
     };
 
     crews.push(newCrew);
