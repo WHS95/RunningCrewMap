@@ -28,7 +28,7 @@ export function MobileNav({ children }: MobileNavProps) {
             className='flex flex-col items-center justify-center space-y-1'
           >
             <Trophy className='h-5 w-5' />
-            <span className='text-xs'>대회</span>
+            <span className='text-xs'>대회일정</span>
           </a>
           <Sheet>
             <SheetTrigger className='flex flex-col items-center justify-center space-y-1'>

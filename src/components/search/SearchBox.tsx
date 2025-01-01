@@ -22,9 +22,14 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
     const timer = setTimeout(() => {
       if (query) {
         const filtered = crews
-          .filter((crew) =>
-            crew.name.toLowerCase().includes(query.toLowerCase())
-          )
+          .filter((crew) => {
+            const searchQuery = query.toLowerCase();
+            return (
+              crew.name.toLowerCase().includes(searchQuery) ||
+              (crew.location.address &&
+                crew.location.address.toLowerCase().includes(searchQuery))
+            );
+          })
           .slice(0, 3); // 최대 3개까지만 표시
         setResults(filtered);
         setIsOpen(true);
@@ -32,7 +37,7 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
         setResults([]);
         setIsOpen(false);
       }
-    }, 300); // 300ms 디바운스
+    }, 100); // 300ms 디바운스
 
     return () => clearTimeout(timer);
   }, [query, crews]);
@@ -58,11 +63,9 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
         <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
         <Input
           type='text'
-          placeholder='크루명 입력'
+          placeholder='크루명 또는 주소 검색...'
           value={query}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setQuery(e.target.value)
-          }
+          onChange={(e) => setQuery(e.target.value)}
           className='pl-9 pr-4'
         />
       </div>

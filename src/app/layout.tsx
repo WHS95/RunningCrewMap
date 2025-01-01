@@ -24,7 +24,7 @@ export default function RootLayout({
           <nav className='border-b'>
             <div className='pl-4 flex h-14 items-center'>
               <Link href='/' className='font-bold'>
-                RunHouseMap
+                RunHouse
               </Link>
             </div>
           </nav>
