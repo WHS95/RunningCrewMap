@@ -18,8 +18,8 @@ export default function RootLayout({
 }) {
   // const RUNNING_EVENTS = "http://www.marathon.pe.kr/schedule_index.html";
   return (
-    <html lang='ko'>
-      <body className={inter.className}>
+    <html lang='ko' suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <div className='min-h-screen bg-background'>
           <nav className='border-b'>
             <div className='pl-4 flex h-14 items-center'>

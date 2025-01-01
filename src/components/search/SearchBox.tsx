@@ -17,7 +17,6 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query) {
@@ -37,12 +36,11 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
         setResults([]);
         setIsOpen(false);
       }
-    }, 100); // 300ms 디바운스
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query, crews]);
 
-  // 검색창 외부 클릭 시 결과 닫기
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
