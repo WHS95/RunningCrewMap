@@ -6,8 +6,8 @@ import Link from "next/link";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "서울 러닝 크루 지도",
-  description: "서울의 다양한 러닝 크루들을 한눈에 확인하세요",
+  title: "러닝 크루 지도",
+  description: "다양한 러닝 크루들을 한눈에 확인하세요",
 };
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
           <nav className='border-b'>
             <div className='container flex h-14 items-center'>
               <Link href='/' className='font-bold'>
-                서울 러닝 크루
+                러닝 크루 맵
               </Link>
               <div className='ml-auto flex items-center space-x-4'>
                 <a

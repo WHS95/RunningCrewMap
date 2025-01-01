@@ -5,10 +5,18 @@ import dynamic from "next/dynamic";
 import { crewService } from "@/lib/services";
 import type { Crew } from "@/lib/types/crew";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
+  loading: () => <LoadingSpinner message='로딩 중' />,
 });
+
+// 서울시청 좌표 (기본값)
+const DEFAULT_CENTER = {
+  lat: 37.5666805,
+  lng: 126.9784147,
+};
 
 function CrewList({ crews }: { crews: Crew[] }) {
   return (
@@ -41,7 +49,32 @@ function CrewList({ crews }: { crews: Crew[] }) {
 
 export default function Home() {
   const [crews, setCrews] = useState<Crew[]>([]);
+  const [center, setCenter] = useState(DEFAULT_CENTER);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // 사용자 위치 정보 가져오기
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setIsLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCenter({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setIsLoading(false);
+      },
+      () => {
+        // 위치 정보 가져오기 실패 시 기본값 사용
+        setIsLoading(false);
+      }
+    );
+  }, []);
+
+  // 크루 데이터 가져오기
   useEffect(() => {
     const loadCrews = async () => {
       try {
@@ -55,6 +88,10 @@ export default function Home() {
     loadCrews();
   }, []);
 
+  if (isLoading) {
+    return <LoadingSpinner message='위치 정보를 불러오는 중' />;
+  }
+
   return (
     <div className='relative flex flex-col md:flex-row h-[calc(100vh-3.5rem)]'>
       {/* 데스크톱: 왼쪽 사이드바 */}
@@ -67,8 +104,8 @@ export default function Home() {
         <NaverMap
           width='100%'
           height='100%'
-          initialCenter={{ lat: 37.5665, lng: 126.978 }}
-          initialZoom={13}
+          initialCenter={center}
+          initialZoom={14}
           crews={crews}
         />
       </div>

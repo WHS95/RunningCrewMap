@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UsersRound, Trophy, Menu } from "lucide-react";
+import { MapPinned, Trophy, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface MobileNavProps {
@@ -17,7 +17,7 @@ export function MobileNav({ children }: MobileNavProps) {
             href='/'
             className='flex flex-col items-center justify-center space-y-1'
           >
-            <UsersRound className='h-5 w-5' />
+            <MapPinned className='h-5 w-5' />
             <span className='text-xs'>크루</span>
           </Link>
           <Link
