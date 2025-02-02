@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { crewService } from "@/lib/services";
 import type { Crew } from "@/lib/types/crew";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { CrewList } from "@/components/crew/CrewList";
+import { eventEmitter, EVENTS } from "@/lib/events";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -18,39 +20,45 @@ const DEFAULT_CENTER = {
   lng: 126.9784147,
 };
 
-function CrewList({ crews }: { crews: Crew[] }) {
-  return (
-    <div className='h-full overflow-auto p-4'>
-      <div className='mb-4'>
-        <h2 className='text-lg font-semibold'>러닝 크루 목록</h2>
-        <p className='text-sm text-muted-foreground'>
-          총 {crews.length}개의 크루
-        </p>
-      </div>
-      <div className='space-y-4'>
-        {crews.map((crew) => (
-          <div
-            key={crew.id}
-            className='p-4 rounded-lg border hover:bg-accent cursor-pointer'
-          >
-            <h3 className='font-semibold'>{crew.name}</h3>
-            <p className='text-sm text-muted-foreground line-clamp-2'>
-              {crew.description}
-            </p>
-            {crew.instagram && (
-              <p className='text-sm text-blue-600 mt-2'>{crew.instagram}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// 크루 데이터를 저장할 전역 캐시
+let crewsCache: Crew[] | null = null;
 
 export default function Home() {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+
+  // 캐시 무효화 이벤트 리스너 등록
+  useEffect(() => {
+    const handleInvalidateCache = () => {
+      crewsCache = null;
+      loadCrews();
+    };
+
+    eventEmitter.on(EVENTS.INVALIDATE_CREWS_CACHE, handleInvalidateCache);
+
+    return () => {
+      eventEmitter.off(EVENTS.INVALIDATE_CREWS_CACHE, handleInvalidateCache);
+    };
+  }, []);
+
+  // 크루 데이터 가져오기 (캐시 활용)
+  const loadCrews = async () => {
+    try {
+      // 캐시된 데이터가 있으면 사용
+      if (crewsCache) {
+        setCrews(crewsCache);
+        return;
+      }
+
+      const data = await crewService.getAllCrews();
+      crewsCache = data; // 데이터를 캐시에 저장
+      setCrews(data);
+    } catch (error) {
+      console.error("Failed to load crews:", error);
+    }
+  };
 
   // 사용자 위치 정보 가져오기
   useEffect(() => {
@@ -60,9 +68,9 @@ export default function Home() {
     }
 
     const geoOptions = {
-      timeout: 1000, // 1초 timeout
-      maximumAge: 0, // 캐시된 위치 정보를 사용하지 않음
-      enableHighAccuracy: false, // 높은 정확도가 필요하지 않음
+      timeout: 1000,
+      maximumAge: 0,
+      enableHighAccuracy: false,
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -74,7 +82,6 @@ export default function Home() {
         setIsLoading(false);
       },
       () => {
-        // 위치 정보 가져오기 실패 또는 timeout 시 기본값 사용
         console.log(
           "위치 정보를 가져올 수 없어 기본 위치(서울시청)를 사용합니다."
         );
@@ -84,20 +91,20 @@ export default function Home() {
     );
   }, []);
 
-  // 크루 데이터 가져오기
+  // 초기 데이터 로딩
   useEffect(() => {
-    const loadCrews = async () => {
-      try {
-        const data = await crewService.getAllCrews();
-        console.log("data", data);
-        setCrews(data);
-      } catch (error) {
-        console.error("Failed to load crews:", error);
-      }
-    };
-
     loadCrews();
   }, []);
+
+  const handleCrewSelect = (crew: Crew) => {
+    setSelectedCrew(crew);
+  };
+
+  // 크루 목록 컴포넌트 메모이제이션
+  const crewListComponent = useMemo(
+    () => <CrewList crews={crews} onSelect={handleCrewSelect} />,
+    [crews]
+  );
 
   if (isLoading) {
     return <LoadingSpinner message='위치 정보를 불러오는 중' />;
@@ -106,9 +113,7 @@ export default function Home() {
   return (
     <div className='relative flex flex-col md:flex-row h-[calc(100vh-3.5rem)]'>
       {/* 데스크톱: 왼쪽 사이드바 */}
-      <div className='hidden md:block w-80 border-r'>
-        <CrewList crews={crews} />
-      </div>
+      <div className='hidden border-r md:block w-80'>{crewListComponent}</div>
 
       {/* 지도 */}
       <div className='flex-1 h-[calc(100vh-3.5rem-4rem)] md:h-full'>
@@ -122,9 +127,7 @@ export default function Home() {
       </div>
 
       {/* 모바일: 하단 네비게이션 */}
-      <MobileNav>
-        <CrewList crews={crews} />
-      </MobileNav>
+      <MobileNav>{crewListComponent}</MobileNav>
     </div>
   );
 }

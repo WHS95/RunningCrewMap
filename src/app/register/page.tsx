@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { crewService } from "@/lib/services";
 import type { CreateCrewInput } from "@/lib/types/crew";
+import { eventEmitter, EVENTS } from "@/lib/events";
+
+// 크루 데이터 캐시를 초기화하기 위해 외부에서 선언된 캐시 변수 참조
+declare const crewsCache: any;
 
 const LocationPicker = dynamic(
-  () => import("../../components/map/LocationPicker"),
+  () => import("@/components/map/LocationPicker"),
   {
     ssr: false,
   }
@@ -28,8 +32,9 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log("[RegisterPage] 제출할 크루 데이터:", formData);
       await crewService.createCrew(formData);
+      // 캐시 무효화 이벤트 발생
+      eventEmitter.emit(EVENTS.INVALIDATE_CREWS_CACHE);
       router.push("/");
     } catch (error) {
       console.error("Failed to create crew:", error);
