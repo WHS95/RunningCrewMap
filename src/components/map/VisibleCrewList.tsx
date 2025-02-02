@@ -4,11 +4,12 @@ import { Crew } from "@/lib/types/crew";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   //   SheetClose,
 } from "@/components/ui/sheet";
-import { MapPin, Instagram } from "lucide-react";
+import { MapPin, Instagram, SquareArrowOutUpRight } from "lucide-react";
+import Image from "next/image";
+import { CrewDetailView } from "./CrewDetailView";
+import { useState } from "react";
 
 interface VisibleCrewListProps {
   crews: Crew[];
@@ -21,57 +22,110 @@ export function VisibleCrewList({
   crews,
   isOpen,
   onClose,
-  onSelect,
 }: VisibleCrewListProps) {
+  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const handleCrewSelect = (crew: Crew) => {
+    setSelectedCrew(crew);
+    setIsDetailOpen(true);
+  };
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
+    setSelectedCrew(null);
+  };
+
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent
-        side='bottom'
-        className='h-[50vh] p-0 rounded-t-[10px] z-[10000]'
-      >
-        <SheetHeader className='p-6 pb-0'>
-          <SheetTitle>현재 화면의 크루 목록</SheetTitle>
-          {/* <p className='text-sm text-muted-foreground'>
-            총 {crews.length}개의 크루가 있습니다
-          </p> */}
-        </SheetHeader>
-        <div className='overflow-y-auto h-[calc(50vh-80px)] pb-3'>
-          {crews.map((crew) => (
-            <div
-              key={crew.id}
-              className='p-6 border-b hover:bg-accent cursor-pointer transition-colors'
-              onClick={() => onSelect(crew)}
-            >
-              <h3 className='font-semibold mb-2'>{crew.name}</h3>
-              <p className='text-sm text-muted-foreground mb-3'>
-                {crew.description}
-              </p>
-              <div className='flex flex-col gap-2 text-sm'>
-                {crew.location.address && (
-                  <div className='flex items-center gap-2'>
-                    <MapPin className='h-4 w-4' />
-                    <span>{crew.location.address}</span>
+    <>
+      <Sheet open={isOpen && !isDetailOpen} onOpenChange={onClose}>
+        <SheetContent
+          side='bottom'
+          className='h-[50vh] p-0 rounded-t-[10px] z-[10000]'
+        >
+          <div className='overflow-y-auto h-[50vh]'>
+            {crews.map((crew) => (
+              <div
+                key={crew.id}
+                className='px-4 py-3 transition-colors border-b hover:bg-accent/50'
+              >
+                <div className='flex gap-3'>
+                  {/* 로고 이미지 */}
+                  <button
+                    onClick={() => handleCrewSelect(crew)}
+                    className='relative flex-shrink-0 group focus:outline-none'
+                    title='크루 상세정보 보기'
+                  >
+                    {crew.logo_image ? (
+                      <>
+                        <Image
+                          src={crew.logo_image}
+                          alt={`${crew.name} 로고`}
+                          width={48}
+                          height={48}
+                          className='flex-shrink-0 object-cover transition-opacity rounded-full group-hover:opacity-90'
+                        />
+                        <div className='absolute inset-0 transition-all rounded-full ring-2 ring-transparent group-hover:ring-primary' />
+                      </>
+                    ) : (
+                      <div className='flex items-center justify-center flex-shrink-0 w-12 h-12 transition-colors rounded-full bg-muted group-hover:bg-muted/80'>
+                        <span className='text-lg font-medium text-muted-foreground'>
+                          {crew.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* 크루 정보 */}
+                  <div className='flex-1 min-w-0'>
+                    {/* 크루 이름 */}
+                    <div className='flex items-center justify-between gap-2'>
+                      <button
+                        onClick={() => handleCrewSelect(crew)}
+                        className='text-left group focus:outline-none'
+                        title='크루 상세정보 보기'
+                      >
+                        <h3 className='flex items-center font-medium truncate transition-colors group-hover:text-primary'>
+                          <span className='truncate'>{crew.name}</span>
+                          <SquareArrowOutUpRight className='w-3.5 h-3.5 ml-0.5' />
+                        </h3>
+                      </button>
+                      {crew.instagram && (
+                        <a
+                          href={`https://instagram.com/${crew.instagram}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='flex items-center flex-shrink-0 gap-1 text-xs text-blue-600 hover:underline'
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Instagram className='w-3.5 h-3.5' />
+                          <span>@{crew.instagram}</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* 활동 지역 */}
+                    <div className='flex items-center gap-1.5 mt-1'>
+                      <MapPin className='h-3.5 w-3.5 flex-shrink-0 text-muted-foreground' />
+                      <span className='text-xs truncate text-muted-foreground'>
+                        {crew.location.main_address ||
+                          crew.location.address ||
+                          "활동 지역 정보 없음"}
+                      </span>
+                    </div>
                   </div>
-                )}
-                {crew.instagram && (
-                  <div className='flex items-center gap-2'>
-                    <Instagram className='h-4 w-4' />
-                    <a
-                      href={`https://instagram.com/${crew.instagram}`}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-blue-600 hover:underline'
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {crew.instagram}
-                    </a>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </SheetContent>
-    </Sheet>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <CrewDetailView
+        crew={selectedCrew}
+        isOpen={isDetailOpen}
+        onClose={handleDetailClose}
+      />
+    </>
   );
 }

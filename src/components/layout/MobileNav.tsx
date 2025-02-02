@@ -18,7 +18,7 @@ export function MobileNav({ children }: MobileNavProps) {
             href='/'
             className='flex flex-col items-center justify-center space-y-1'
           >
-            <MapPinned className='h-5 w-5' />
+            <MapPinned className='w-5 h-5' />
             <span className='text-xs'>크루</span>
           </Link>
           <a
@@ -27,12 +27,12 @@ export function MobileNav({ children }: MobileNavProps) {
             rel='noopener noreferrer'
             className='flex flex-col items-center justify-center space-y-1'
           >
-            <Trophy className='h-5 w-5' />
+            <Trophy className='w-5 h-5' />
             <span className='text-xs'>대회일정</span>
           </a>
           <Sheet>
             <SheetTrigger className='flex flex-col items-center justify-center space-y-1'>
-              <Menu className='h-5 w-5' />
+              <Menu className='w-5 h-5' />
               <span className='text-xs'>메뉴</span>
             </SheetTrigger>
             <SheetContent side='bottom' className='h-[80vh] z-[9998]'>

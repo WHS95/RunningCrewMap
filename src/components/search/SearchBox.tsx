@@ -16,6 +16,22 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
   const [results, setResults] = useState<Crew[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  useEffect(() => {
+    if (searchRef.current) {
+      const rect = searchRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -56,20 +72,27 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
   }, []);
 
   return (
-    <div ref={searchRef} className='relative w-full max-w-sm mx-auto px-4'>
-      <div className='relative'>
-        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+    <div ref={searchRef} className='relative w-full max-w-sm mx-auto'>
+      <div className='relative px-4'>
+        <Search className='absolute w-4 h-4 transform -translate-y-1/2 left-7 top-1/2 text-muted-foreground' />
         <Input
           type='text'
           placeholder='크루명 또는 주소 검색...'
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className='pl-9 pr-4'
+          className='pr-4 transition-shadow border-none shadow-sm pl-9 focus:outline-none focus:ring-0 hover:shadow-sm'
         />
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className='absolute mt-1 w-full bg-background rounded-md border shadow-lg z-50'>
+        <div
+          className='fixed z-[10000] border rounded-md shadow-lg bg-background max-h-60 overflow-y-auto mt-1'
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left + 16}px`,
+            width: `${dropdownPosition.width - 32}px`,
+          }}
+        >
           {results.map((crew) => (
             <div
               key={crew.id}
@@ -91,6 +114,19 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {isOpen && query && results.length === 0 && (
+        <div
+          className='fixed z-[10000] p-4 text-center border rounded-md shadow-lg bg-background text-muted-foreground mt-1'
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left + 16}px`,
+            width: `${dropdownPosition.width - 32}px`,
+          }}
+        >
+          검색 결과가 없습니다.
         </div>
       )}
     </div>

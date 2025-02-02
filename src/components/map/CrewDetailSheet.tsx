@@ -29,7 +29,7 @@ export function CrewDetailSheet({
       <SheetContent side='bottom' className='h-[50vh] rounded-t-[10px] z-[100]'>
         <SheetHeader className='relative pb-4'>
           <SheetTitle className='text-xl font-bold'>{crew.name}</SheetTitle>
-          <SheetClose className='absolute right-0 top-0' />
+          <SheetClose className='absolute top-0 right-0' />
         </SheetHeader>
 
         <div className='space-y-4'>
@@ -37,7 +37,7 @@ export function CrewDetailSheet({
 
           {crew.instagram && (
             <div className='flex items-center space-x-2'>
-              <Instagram className='h-4 w-4' />
+              <Instagram className='w-4 h-4' />
               <a
                 href={`https://instagram.com/${crew.instagram}`}
                 target='_blank'
@@ -50,7 +50,7 @@ export function CrewDetailSheet({
           )}
 
           <div className='flex items-center space-x-2'>
-            <Calendar className='h-4 w-4' />
+            <Calendar className='w-4 h-4' />
             <span className='text-sm'>
               크루 생성일: {formatDate(crew.created_at)}
             </span>
@@ -58,7 +58,7 @@ export function CrewDetailSheet({
 
           {crew.location.address && (
             <div className='flex items-center space-x-2'>
-              <MapPin className='h-4 w-4' />
+              <MapPin className='w-4 h-4' />
               <span className='text-sm'>{crew.location.address}</span>
             </div>
           )}
