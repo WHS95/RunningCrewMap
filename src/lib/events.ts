@@ -28,4 +28,5 @@ export const eventEmitter = new EventEmitter();
 // 이벤트 상수
 export const EVENTS = {
   INVALIDATE_CREWS_CACHE: "INVALIDATE_CREWS_CACHE",
+  INVALIDATE_MAP_CACHE: "INVALIDATE_MAP_CACHE",
 } as const;

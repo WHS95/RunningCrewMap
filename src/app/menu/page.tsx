@@ -3,11 +3,11 @@
 import { PlusCircle, MessageCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function MenuPage() {
   const { toast } = useToast();
-  //   const router = useRouter();
+  const router = useRouter();
 
   const handleComingSoon = () => {
     toast({
@@ -34,9 +34,7 @@ export default function MenuPage() {
       {/* 메뉴 목록 */}
       <div className='p-4 space-y-2'>
         <button
-          // TODO 크루 등록 페이지 이동 기능 구현
-          //   onClick={() => router.push("/register")}
-          onClick={handleComingSoon}
+          onClick={() => router.push("/register")}
           className='flex items-center w-full gap-3 px-4 py-3 transition-colors rounded-lg hover:bg-accent'
         >
           <PlusCircle className='w-5 h-5' />

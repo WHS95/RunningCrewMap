@@ -6,7 +6,7 @@ export async function GET(request: Request) {
 
   if (!query) {
     return NextResponse.json(
-      { error: "검색어가 필요합니다." },
+      { message: "검색어를 입력해주세요." },
       { status: 400 }
     );
   }
@@ -20,16 +20,21 @@ export async function GET(request: Request) {
         headers: {
           "X-NCP-APIGW-API-KEY-ID": process.env.NEXT_PUBLIC_NAVER_CLIENT_ID!,
           "X-NCP-APIGW-API-KEY": process.env.NEXT_PUBLIC_NAVER_CLIENT_SECRET!,
+          Accept: "application/json",
         },
       }
     );
 
+    if (!response.ok) {
+      throw new Error("Geocoding API 요청 실패");
+    }
+
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Geocoding API 에러:", error);
+    console.error("Geocoding error:", error);
     return NextResponse.json(
-      { error: "주소 검색에 실패했습니다." },
+      { message: "주소 검색에 실패했습니다." },
       { status: 500 }
     );
   }

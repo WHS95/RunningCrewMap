@@ -1,7 +1,7 @@
 [
   {
     "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
-    "name": "러닝크루 테스트",
+    "name": "러닝크루 11",
     "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
     "location": {
       "lat": 37.5665,
@@ -17,7 +17,119 @@
   },
   {
     "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
-    "name": "테스트",
+    "name": "러닝크루22",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "러닝크루33",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "러닝크루44",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "러닝크루55",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "러닝크루66",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "러닝크루33",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "러닝크루77",
+    "description": "안녕하세요! 저희는 매주 정기적으로 모여서 함께 달리는 러닝 크루입니다.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요! .\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!.\n\n함께 달리면서 건강도 챙기고 즐거운 추억도 만들어가요!🏃‍♂️✨\n\n초보자부터 마라톤 완주자까지 모두 환영합니다.",
+    "location": {
+      "lat": 37.566,
+      "lng": 126.978,
+      "address": "서울특별시 강남구 테헤란로 14길 52",
+      "main_address": "반포 한강 공원"
+    },
+    "instagram": "tcrc_run22",
+    "logo_image": "https://images.unsplash.com/photo-1602510599419-c688afe6a8db?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "created_at": "2024-01-30T12:50:18.085Z",
+    "activity_day": "매주 토요일 아침 7시",
+    "age_range": "20대 ~ 40대"
+  },
+  {
+    "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
+    "name": "테스트88",
     "description": "테스트",
     "location": {
       "lat": 37.5664,
@@ -31,7 +143,7 @@
   },
   {
     "id": "3b60f0ff-b489-42f4-b217-0b9a9577d834",
-    "name": "테스트",
+    "name": "테스트99",
     "description": "테스트",
     "location": {
       "lat": 37.5667,
@@ -70,5 +182,47 @@
     "instagram": "444",
     "created_at": "2024-12-30T12:54:22.046Z",
     "updated_at": "2024-12-30T12:54:22.046Z"
+  },
+  {
+    "id": "443baa04-9527-40ee-b03e-9970db7cd4ad",
+    "name": "테스트",
+    "description": "ㅈㄷㄱ",
+    "location": {
+      "lat": 37.5665,
+      "lng": 126.978
+    },
+    "instagram": "test",
+    "activity_day": "화요일, 월요일에 정기 러닝",
+    "age_range": "30대, 20대 모집",
+    "logo_image": "",
+    "created_at": "2025-02-08T12:22:16.058Z"
+  },
+  {
+    "id": "3087b326-2d99-4050-9c8f-c50618d8f52f",
+    "name": "",
+    "description": "",
+    "location": {
+      "lat": 37.5665,
+      "lng": 126.978
+    },
+    "instagram": "",
+    "activity_day": "",
+    "age_range": "",
+    "logo_image": "",
+    "created_at": "2025-02-08T12:55:55.969Z"
+  },
+  {
+    "id": "b97c1740-aa49-41d7-b732-470f08133238",
+    "name": "",
+    "description": "",
+    "location": {
+      "lat": 37.5665,
+      "lng": 126.978
+    },
+    "instagram": "",
+    "activity_day": "",
+    "age_range": "",
+    "logo_image": "",
+    "created_at": "2025-02-08T12:56:06.768Z"
   }
 ]

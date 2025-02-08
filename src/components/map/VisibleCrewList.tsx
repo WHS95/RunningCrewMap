@@ -1,11 +1,7 @@
 "use client";
 
 import { Crew } from "@/lib/types/crew";
-import {
-  Sheet,
-  SheetContent,
-  //   SheetClose,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { MapPin, Instagram, SquareArrowOutUpRight } from "lucide-react";
 import Image from "next/image";
 import { CrewDetailView } from "./CrewDetailView";
@@ -41,9 +37,12 @@ export function VisibleCrewList({
       <Sheet open={isOpen && !isDetailOpen} onOpenChange={onClose}>
         <SheetContent
           side='bottom'
-          className='h-[50vh] p-0 rounded-t-[10px] z-[10000]'
+          className='h-[calc(80vh-4rem)] p-0 rounded-t-[10px]'
         >
-          <div className='overflow-y-auto h-[50vh]'>
+          <div className='sticky top-0 flex items-center justify-center h-10 border-b bg-background/80 backdrop-blur-md'>
+            <SheetTitle>목록</SheetTitle>
+          </div>
+          <div className='overflow-y-auto h-[calc(80vh-10.5rem)]'>
             {crews.map((crew) => (
               <div
                 key={crew.id}

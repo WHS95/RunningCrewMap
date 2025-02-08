@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { Crew } from "@/lib/types/crew";
-import { CrewDetailSheet } from "@/components/map/CrewDetailSheet";
+// import { CrewDetailSheet } from "@/components/map/CrewDetailSheet";
+import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { VisibleCrewList } from "@/components/map/VisibleCrewList";
 import { SearchBox } from "@/components/search/SearchBox";
 import { ListFilter } from "lucide-react";
@@ -166,12 +167,12 @@ export default function NaverMap({
         onClick={() => setIsListOpen(true)}
         className='absolute bottom-20 right-4 bg-white rounded-full w-12 h-12 shadow-lg z-[100] hover:bg-gray-50 flex flex-col items-center justify-center'
       >
-        <ListFilter className='h-5 w-5' />
-        <span className='text-xs mt-1'>{visibleCrews.length}</span>
+        <ListFilter className='w-5 h-5' />
+        <span className='mt-1 text-xs'>{visibleCrews.length}</span>
       </button>
 
       {/* 크루 상세 정보 */}
-      <CrewDetailSheet
+      <CrewDetailView
         crew={selectedCrew}
         isOpen={isDetailOpen}
         onClose={() => {
@@ -179,6 +180,15 @@ export default function NaverMap({
           setSelectedCrew(null);
         }}
       />
+
+      {/* <CrewDetailSheet
+        crew={selectedCrew}
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedCrew(null);
+        }}
+      /> */}
 
       {/* 현재 화면에 보이는 크루 목록 */}
       <VisibleCrewList

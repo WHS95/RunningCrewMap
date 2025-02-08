@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { Search } from "lucide-react";
 
 interface LocationPickerProps {
   initialLocation: {
@@ -19,192 +20,104 @@ interface SearchResult {
   jibunAddress: string;
   x: string;
   y: string;
+  distance: string;
 }
 
-const LocationPicker = ({
-  initialLocation,
+interface GeocodeResponse {
+  v2: {
+    addresses: SearchResult[];
+  };
+}
+
+export default function LocationPicker({
   onLocationSelect,
-}: LocationPickerProps) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<naver.maps.Map | null>(null);
-  const markerInstance = useRef<naver.maps.Marker | null>(null);
-
-  const [address, setAddress] = useState("");
+}: LocationPickerProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [showResults, setShowResults] = useState(false);
-  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // 주소 검색
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim() || !window.naver || !window.naver.maps.Service)
+      return;
 
-  const searchAddress = async () => {
-    if (!address) return;
-
+    setIsSearching(true);
     try {
-      const response = await fetch(
-        `/api/geocode?query=${encodeURIComponent(address)}`
-      );
+      const response = await new Promise<GeocodeResponse>((resolve, reject) => {
+        window.naver.maps.Service.geocode(
+          {
+            query: searchQuery,
+          },
+          (status: naver.maps.Service.Status, response: GeocodeResponse) => {
+            if (status === window.naver.maps.Service.Status.ERROR) {
+              reject(new Error("주소 검색에 실패했습니다."));
+              return;
+            }
+            resolve(response);
+          }
+        );
+      });
 
-      const data = await response.json();
-
-      if (data.addresses && data.addresses.length > 0) {
-        setSearchResults(data.addresses);
-        setShowResults(true);
-      } else {
-        setSearchResults([]);
-        setShowResults(true);
-      }
+      const results = response.v2.addresses;
+      setSearchResults(results);
     } catch (error) {
-      console.error("주소 검색 실패:", error);
-      setSearchResults([]);
-      setShowResults(true);
+      console.error("Failed to search address:", error);
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  const handleLocationSelect = (result: SearchResult) => {
-    const location = {
+  const handleSelectAddress = (result: SearchResult) => {
+    onLocationSelect({
       lat: parseFloat(result.y),
       lng: parseFloat(result.x),
       address: result.roadAddress || result.jibunAddress,
-    };
-
-    console.log("[LocationPicker] 선택된 위치:", location);
-
-    onLocationSelect(location);
-    if (mapInstance.current && markerInstance.current) {
-      const position = new window.naver.maps.LatLng(location.lat, location.lng);
-      mapInstance.current.setCenter(position);
-      mapInstance.current.setZoom(15);
-      markerInstance.current.setPosition(position);
-    }
-    setShowResults(false);
-    setAddress(location.address);
+    });
+    setSearchResults([]);
+    setSearchQuery("");
   };
 
-  useEffect(() => {
-    if (!mapRef.current || !isClient) return;
-
-    const initMap = () => {
-      const mapOptions = {
-        center: new window.naver.maps.LatLng(
-          initialLocation.lat,
-          initialLocation.lng
-        ),
-        zoom: 13,
-        zoomControl: true,
-        zoomControlOptions: {
-          position: window.naver.maps.Position.TOP_RIGHT,
-        },
-      };
-
-      mapInstance.current = new window.naver.maps.Map(
-        mapRef.current!,
-        mapOptions
-      );
-
-      markerInstance.current = new window.naver.maps.Marker({
-        position: new window.naver.maps.LatLng(
-          initialLocation.lat,
-          initialLocation.lng
-        ),
-        map: mapInstance.current,
-        draggable: true,
-      });
-
-      window.naver.maps.Event.addListener(
-        markerInstance.current,
-        "dragend",
-        () => {
-          if (!markerInstance.current) return;
-
-          const position = markerInstance.current.getPosition();
-          onLocationSelect({
-            lat: position.y,
-            lng: position.x,
-          });
-        }
-      );
-
-      window.naver.maps.Event.addListener(mapInstance.current, "click", (e) => {
-        if (!markerInstance.current) return;
-
-        const clickedLocation = {
-          lat: e.coord.y(),
-          lng: e.coord.x(),
-        };
-
-        markerInstance.current.setPosition(
-          new window.naver.maps.LatLng(clickedLocation.lat, clickedLocation.lng)
-        );
-        onLocationSelect(clickedLocation);
-      });
-    };
-
-    if (window.naver && window.naver.maps) {
-      initMap();
-    } else {
-      const script = document.createElement("script");
-      script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_CLIENT_ID}`;
-      script.onload = initMap;
-      document.head.appendChild(script);
-
-      return () => {
-        document.head.removeChild(script);
-      };
-    }
-  }, [initialLocation, onLocationSelect, isClient]);
-
-  if (!isClient) {
-    return <div className='h-[400px] bg-gray-100 rounded-lg' />;
-  }
-
   return (
-    <div className='space-y-2'>
+    <div className='relative'>
+      {/* 검색창 */}
       <div className='relative'>
-        <div className='flex gap-2'>
+        <form onSubmit={handleSearch} className='relative'>
           <input
             type='text'
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder='주소를 입력하세요'
-            className='flex-1 px-3 py-2 border border-gray-300 rounded-md text-black'
-            onKeyPress={(e) => e.key === "Enter" && searchAddress()}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder='도로명 주소, 지하철역, 공원 등으로 검색...'
+            className='w-full px-4 py-2 pl-10 pr-4 border rounded-lg shadow-sm'
           />
+          <Search className='absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground' />
           <button
-            type='button'
-            onClick={searchAddress}
-            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700'
+            type='submit'
+            disabled={isSearching}
+            className='absolute text-sm transform -translate-y-1/2 right-3 top-1/2 text-primary'
           >
-            검색
+            {isSearching ? "검색 중..." : "검색"}
           </button>
-        </div>
-        {showResults && (
-          <div className='absolute w-full mt-1 bg-white rounded-lg shadow-lg z-10 max-h-60 overflow-auto'>
-            {searchResults.length > 0 ? (
-              searchResults.map((result, index) => (
-                <div
-                  key={index}
-                  className='p-2 hover:bg-gray-100 cursor-pointer'
-                  onClick={() => handleLocationSelect(result)}
-                >
-                  <div className='font-semibold text-black'>
-                    {result.roadAddress}
-                  </div>
-                  <div className='text-sm text-gray-800'>
-                    {result.jibunAddress}
-                  </div>
+        </form>
+
+        {/* 검색 결과 */}
+        {searchResults.length > 0 && (
+          <div className='absolute left-0 right-0 z-50 mt-2 overflow-y-auto bg-white border rounded-lg shadow-lg max-h-60'>
+            {searchResults.map((result, index) => (
+              <button
+                key={index}
+                className='w-full px-4 py-2 text-left transition-colors hover:bg-accent first:rounded-t-lg last:rounded-b-lg'
+                onClick={() => handleSelectAddress(result)}
+              >
+                <div className='font-medium'>{result.roadAddress}</div>
+                <div className='text-sm text-muted-foreground'>
+                  {result.jibunAddress}
                 </div>
-              ))
-            ) : (
-              <div className='p-2 text-gray-800'>검색 결과가 없습니다.</div>
-            )}
+              </button>
+            ))}
           </div>
         )}
       </div>
-      <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
-};
-
-export default LocationPicker;
+}

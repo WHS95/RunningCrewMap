@@ -24,13 +24,14 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
       <SheetContent
         side='bottom'
         className='h-[80vh] p-0 rounded-t-[10px] z-[10000]'
+        closeButtonPosition={{
+          top: "1.5rem",
+          right: "1rem",
+        }}
       >
         <SheetHeader className='relative p-4 pb-2 border-b'>
           <div className='flex items-center justify-between'>
-            <button
-              onClick={onClose}
-              className='p-2 transition-colors rounded-full hover:bg-accent'
-            >
+            <button onClick={onClose} className='p-2'>
               <ArrowLeft className='w-5 h-5' />
             </button>
             <SheetTitle className='flex-1 text-lg text-center'>
@@ -121,13 +122,13 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
               </div>
             </div>
 
-            {/* 모집 연령대 */}
+            {/* 연령대 */}
             <div className='flex items-start gap-3 p-3 rounded-lg bg-accent/50'>
               <Users className='w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5' />
               <div>
                 {/* <h3 className='mb-1 font-medium'>모집 연령대</h3> */}
                 <p className='text-sm text-muted-foreground'>
-                  {crew.age_range || "모집 연령대 정보 없음"}
+                  {crew.age_range || "연령대 정보 없음"}
                 </p>
               </div>
             </div>
