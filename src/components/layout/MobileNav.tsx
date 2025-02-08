@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { MapPinned, Trophy, Menu } from "lucide-react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { EXTERNAL_LINKS } from "@/lib/constants";
+// import { EXTERNAL_LINKS } from "@/lib/constants";
+import { useState } from "react";
+import { RunningEventList } from "@/components/events/RunningEventList";
 // import { MenuList } from "@/components/menu/MenuList";
 // import { useState } from "react";
 
-interface MobileNavProps {
-  children: React.ReactNode;
-}
-
-export function MobileNav({ children }: MobileNavProps) {
-  // const [isMenuOpen, setIsMenuOpen] = useState(false);
+export function MobileNav({}) {
+  const [isEventListOpen, setIsEventListOpen] = useState(false);
 
   return (
     <>
@@ -25,15 +22,13 @@ export function MobileNav({ children }: MobileNavProps) {
             <MapPinned className='w-5 h-5' />
             <span className='text-xs'>크루</span>
           </Link>
-          <a
-            href={EXTERNAL_LINKS.RUNNING_EVENTS}
-            target='_blank'
-            rel='noopener noreferrer'
+          <Link
+            href='/events'
             className='flex flex-col items-center justify-center space-y-1'
           >
             <Trophy className='w-5 h-5' />
             <span className='text-xs'>대회일정</span>
-          </a>
+          </Link>
           <Link
             href='/menu'
             className='flex flex-col items-center justify-center space-y-1'
@@ -44,12 +39,11 @@ export function MobileNav({ children }: MobileNavProps) {
         </div>
       </nav>
 
-      {/* 크루 목록 시트 */}
-      <Sheet>
-        <SheetContent side='bottom' className='h-[80vh]'>
-          {children}
-        </SheetContent>
-      </Sheet>
+      {/* 대회 일정 시트 */}
+      <RunningEventList
+        isOpen={isEventListOpen}
+        onClose={() => setIsEventListOpen(false)}
+      />
     </>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { crewService } from "@/lib/services";
 import type { Crew } from "@/lib/types/crew";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { CrewList } from "@/components/crew/CrewList";
+// import { CrewList } from "@/components/crew/CrewList";
 import { eventEmitter, EVENTS } from "@/lib/events";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
@@ -27,7 +26,7 @@ export default function Home() {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+  // const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
 
   // 캐시 무효화 이벤트 리스너 등록
   useEffect(() => {
@@ -96,15 +95,15 @@ export default function Home() {
     loadCrews();
   }, []);
 
-  const handleCrewSelect = (crew: Crew) => {
-    setSelectedCrew(crew);
-  };
+  // const handleCrewSelect = (crew: Crew) => {
+  //   setSelectedCrew(crew);
+  // };
 
   // 크루 목록 컴포넌트 메모이제이션
-  const crewListComponent = useMemo(
-    () => <CrewList crews={crews} onSelect={handleCrewSelect} />,
-    [crews]
-  );
+  // const crewListComponent = useMemo(
+  //   () => <CrewList crews={crews} onSelect={handleCrewSelect} />,
+  //   [crews]
+  // );
 
   if (isLoading) {
     return <LoadingSpinner message='위치 정보를 불러오는 중' />;
@@ -113,7 +112,7 @@ export default function Home() {
   return (
     <div className='relative flex flex-col md:flex-row h-[calc(100vh-3.5rem)]'>
       {/* 데스크톱: 왼쪽 사이드바 */}
-      <div className='hidden border-r md:block w-80'>{crewListComponent}</div>
+      {/* <div className='hidden border-r md:block w-80'>{crewListComponent}</div> */}
 
       {/* 지도 */}
       <div className='flex-1 h-[calc(100vh-3.5rem-4rem)] md:h-full'>
@@ -125,9 +124,6 @@ export default function Home() {
           crews={crews}
         />
       </div>
-
-      {/* 모바일: 하단 네비게이션 */}
-      <MobileNav>{crewListComponent}</MobileNav>
     </div>
   );
 }

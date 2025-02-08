@@ -1,8 +1,7 @@
 "use client";
 
-import { PlusCircle, MessageCircle, ArrowLeft } from "lucide-react";
+import { PlusCircle, MessageCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function MenuPage() {
@@ -18,19 +17,7 @@ export default function MenuPage() {
   };
 
   return (
-    <div className='h-[calc(100vh-4rem)] bg-background'>
-      {/* 헤더 */}
-      <div className='sticky top-0 flex items-center gap-3 p-4 border-b bg-background'>
-        <Link
-          href='/'
-          className='p-2 rounded-full hover:bg-accent'
-          title='뒤로가기'
-        >
-          <ArrowLeft className='w-5 h-5' />
-        </Link>
-        <h1 className='text-lg font-medium'>전체</h1>
-      </div>
-
+    <div className='flex flex-col h-[calc(100vh-8rem)]'>
       {/* 메뉴 목록 */}
       <div className='p-4 space-y-2'>
         <button

@@ -36,16 +36,15 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query) {
-        const filtered = crews
-          .filter((crew) => {
-            const searchQuery = query.toLowerCase();
-            return (
-              crew.name.toLowerCase().includes(searchQuery) ||
-              (crew.location.address &&
-                crew.location.address.toLowerCase().includes(searchQuery))
-            );
-          })
-          .slice(0, 3); // 최대 3개까지만 표시
+        const filtered = crews.filter((crew) => {
+          const searchQuery = query.toLowerCase();
+          return (
+            crew.name.toLowerCase().includes(searchQuery) ||
+            (crew.location.address &&
+              crew.location.address.toLowerCase().includes(searchQuery))
+          );
+        });
+        // .slice(0, 3); // 최대 3개까지만 표시
         setResults(filtered);
         setIsOpen(true);
       } else {
