@@ -20,7 +20,14 @@ export function MenuList() {
 
       <div className='space-y-2'>
         <button
-          onClick={handleComingSoon}
+          //TODO : 크루등록 기능 완료 후 붙이ㅣ기
+          // onClick={handleComingSoon}
+          onClick={() =>
+            window.open(
+              "https://docs.google.com/forms/d/e/1FAIpQLSdfAbw3WBAF7xyrM7abGcI8geU2zQZkIFCOes_nFYrtVuo_aw/viewform",
+              "_blank"
+            )
+          }
           className='flex items-center w-full gap-3 px-4 py-3 transition-colors rounded-lg hover:bg-accent'
         >
           <PlusCircle className='w-5 h-5' />
