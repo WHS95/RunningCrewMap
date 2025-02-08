@@ -7,6 +7,7 @@ import type { Crew } from "@/lib/types/crew";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 // import { CrewList } from "@/components/crew/CrewList";
 import { eventEmitter, EVENTS } from "@/lib/events";
+import { CSS_VARIABLES } from "@/lib/constants";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -106,16 +107,29 @@ export default function Home() {
   // );
 
   if (isLoading) {
-    return <LoadingSpinner message='위치 정보를 불러오는 중' />;
+    return (
+      <div style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}>
+        <LoadingSpinner message='위치 정보를 불러오는 중' />
+      </div>
+    );
   }
 
   return (
-    <div className='relative flex flex-col md:flex-row h-[calc(100vh-3.5rem)]'>
+    <div
+      className='relative flex flex-col md:flex-row'
+      style={{
+        height: CSS_VARIABLES.CONTENT_HEIGHT,
+        paddingTop: CSS_VARIABLES.HEADER_PADDING,
+      }}
+    >
       {/* 데스크톱: 왼쪽 사이드바 */}
       {/* <div className='hidden border-r md:block w-80'>{crewListComponent}</div> */}
 
       {/* 지도 */}
-      <div className='flex-1 h-[calc(100vh-3.5rem-4rem)] md:h-full'>
+      <div
+        className='flex-1'
+        style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
+      >
         <NaverMap
           width='100%'
           height='100%'

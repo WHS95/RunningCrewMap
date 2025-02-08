@@ -4,7 +4,8 @@ import { useState, useMemo } from "react";
 import { runningEvents } from "@/lib/data/events";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, ExternalLink } from "lucide-react";
+import { CSS_VARIABLES, LAYOUT } from "@/lib/constants";
 
 // 월 이름 상수
 const MONTHS = [
@@ -46,10 +47,18 @@ export default function EventsPage() {
   }, [selectedMonth]);
 
   return (
-    <div className='flex flex-col h-[calc(100vh-8rem)]'>
+    <div
+      className='flex flex-col min-h-screen '
+      style={{
+        paddingTop: CSS_VARIABLES.HEADER_PADDING,
+      }}
+    >
       {/* 필터 */}
-      <div className='sticky top-0 p-4 border-b bg-background/80 backdrop-blur-md'>
-        <div className='flex gap-2 pb-2 overflow-x-auto scrollbar-none'>
+      <div
+        className='sticky border-b bg-background/80 backdrop-blur-md'
+        style={{ top: LAYOUT.HEADER_HEIGHT }}
+      >
+        <div className='flex gap-2 p-4 pb-2 overflow-x-auto scrollbar-none'>
           {MONTHS.map((month) => (
             <Button
               key={month}
@@ -64,7 +73,7 @@ export default function EventsPage() {
       </div>
 
       {/* 이벤트 목록 */}
-      <div className='flex-1 overflow-y-auto'>
+      <div className='flex-1'>
         <div className='divide-y'>
           {groupedEvents.length > 0 ? (
             groupedEvents.map((event) => (
@@ -72,7 +81,19 @@ export default function EventsPage() {
                 key={`${event.title}-${event.startDate}`}
                 className='p-4 transition-colors hover:bg-accent/50'
               >
-                <h3 className='font-medium'>{event.title}</h3>
+                <div className='flex items-center justify-between gap-4'>
+                  <h3 className='font-medium'>{event.title}</h3>
+                  {event.link && (
+                    <a
+                      href={event.link}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='flex items-center gap-1 px-2 py-1 text-xs transition-colors rounded-md text-primary hover:bg-primary/10'
+                    >
+                      <ExternalLink className='w-3 h-3' />
+                    </a>
+                  )}
+                </div>
                 <div className='mt-2 space-y-1'>
                   <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                     <Calendar className='w-4 h-4' />

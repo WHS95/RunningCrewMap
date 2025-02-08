@@ -4,6 +4,7 @@ export interface RunningEvent {
   endDate: string;
   location: string;
   city: string; // 시/도 단위 필터링을 위한 필드
+  link: string | null;
 }
 
 // 시/도 단위 상수
