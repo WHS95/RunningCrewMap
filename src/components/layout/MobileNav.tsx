@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPinned, Trophy, Menu } from "lucide-react";
+import { MapPinned, Trophy, Menu, Home } from "lucide-react";
 // import { EXTERNAL_LINKS } from "@/lib/constants";
 import { useState } from "react";
 import { RunningEventList } from "@/components/events/RunningEventList";
@@ -16,6 +16,12 @@ export function MobileNav() {
   const pathname = usePathname();
 
   const navItems = [
+    {
+      href: "/home",
+      icon: Home,
+      label: "홈",
+      isActive: pathname === "/home",
+    },
     {
       href: "/",
       icon: MapPinned,
