@@ -39,6 +39,7 @@
     "@radix-ui/react-tooltip": "^1.1.6",
     "@types/navermaps": "^3.7.8",
     "@types/uuid": "^10.0.0",
+    "@vercel/analytics": "^1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

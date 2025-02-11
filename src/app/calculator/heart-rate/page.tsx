@@ -23,7 +23,7 @@ const ZONE_COLORS = {
 
 export default function HeartRateCalculatorPage() {
   const { toast } = useToast();
-  const [age, setAge] = useState<string>("30");
+  const [age, setAge] = useState<string>("");
   const [results, setResults] = useState<HeartRateZone[]>([]);
   const [maxHR, setMaxHR] = useState<number | null>(null);
 

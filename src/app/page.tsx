@@ -74,17 +74,18 @@ export default function Home() {
     };
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      () => {
         setCenter({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat: 37.5666805,
+          lng: 126.9784147,
         });
         setIsLoading(false);
       },
       () => {
-        console.log(
-          "위치 정보를 가져올 수 없어 기본 위치(서울시청)를 사용합니다."
-        );
+        console
+          .log
+          // "위치 정보를 가져올 수 없어 기본 위치(서울시청)를 사용합니다."
+          ();
         setIsLoading(false);
       },
       geoOptions

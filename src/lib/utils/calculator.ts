@@ -65,6 +65,28 @@ export function calculatePace(distanceKm: number, timeSeconds: number): string {
   return `${paceMinutes}:${paceSeconds.toString().padStart(2, "0")}/km`;
 }
 
+// 페이스 계산 (1KM당 시간)
+export function calculatePacePerKm(
+  distanceKm: number,
+  totalSeconds: number
+): string {
+  const secondsPerKm = totalSeconds / distanceKm;
+  const minutes = Math.floor(secondsPerKm / 60);
+  const seconds = Math.floor(secondsPerKm % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+// 페이스 계산 (100M당 시간)
+export function calculatePacePer100m(
+  distanceKm: number,
+  totalSeconds: number
+): string {
+  const secondsPer100m = totalSeconds / distanceKm / 10;
+  const minutes = Math.floor(secondsPer100m / 60);
+  const seconds = Math.floor(secondsPer100m % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 // 기본 거리 옵션
 export const COMMON_DISTANCES = [
   { value: 5, label: "5K" },

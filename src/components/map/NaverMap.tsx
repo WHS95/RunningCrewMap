@@ -81,6 +81,15 @@ export default function NaverMap({
           crew.location.lng
         ),
         map: mapInstanceRef.current!,
+        icon: crew.logo_image
+          ? {
+              url: crew.logo_image,
+              size: new window.naver.maps.Size(50, 50),
+              scaledSize: new window.naver.maps.Size(50, 50),
+              origin: new window.naver.maps.Point(0, 0),
+              anchor: new window.naver.maps.Point(25, 25),
+            }
+          : undefined,
       });
 
       // 마커 클릭 이벤트

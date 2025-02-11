@@ -1,18 +1,18 @@
 "use client";
 
 import { PlusCircle, MessageCircle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+// import { useToast } from "@/components/ui/use-toast";
 
 export function MenuList() {
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
-  const handleComingSoon = () => {
-    toast({
-      description: "기능 준비중입니다.",
-      duration: 1000,
-      className: "text-center",
-    });
-  };
+  // const handleComingSoon = () => {
+  //   toast({
+  //     description: "기능 준비중입니다.",
+  //     duration: 1000,
+  //     className: "text-center",
+  //   });
+  // };
 
   return (
     <div className='p-4 space-y-4'>
@@ -35,11 +35,13 @@ export function MenuList() {
         </button>
 
         <button
-          onClick={handleComingSoon}
+          onClick={() =>
+            window.open("https://open.kakao.com/me/runhouse", "_blank")
+          }
           className='flex items-center w-full gap-3 px-4 py-3 transition-colors rounded-lg hover:bg-accent'
         >
           <MessageCircle className='w-5 h-5' />
-          <span>문의하기</span>
+          <span>문의 및 건의</span>
         </button>
       </div>
     </div>

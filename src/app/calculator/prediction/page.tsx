@@ -23,11 +23,11 @@ import { useToast } from "@/components/ui/use-toast";
 
 export default function PredictionCalculatorPage() {
   const { toast } = useToast();
-  const [recordedDistance, setRecordedDistance] = useState<string>("10");
-  const [hours, setHours] = useState<string>("0");
-  const [minutes, setMinutes] = useState<string>("50");
-  const [seconds, setSeconds] = useState<string>("0");
-  const [targetDistance, setTargetDistance] = useState<string>("42.195");
+  const [recordedDistance, setRecordedDistance] = useState<string>("");
+  const [hours, setHours] = useState<string>("");
+  const [minutes, setMinutes] = useState<string>("");
+  const [seconds, setSeconds] = useState<string>("");
+  const [targetDistance, setTargetDistance] = useState<string>("");
   const [result, setResult] = useState<{
     time: string;
     pace: string;
@@ -75,6 +75,16 @@ export default function PredictionCalculatorPage() {
   return (
     <CalculatorLayout title='완주 시간 예측기'>
       <div className='space-y-6'>
+        {/* 설명 */}
+        <div className='p-4 text-sm rounded-lg bg-accent/50'>
+          <p className='text-muted-foreground'>
+            이전에 달린 기록을 바탕으로 다른 거리의 예상 완주 시간을 계산합니다.
+            <br />
+            예를 들어, 10km를 60분에 달렸다면 하프마라톤(21.1km)은 얼마나 걸릴지
+            예측할 수 있습니다.
+          </p>
+        </div>
+
         {/* 입력 폼 */}
         <div className='space-y-4'>
           {/* 기록한 거리 선택 */}
@@ -105,30 +115,50 @@ export default function PredictionCalculatorPage() {
           {/* 기록 시간 입력 */}
           <div>
             <label className='block mb-2 text-sm font-medium'>기록 시간</label>
-            <div className='flex gap-2'>
-              <Input
-                type='number'
-                min='0'
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                placeholder='시'
-              />
-              <Input
-                type='number'
-                min='0'
-                max='59'
-                value={minutes}
-                onChange={(e) => setMinutes(e.target.value)}
-                placeholder='분'
-              />
-              <Input
-                type='number'
-                min='0'
-                max='59'
-                value={seconds}
-                onChange={(e) => setSeconds(e.target.value)}
-                placeholder='초'
-              />
+            <div className='relative flex items-center gap-1'>
+              <div className='flex-1'>
+                <Input
+                  type='number'
+                  min='0'
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  placeholder='0'
+                  className='text-center'
+                />
+                <span className='block mt-1 text-xs text-center text-muted-foreground'>
+                  시
+                </span>
+              </div>
+              <span className='text-xl text-muted-foreground'>:</span>
+              <div className='flex-1'>
+                <Input
+                  type='number'
+                  min='0'
+                  max='59'
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                  placeholder='0'
+                  className='text-center'
+                />
+                <span className='block mt-1 text-xs text-center text-muted-foreground'>
+                  분
+                </span>
+              </div>
+              <span className='text-xl text-muted-foreground'>:</span>
+              <div className='flex-1'>
+                <Input
+                  type='number'
+                  min='0'
+                  max='59'
+                  value={seconds}
+                  onChange={(e) => setSeconds(e.target.value)}
+                  placeholder='0'
+                  className='text-center'
+                />
+                <span className='block mt-1 text-xs text-center text-muted-foreground'>
+                  초
+                </span>
+              </div>
             </div>
           </div>
 

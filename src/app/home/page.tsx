@@ -12,23 +12,23 @@ export default function HomePage() {
     >
       {/* 공지사항 섹션 */}
       <section className='p-4 border-b'>
-        <h2 className='text-lg font-medium mb-4'>공지사항</h2>
+        <h2 className='mb-4 text-lg font-medium'>❗️공지사항</h2>
         <div className='space-y-2'>
           <div className='p-4 rounded-lg bg-accent/50'>
             <h3 className='font-medium'>서비스 오픈 안내</h3>
             <p className='mt-1 text-sm text-muted-foreground'>
-              러너하우스가 정식 오픈했습니다. 많은 관심 부탁드립니다.
+              Runner House 가 베타 오픈했습니다. 많은 관심 부탁드립니다.
             </p>
-            <time className='block mt-2 text-xs text-muted-foreground'>
+            {/* <time className='block mt-2 text-xs text-muted-foreground'>
               2024.02.08
-            </time>
+            </time> */}
           </div>
         </div>
       </section>
 
       {/* 러닝 매거진 섹션 */}
-      <section className='p-4'>
-        <h2 className='text-lg font-medium mb-4'>러닝 매거진</h2>
+      {/* <section className='p-4'>
+        <h2 className='mb-4 text-lg font-medium'>러닝 매거진</h2>
         <div className='grid gap-4'>
           <article className='overflow-hidden border rounded-lg'>
             <div className='aspect-video bg-muted' />
@@ -51,7 +51,7 @@ export default function HomePage() {
             </div>
           </article>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }

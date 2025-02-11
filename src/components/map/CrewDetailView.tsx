@@ -70,8 +70,8 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                     rel='noopener noreferrer'
                     className='flex items-center gap-1.5 text-blue-600 hover:underline'
                   >
-                    <Instagram className='w-5 h-5' />
-                    <span>@{crew.instagram}</span>
+                    <Instagram className='w-5 h-5 text-muted-foreground' />
+                    <span>{crew.instagram}</span>
                   </a>
                 ) : (
                   <div className='flex items-center gap-1.5 text-lg font-medium'>
