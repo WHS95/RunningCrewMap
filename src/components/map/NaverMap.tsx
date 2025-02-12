@@ -32,6 +32,16 @@ export default function NaverMap({
   const [isListOpen, setIsListOpen] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
 
+  // 이미지 프리로딩
+  useEffect(() => {
+    crews.forEach((crew) => {
+      if (crew.logo_image) {
+        const img = new global.Image();
+        img.src = crew.logo_image;
+      }
+    });
+  }, [crews]);
+
   // 지도에 보이는 크루 필터링
   const updateVisibleCrews = useCallback(() => {
     if (!mapInstanceRef.current || typeof window === "undefined") return;
@@ -63,7 +73,24 @@ export default function NaverMap({
     setIsDetailOpen(true);
   }, []);
 
-  // 마커 생성 및 이벤트 처리
+  // 마커 생성 함수
+  const createMarkerContent = useCallback((crew: Crew) => {
+    const size = 40; // 마커 크기 최적화
+    return crew.logo_image
+      ? `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; overflow: hidden; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); background-color: #f1f5f9;">
+          <img src="${crew.logo_image}" 
+               alt="${crew.name}" 
+               style="width: 100%; height: 100%; object-fit: cover;"
+               onerror="this.style.display='none'; this.parentElement.innerHTML='${crew.name.charAt(
+                 0
+               )}'"
+          >
+        </div>`
+      : `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: #f1f5f9; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-weight: 500; color: #64748b;">
+          ${crew.name.charAt(0)}
+        </div>`;
+  }, []);
+
   const initializeMarkers = useCallback(() => {
     if (!mapInstanceRef.current || typeof window === "undefined") return;
 
@@ -81,15 +108,11 @@ export default function NaverMap({
           crew.location.lng
         ),
         map: mapInstanceRef.current!,
-        icon: crew.logo_image
-          ? {
-              url: crew.logo_image,
-              size: new window.naver.maps.Size(50, 50),
-              scaledSize: new window.naver.maps.Size(50, 50),
-              origin: new window.naver.maps.Point(0, 0),
-              anchor: new window.naver.maps.Point(25, 25),
-            }
-          : undefined,
+        icon: {
+          content: createMarkerContent(crew),
+          size: new window.naver.maps.Size(40, 40),
+          anchor: new window.naver.maps.Point(20, 20),
+        },
       });
 
       // 마커 클릭 이벤트
@@ -103,7 +126,7 @@ export default function NaverMap({
 
     // 초기 보이는 크루 설정
     updateVisibleCrews();
-  }, [crews, updateVisibleCrews]);
+  }, [crews, updateVisibleCrews, createMarkerContent]);
 
   // 지도 초기화
   useEffect(() => {

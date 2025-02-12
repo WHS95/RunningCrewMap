@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { MapPin, Instagram, SquareArrowOutUpRight } from "lucide-react";
 import Image from "next/image";
 import { CrewDetailView } from "./CrewDetailView";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface VisibleCrewListProps {
   crews: Crew[];
@@ -21,6 +21,18 @@ export function VisibleCrewList({
 }: VisibleCrewListProps) {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // 이미지 프리로딩
+  useEffect(() => {
+    if (isOpen) {
+      crews.forEach((crew) => {
+        if (crew.logo_image) {
+          const img = new global.Image();
+          img.src = crew.logo_image;
+        }
+      });
+    }
+  }, [crews, isOpen]);
 
   const handleCrewSelect = (crew: Crew) => {
     setSelectedCrew(crew);
@@ -63,6 +75,15 @@ export function VisibleCrewList({
                           width={48}
                           height={48}
                           className='flex-shrink-0 object-cover transition-opacity rounded-full group-hover:opacity-90'
+                          loading='eager'
+                          priority={true}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                            target.parentElement!.innerHTML = `<div class="flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full bg-muted"><span class="text-lg font-medium text-muted-foreground">${crew.name.charAt(
+                              0
+                            )}</span></div>`;
+                          }}
                         />
                         <div className='absolute inset-0 transition-all rounded-full ring-2 ring-transparent group-hover:ring-primary' />
                       </>

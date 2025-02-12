@@ -134,7 +134,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
             </div>
 
             {/* 크루 소개 */}
-            <div className='p-3 rounded-lg bg-accent/50'>
+            <div className='p-3 mb-3 rounded-lg bg-accent/50'>
               <h3 className='mb-2 font-medium'>소개글</h3>
               <div className='max-h-[180px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-accent-foreground/40'>
                 <p className='text-sm whitespace-pre-wrap text-muted-foreground'>
