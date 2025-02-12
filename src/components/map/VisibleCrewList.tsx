@@ -2,7 +2,7 @@
 
 import { Crew } from "@/lib/types/crew";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { MapPin, Instagram, SquareArrowOutUpRight } from "lucide-react";
+import { MapPin, SquareArrowOutUpRight } from "lucide-react";
 import Image from "next/image";
 import { CrewDetailView } from "./CrewDetailView";
 import { useState, useEffect } from "react";
@@ -110,7 +110,7 @@ export function VisibleCrewList({
                           <SquareArrowOutUpRight className='w-3.5 h-3.5 ml-0.5' />
                         </h3>
                       </button>
-                      {crew.instagram && (
+                      {/* {crew.instagram && (
                         <a
                           href={`https://instagram.com/${crew.instagram}`}
                           target='_blank'
@@ -121,7 +121,7 @@ export function VisibleCrewList({
                           <Instagram className='w-3.5 h-3.5' />
                           <span>@{crew.instagram}</span>
                         </a>
-                      )}
+                      )} */}
                     </div>
 
                     {/* 활동 지역 */}
