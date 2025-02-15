@@ -65,9 +65,12 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                 {/* 크루 인스타그램 또는 크루명 */}
                 {crew.instagram ? (
                   <a
-                    href={`https://instagram.com/${crew.instagram}`}
+                    href={`https://www.instagram.com/${crew.instagram.replace(
+                      "@",
+                      ""
+                    )}`}
                     target='_blank'
-                    rel='noopener noreferrer'
+                    rel='noopener noreferrer nofollow'
                     className='flex items-center gap-1.5 text-blue-600 hover:underline'
                   >
                     <Instagram className='w-5 h-5 text-muted-foreground' />
