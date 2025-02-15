@@ -45,7 +45,7 @@ export function MobileNav() {
   return (
     <>
       <nav
-        className='md:hidden fixed bottom-0 left-0 right-0 border-t bg-black z-[9999]'
+        className='fixed bottom-0 left-0 right-0 border-t bg-black z-[9999]'
         style={{ height: LAYOUT.MOBILE_NAV_HEIGHT }}
       >
         <div className='flex items-center justify-around h-full'>
