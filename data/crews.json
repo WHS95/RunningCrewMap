@@ -95,6 +95,54 @@
       "created_at": "2019-02-01T00:00:00.000Z",
       "activity_day": "매주 수요일",
       "age_range": "20~30대"
+    },
+    {
+      "id": "ddinhm0405",
+      "name": "뜨거운냄새",
+      "description": "월요일, 수요일 하남에서 활동 하고 있는 2030 러닝 크루 입니다^^",
+      "location": {
+        "lat": 37.5459852,
+        "lng": 127.2170271,
+        "address": "경기도 하남시 덕풍천, 망월천",
+        "main_address": "경기도 하남시 덕풍천, 망월천"
+      },
+      "instagram": "ddinhm0405",
+      "logo_image": "https://sazfajslhnvzhpaianhl.supabase.co/storage/v1/object/public/image//hotsmell.jpg",
+      "created_at": "2020-04",
+      "activity_day": "월요일, 수요일",
+      "age_range": "20~30대"
+    },
+    {
+      "id": "swrc_official",
+      "name": "SWRC | SUWON RUNNERS",
+      "description": "수원을 달리는 러너들",
+      "location": {
+        "lat": 37.2635846787744,
+        "lng": 127.028715898311,
+        "address": "수원",
+        "main_address": "수원"
+      },
+      "instagram": "swrc_official",
+      "logo_image": "https://sazfajslhnvzhpaianhl.supabase.co/storage/v1/object/public/image//swrc.jpg",
+      "created_at": "2023-10",
+      "activity_day": "화요일, 목요일, 토요일",
+      "age_range": "20~40대"
+    },
+    {
+      "id": "nprc2014",
+      "name": "NPRC",
+      "description": "NPRC(normal pace)입니다. \n\n 약 100명 정도의 달리기를 시작하는 입문자부터 메이져 마스터즈대회 수상 경력이 있는 다양한 층의 순수 달리기를 사랑하는 회원들이 만나 마라톤, 트레일런 활동을 정기적으로 진행하고 있습니다. \n\n 자타공인 천안 최고의 달리기 크루라고 자부합니다.",
+      "location": {
+        "lat": 36.8206611,
+        "lng": 127.1166923,
+        "address": "충남 천안시 서북구 번영로 208 천안종합운동장보조경기장",
+        "main_address": "충남 천안시 서북구 번영로 208 천안종합운동장보조경기장"
+      },
+      "instagram": "nprc2014",
+      "logo_image": "https://sazfajslhnvzhpaianhl.supabase.co/storage/v1/object/public/image//nprc.jpeg",
+      "created_at": "2014-04",
+      "activity_day": "화요일, 토요일",
+      "age_range": "30~50대"
     }
     
   ]
