@@ -3,7 +3,7 @@
 import { CSS_VARIABLES } from "@/lib/constants";
 import { useState } from "react";
 import { crewService } from "@/lib/services";
-import { Crew } from "@/lib/types/crewInsert";
+import { Crew } from "@/lib/types/crew";
 import { useEffect } from "react";
 import Image from "next/image";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
