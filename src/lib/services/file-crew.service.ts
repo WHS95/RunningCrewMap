@@ -26,6 +26,27 @@ export class FileCrewService implements CrewService {
     return response.json();
   }
 
+  async updateCrew(id: string, data: Partial<CreateCrewInput>): Promise<Crew> {
+    const response = await fetch(`/api/crews/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) throw new Error("Failed to update crew");
+    return response.json();
+  }
+
+  async deleteCrew(id: string): Promise<void> {
+    const response = await fetch(`/api/crews/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) throw new Error("Failed to delete crew");
+  }
+
   async searchCrews(query: string): Promise<Crew[]> {
     const crews = await this.getAllCrews();
     const lowercaseQuery = query.toLowerCase();
@@ -33,6 +54,7 @@ export class FileCrewService implements CrewService {
       (crew) =>
         crew.name.toLowerCase().includes(lowercaseQuery) ||
         crew.description.toLowerCase().includes(lowercaseQuery) ||
+        crew.location.main_address?.toLowerCase().includes(lowercaseQuery) ||
         crew.location.address?.toLowerCase().includes(lowercaseQuery)
     );
   }
