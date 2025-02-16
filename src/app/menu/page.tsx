@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusCircle, MessageCircle, Calculator } from "lucide-react";
+import { PlusCircle, MessageCircle, Calculator, Medal } from "lucide-react";
 // import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { CSS_VARIABLES } from "@/lib/constants";
@@ -28,12 +28,7 @@ export default function MenuPage() {
       <div className='p-4'>
         <div className='mb-4'>
           <button
-            onClick={() =>
-              window.open(
-                "https://docs.google.com/forms/d/e/1FAIpQLSdfAbw3WBAF7xyrM7abGcI8geU2zQZkIFCOes_nFYrtVuo_aw/viewform",
-                "_blank"
-              )
-            }
+            onClick={() => router.push("/register")}
             className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
           >
             <PlusCircle className='w-4 h-4' />
@@ -53,6 +48,35 @@ export default function MenuPage() {
           </button>
         </div>
 
+        {/* 인증 카테고리 */}
+        <div className='pt-2 mb-4'>
+          <h3 className='px-3 mb-1 text-xs font-medium text-muted-foreground'>
+            인증
+          </h3>
+          <div className='space-y-1'>
+            {[
+              {
+                title: "러닝 기록 인증",
+                path: "/certification",
+              },
+              {
+                title: "크루 인증",
+                path: "/certification/crew",
+              },
+            ].map((menu) => (
+              <button
+                key={menu.path}
+                onClick={() => router.push(menu.path)}
+                className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
+              >
+                <Medal className='w-4 h-4' />
+                <span className='text-sm'>{menu.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 러너 계산기 카테고리 */}
         <div className='pt-2'>
           <h3 className='px-3 mb-1 text-xs font-medium text-muted-foreground'>
             러너 계산기

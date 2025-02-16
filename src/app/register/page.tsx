@@ -7,7 +7,6 @@ import type { CreateCrewInput } from "@/lib/types/crew";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { AddressSearchDialog } from "@/components/search/AddressSearchDialog";
 
 const ACTIVITY_DAYS = [
   "월요일",
@@ -18,8 +17,6 @@ const ACTIVITY_DAYS = [
   "토요일",
   "일요일",
 ] as const;
-
-const AGE_RANGES = ["20대", "30대", "40대", "50대", "60대 이상"] as const;
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,22 +34,20 @@ export default function RegisterPage() {
   });
 
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
-  const [selectedAges, setSelectedAges] = useState<string[]>([]);
+  const [ageRange, setAgeRange] = useState({ min: 20, max: 60 });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // 선택된 요일과 연령대를 문자열로 변환
       const activityDay =
         selectedDays.length > 0 ? selectedDays.join(", ") + "에 정기 러닝" : "";
 
-      const ageRange =
-        selectedAges.length > 0 ? selectedAges.join(", ") + " 모집" : "";
+      const ageRangeText = `${ageRange.min}세 ~ ${ageRange.max}세 모집`;
 
       await crewService.createCrew({
         ...formData,
         activity_day: activityDay,
-        age_range: ageRange,
+        age_range: ageRangeText,
       });
 
       eventEmitter.emit(EVENTS.INVALIDATE_CREWS_CACHE);
@@ -123,31 +118,22 @@ export default function RegisterPage() {
               <span className='ml-1 text-red-500'>*</span>
             </label>
             <div className='space-y-2'>
-              <AddressSearchDialog
-                onSelect={(location) => {
+              <input
+                type='text'
+                value={formData.location.main_address || ""}
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     location: {
-                      lat: location.lat,
-                      lng: location.lng,
-                      address: location.address,
-                      main_address: location.title,
+                      ...formData.location,
+                      main_address: e.target.value,
                     },
-                  });
-                }}
+                  })
+                }
+                className='w-full px-3 py-2 border rounded-lg'
+                required
+                placeholder='메인 활동 장소를 입력해주세요 (예: 한강공원 잠원지구)'
               />
-              {formData.location.main_address && (
-                <div className='p-3 space-y-1 text-sm rounded-lg bg-accent/50'>
-                  <div className='font-medium'>
-                    {formData.location.main_address}
-                  </div>
-                  {formData.location.address && (
-                    <div className='text-muted-foreground'>
-                      {formData.location.address}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
@@ -182,32 +168,65 @@ export default function RegisterPage() {
           </div>
 
           {/* 연령대 */}
-          <div className='space-y-2'>
-            <label className='text-sm font-medium'>
-              모집 연령대
-              <span className='ml-1 text-red-500'>*</span>
-            </label>
-            <div className='flex flex-wrap gap-2'>
-              {AGE_RANGES.map((age) => (
-                <button
-                  key={age}
-                  type='button'
-                  onClick={() => {
-                    setSelectedAges((prev) =>
-                      prev.includes(age)
-                        ? prev.filter((a) => a !== age)
-                        : [...prev, age]
-                    );
+          <div className='space-y-4'>
+            <div className='flex items-center justify-between'>
+              <label className='text-sm font-medium'>
+                모집 연령대
+                <span className='ml-1 text-red-500'>*</span>
+              </label>
+              <span className='text-sm text-muted-foreground'>
+                {ageRange.min}세 ~ {ageRange.max}세
+              </span>
+            </div>
+            <div className='relative pt-3 pb-3'>
+              <div className='h-1 bg-gray-200 rounded-full'>
+                <div
+                  className='absolute h-1 bg-black rounded-full'
+                  style={{
+                    left: `${(ageRange.min / 100) * 100}%`,
+                    right: `${100 - (ageRange.max / 100) * 100}%`,
                   }}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                    selectedAges.includes(age)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-input hover:bg-accent"
-                  }`}
-                >
-                  {age}
-                </button>
-              ))}
+                ></div>
+              </div>
+              <input
+                type='range'
+                min='0'
+                max='100'
+                value={ageRange.min}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (value < ageRange.max) {
+                    setAgeRange((prev) => ({ ...prev, min: value }));
+                  }
+                }}
+                className='absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-30'
+              />
+              <input
+                type='range'
+                min='0'
+                max='100'
+                value={ageRange.max}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (value > ageRange.min) {
+                    setAgeRange((prev) => ({ ...prev, max: value }));
+                  }
+                }}
+                className='absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-30'
+              />
+              <div className='absolute inset-0 pointer-events-none'>
+                <div
+                  className='absolute h-1 bg-transparent'
+                  style={{ left: 0, width: `${(ageRange.min / 100) * 100}%` }}
+                />
+                <div
+                  className='absolute h-1 bg-transparent'
+                  style={{
+                    right: 0,
+                    width: `${100 - (ageRange.max / 100) * 100}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
 
