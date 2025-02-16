@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalculatorLayout } from "@/components/calculator/CalculatorLayout";
+import { FormLayout } from "@/components/layout/FormLayout";
 import {
   calculateSplitTimes,
   timeToSeconds,
@@ -55,7 +55,7 @@ export default function SplitTimeCalculatorPage() {
   };
 
   return (
-    <CalculatorLayout title='스플릿 타임 계산기'>
+    <FormLayout title='스플릿 타임 계산기'>
       <div className='space-y-6'>
         {/* 입력 폼 */}
         <div className='space-y-4'>
@@ -156,6 +156,6 @@ export default function SplitTimeCalculatorPage() {
           </div>
         )}
       </div>
-    </CalculatorLayout>
+    </FormLayout>
   );
 }

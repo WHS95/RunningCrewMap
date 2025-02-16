@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalculatorLayout } from "@/components/calculator/CalculatorLayout";
+import { FormLayout } from "@/components/layout/FormLayout";
 import {
   calculateMaxHeartRate,
   calculateHeartRateZones,
@@ -45,7 +45,7 @@ export default function HeartRateCalculatorPage() {
   };
 
   return (
-    <CalculatorLayout title='심박수 존 계산기'>
+    <FormLayout title='심박수 존 계산기'>
       <div className='max-w-md mx-auto space-y-6'>
         {/* 입력 폼 */}
         <div className='space-y-4'>
@@ -130,6 +130,6 @@ export default function HeartRateCalculatorPage() {
           </div>
         )}
       </div>
-    </CalculatorLayout>
+    </FormLayout>
   );
 }

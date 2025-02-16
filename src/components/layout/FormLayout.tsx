@@ -4,12 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { CSS_VARIABLES } from "@/lib/constants";
 
-interface CalculatorLayoutProps {
+interface FormLayoutProps {
   title: string;
   children: React.ReactNode;
 }
 
-export function CalculatorLayout({ title, children }: CalculatorLayoutProps) {
+export function FormLayout({ title, children }: FormLayoutProps) {
   return (
     <div
       className='flex flex-col min-h-screen'
@@ -26,7 +26,7 @@ export function CalculatorLayout({ title, children }: CalculatorLayoutProps) {
         >
           <ArrowLeft className='w-5 h-5' />
         </Link>
-        <h1 className='text-ㅣㅎ font-medium'>{title}</h1>
+        <h1 className='text-lg font-medium'>{title}</h1>
       </div>
 
       {/* 컨텐츠 */}

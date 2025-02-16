@@ -26,14 +26,6 @@ export class FileCrewService implements CrewService {
     return response.json();
   }
 
-  //   async updateCrew(id: string, data: Partial<CreateCrewInput>): Promise<Crew> {
-  //     throw new Error("Not implemented");
-  //   }
-
-  //   async deleteCrew(id: string): Promise<void> {
-  //     throw new Error("Not implemented");
-  //   }
-
   async searchCrews(query: string): Promise<Crew[]> {
     const crews = await this.getAllCrews();
     const lowercaseQuery = query.toLowerCase();

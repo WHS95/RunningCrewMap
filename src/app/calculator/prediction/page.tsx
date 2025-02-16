@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalculatorLayout } from "@/components/calculator/CalculatorLayout";
+import { FormLayout } from "@/components/layout/FormLayout";
 import {
   timeToSeconds,
   secondsToTimeString,
@@ -73,7 +73,7 @@ export default function PredictionCalculatorPage() {
   };
 
   return (
-    <CalculatorLayout title='완주 시간 예측기'>
+    <FormLayout title='완주 시간 예측기'>
       <div className='space-y-6'>
         {/* 설명 */}
         <div className='p-4 text-sm rounded-lg bg-accent/50'>
@@ -231,6 +231,6 @@ export default function PredictionCalculatorPage() {
           </div>
         )}
       </div>
-    </CalculatorLayout>
+    </FormLayout>
   );
 }

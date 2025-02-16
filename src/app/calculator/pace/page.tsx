@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalculatorLayout } from "@/components/calculator/CalculatorLayout";
+import { FormLayout } from "@/components/layout/FormLayout";
 import {
   timeToSeconds,
   validateTimeInputs,
@@ -148,7 +148,7 @@ export default function PaceCalculatorPage() {
   };
 
   return (
-    <CalculatorLayout title='페이스 계산기'>
+    <FormLayout title='페이스 계산기'>
       <div className='max-w-md mx-auto space-y-6'>
         {/* 모드 선택 탭 */}
         <div className='flex p-1 space-x-1 border rounded-lg'>
@@ -324,6 +324,6 @@ export default function PaceCalculatorPage() {
           </div>
         )}
       </div>
-    </CalculatorLayout>
+    </FormLayout>
   );
 }
