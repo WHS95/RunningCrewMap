@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { CrewWithDetails as Crew, CreateCrewInput } from "@/lib/types/crew";
+import { CrewWithDetails, CreateCrewInput } from "@/lib/types/crewInsert";
 
 const DATA_FILE_PATH = path.join(process.cwd(), "data", "crews.json");
 
@@ -20,13 +20,13 @@ async function initializeDataFile() {
   }
 }
 
-async function readCrews(): Promise<Crew[]> {
+async function readCrews(): Promise<CrewWithDetails[]> {
   await initializeDataFile();
   const data = await fs.readFile(DATA_FILE_PATH, "utf-8");
   return JSON.parse(data);
 }
 
-async function writeCrews(crews: Crew[]): Promise<void> {
+async function writeCrews(crews: CrewWithDetails[]): Promise<void> {
   await fs.writeFile(DATA_FILE_PATH, JSON.stringify(crews, null, 2));
 }
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const crews = await readCrews();
     const now = new Date().toISOString();
 
-    const newCrew: Crew = {
+    const newCrew: CrewWithDetails = {
       id: uuidv4(),
       name: data.name,
       description: data.description,

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { crewService } from "@/lib/services/crew.service";
-import type { CreateCrewInput } from "@/lib/types/crew";
+import type { CreateCrewInput } from "@/lib/types/crewInsert";
 import { FormLayout } from "@/components/layout/FormLayout";
-import { ACTIVITY_DAYS } from "@/lib/types/crew";
+import { ACTIVITY_DAYS } from "@/lib/types/crewInsert";
 
 export default function RegisterPage() {
   const router = useRouter();

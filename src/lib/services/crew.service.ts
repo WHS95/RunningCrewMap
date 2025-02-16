@@ -3,7 +3,7 @@ import type {
   CrewWithDetails,
   CreateCrewInput,
   CrewFilterOptions,
-} from "@/lib/types/crew";
+} from "@/lib/types/crewInsert";
 
 // Supabase 응답 타입 정의
 interface DbCrew {
