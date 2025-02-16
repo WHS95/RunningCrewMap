@@ -1,6 +1,7 @@
 "use client";
 
-import { PlusCircle, MessageCircle, Calculator, Medal } from "lucide-react";
+// import { PlusCircle, MessageCircle, Calculator, Medal } from "lucide-react";
+import { PlusCircle, MessageCircle, Calculator } from "lucide-react";
 // import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { CSS_VARIABLES } from "@/lib/constants";
@@ -49,7 +50,7 @@ export default function MenuPage() {
         </div>
 
         {/* 인증 카테고리 */}
-        <div className='pt-2 mb-4'>
+        {/* <div className='pt-2 mb-4'>
           <h3 className='px-3 mb-1 text-xs font-medium text-muted-foreground'>
             인증
           </h3>
@@ -74,7 +75,7 @@ export default function MenuPage() {
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* 러너 계산기 카테고리 */}
         <div className='pt-2'>

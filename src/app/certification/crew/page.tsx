@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { CSS_VARIABLES } from "@/lib/constants";
 import { crewService } from "@/lib/services";
-import type { Crew } from "@/lib/types/crew";
+import type { Crew } from "@/lib/types/crewFile";
 
 interface CrewCertData {
   crewLogo: string | null;
