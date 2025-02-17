@@ -8,6 +8,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 // import { CrewList } from "@/components/crew/CrewList";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
+import { toast } from "sonner";
+import { ErrorCode, AppError } from "@/lib/types/error";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -46,17 +48,79 @@ export default function Home() {
   // 크루 데이터 가져오기 (캐시 활용)
   const loadCrews = async () => {
     try {
-      // 캐시된 데이터가 있으면 사용
       if (crewsCache) {
         setCrews(crewsCache);
         return;
       }
 
       const data = await crewService.getAllCrews();
-      crewsCache = data; // 데이터를 캐시에 저장
+      crewsCache = data;
       setCrews(data);
-    } catch (error) {
-      console.error("Failed to load crews:", error);
+    } catch (err: unknown) {
+      console.error("크루 데이터 로딩 실패:", err);
+
+      // 에러 타입에 따른 사용자 피드백
+      const error = err as Error;
+      const appError = err as AppError;
+
+      if ("code" in error) {
+        switch (appError.code) {
+          case ErrorCode.NETWORK_ERROR:
+            toast.error("네트워크 연결을 확인해주세요.");
+            break;
+          case ErrorCode.SERVER_ERROR:
+            toast.error(
+              "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+            );
+            break;
+          case ErrorCode.STORAGE_ERROR:
+            toast.error(
+              "이미지 저장소에 접근할 수 없습니다. 잠시 후 다시 시도해주세요."
+            );
+            break;
+          case ErrorCode.DUPLICATE_CREW_NAME:
+            toast.error(
+              "이미 등록된 크루 이름입니다. 다른 이름을 사용해주세요."
+            );
+            break;
+          case ErrorCode.INVALID_CREW_NAME:
+            toast.error(
+              "크루 이름이 올바르지 않습니다. 2자 이상 100자 이하로 입력해주세요."
+            );
+            break;
+          case ErrorCode.INVALID_DESCRIPTION:
+            toast.error("크루 소개를 입력해주세요.");
+            break;
+          case ErrorCode.INVALID_LOCATION:
+            toast.error("활동 장소를 입력해주세요.");
+            break;
+          case ErrorCode.INVALID_ACTIVITY_DAYS:
+            toast.error("활동 요일을 선택해주세요.");
+            break;
+          case ErrorCode.INVALID_AGE_RANGE:
+            toast.error("올바른 연령대 범위를 선택해주세요.");
+            break;
+          case ErrorCode.UPLOAD_FAILED:
+            toast.error("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+            break;
+          default:
+            toast.error(
+              "크루 정보를 불러오는데 실패했습니다. 다시 시도해주세요."
+            );
+        }
+      } else {
+        toast.error(
+          "알 수 없는 오류가 발생했습니다. 페이지를 새로고침 해주세요."
+        );
+      }
+
+      // 개발자 콘솔에 상세 로그
+      console.error("상세 에러 정보:", {
+        name: error.name || "Unknown",
+        message: error.message || "알 수 없는 오류",
+        code: "code" in error ? appError.code : "UNKNOWN_ERROR",
+        details: "details" in error ? appError.details : undefined,
+      });
     }
   };
 

@@ -6,7 +6,7 @@ import { crewService } from "@/lib/services/crew.service";
 import type { CreateCrewInput } from "@/lib/types/crewInsert";
 import { FormLayout } from "@/components/layout/FormLayout";
 import { ACTIVITY_DAYS } from "@/lib/types/crewInsert";
-import { ErrorMessages, AppError, ErrorCode } from "@/lib/types/error";
+import { AppError, ErrorCode } from "@/lib/types/error";
 import { ResultDialog } from "@/components/dialog/ResultDialog";
 
 export default function RegisterPage() {
@@ -44,6 +44,125 @@ export default function RegisterPage() {
 
     try {
       setIsLoading(true);
+
+      // 필수 필드 검증
+      if (!formData.name.trim()) {
+        setDialogState({
+          isOpen: true,
+          title: "크루명 입력 필요",
+          description: "크루명을 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        setDialogState({
+          isOpen: true,
+          title: "크루 소개 입력 필요",
+          description: "크루를 소개하는 내용을 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      if (!formData.location.main_address.trim()) {
+        setDialogState({
+          isOpen: true,
+          title: "활동 장소 입력 필요",
+          description: "주요 활동 장소를 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      if (formData.activity_days.length === 0) {
+        setDialogState({
+          isOpen: true,
+          title: "활동 요일 선택 필요",
+          description: "정기 러닝 요일을 하나 이상 선택해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      // 인스타그램 아이디 형식 검증
+      if (formData.instagram && formData.instagram.includes("@")) {
+        setDialogState({
+          isOpen: true,
+          title: "인스타그램 아이디 형식 오류",
+          description: "@를 제외한 아이디만 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      // 이미지 파일 검증
+      if (formData.logo_image) {
+        const fileSize = formData.logo_image.size / (1024 * 1024); // MB로 변환
+        const validTypes = ["image/jpeg", "image/png", "image/gif"];
+
+        // 파일 형식 검증
+        if (!validTypes.includes(formData.logo_image.type)) {
+          setDialogState({
+            isOpen: true,
+            title: "지원하지 않는 파일 형식",
+            description: `현재 파일: ${formData.logo_image.type}\n지원 형식: JPG, PNG, GIF\n\n다른 이미지를 선택해주세요.`,
+            isSuccess: false,
+          });
+          return;
+        }
+
+        // 파일 크기 검증 및 자동 압축 시도
+        if (fileSize > 2) {
+          try {
+            setDialogState({
+              isOpen: true,
+              title: "이미지 압축 시작",
+              description: `현재 크기: ${fileSize.toFixed(
+                1
+              )}MB\n2MB 이하로 자동 압축을 시도합니다.`,
+              isSuccess: true,
+            });
+          } catch (error) {
+            const compressionError = error as AppError;
+            if (compressionError.code === ErrorCode.COMPRESSION_FAILED) {
+              setDialogState({
+                isOpen: true,
+                title: "이미지 압축 실패",
+                description:
+                  "이미지 압축에 실패했습니다. 더 작은 크기의 이미지를 사용하거나 다른 이미지를 선택해주세요.",
+                isSuccess: false,
+              });
+              return;
+            }
+
+            setDialogState({
+              isOpen: true,
+              title: "이미지 처리 오류",
+              description:
+                "이미지 처리 중 오류가 발생했습니다. 다른 이미지를 선택해주세요.",
+              isSuccess: false,
+            });
+            return;
+          }
+        }
+
+        // 이미지 파일명 검증
+        const filename = formData.logo_image.name;
+        const invalidChars = /[\\/:*?"<>|]/;
+        if (invalidChars.test(filename)) {
+          setDialogState({
+            isOpen: true,
+            title: "잘못된 파일명",
+            description:
+              "파일명에 특수문자를 사용할 수 없습니다. 파일명을 변경하거나 다른 이미지를 선택해주세요.",
+            isSuccess: false,
+          });
+          return;
+        }
+      }
+
       await crewService.createCrew(formData);
 
       // 성공 팝업 표시
@@ -51,7 +170,7 @@ export default function RegisterPage() {
         isOpen: true,
         title: "크루 등록 완료! 🎉",
         description:
-          "크루가 성공적으로 등록되었습니다. 관리자 승인 후 지도에 표시됩니다. 홈으로 이동합니다.",
+          "크루가 성공적으로 등록되었습니다. 관리자 승인 후 지도에 표시됩니다.",
         isSuccess: true,
       });
 
@@ -61,23 +180,62 @@ export default function RegisterPage() {
       }, 2000);
     } catch (error) {
       const appError = error as AppError;
-
-      // 이미지 압축 성공은 팝업으로 표시하지 않음
-      if (appError.code !== ErrorCode.FILE_COMPRESSED) {
-        setDialogState({
-          isOpen: true,
-          title: "크루 등록 실패",
-          description:
-            ErrorMessages[appError.code] || "알 수 없는 오류가 발생했습니다.",
-          isSuccess: false,
-        });
-      }
-
-      // 개발자를 위한 상세 로그
-      console.error("Failed to create crew:", {
+      console.error("크루 등록 실패:", {
         code: appError.code,
         message: appError.message,
         details: appError.details,
+      });
+
+      // 에러 코드별 사용자 피드백
+      let errorTitle = "크루 등록 실패";
+      let errorDescription = "알 수 없는 오류가 발생했습니다.";
+
+      // 이미지 관련 에러 처리 추가
+      if (appError.code === ErrorCode.FILE_TOO_LARGE) {
+        errorTitle = "이미지 크기 초과";
+        errorDescription =
+          "이미지 크기가 2MB를 초과합니다. 더 작은 이미지를 사용해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_FILE_TYPE) {
+        errorTitle = "잘못된 파일 형식";
+        errorDescription = "JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.";
+      } else if (appError.code === ErrorCode.UPLOAD_FAILED) {
+        errorTitle = "업로드 실패";
+        errorDescription =
+          "이미지 업로드에 실패했습니다. 네트워크 연결을 확인하고 다시 시도해주세요.";
+      } else if (appError.code === ErrorCode.COMPRESSION_FAILED) {
+        errorTitle = "압축 실패";
+        errorDescription =
+          "이미지 압축에 실패했습니다. 다른 이미지를 선택해주세요.";
+      } else if (appError.code === ErrorCode.STORAGE_ERROR) {
+        errorTitle = "저장소 오류";
+        errorDescription =
+          "이미지 저장소에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      } else if (appError.code === ErrorCode.DUPLICATE_CREW_NAME) {
+        errorTitle = "중복된 크루명";
+        errorDescription =
+          "이미 등록된 크루명입니다. 다른 이름을 사용해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_CREW_NAME) {
+        errorTitle = "크루명 형식 오류";
+        errorDescription = "크루명은 2자 이상 100자 이하로 입력해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_DESCRIPTION) {
+        errorTitle = "크루 소개 오류";
+        errorDescription = "크루 소개를 입력해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_LOCATION) {
+        errorTitle = "활동 장소 오류";
+        errorDescription = "활동 장소를 입력해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_ACTIVITY_DAYS) {
+        errorTitle = "활동 요일 오류";
+        errorDescription = "활동 요일을 선택해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_AGE_RANGE) {
+        errorTitle = "연령대 범위 오류";
+        errorDescription = "올바른 연령대 범위를 선택해주세요.";
+      }
+
+      setDialogState({
+        isOpen: true,
+        title: errorTitle,
+        description: errorDescription,
+        isSuccess: false,
       });
     } finally {
       setIsLoading(false);
