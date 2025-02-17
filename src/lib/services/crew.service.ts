@@ -4,6 +4,9 @@ import type {
   CreateCrewInput,
   CrewFilterOptions,
 } from "@/lib/types/crewInsert";
+import { logger } from "@/lib/utils/logger";
+import { ErrorCode, AppError } from "@/lib/types/error";
+import { compressImageFile } from "@/lib/utils/imageCompression";
 
 // Supabase 응답 타입 정의
 interface DbCrew {
@@ -29,11 +32,29 @@ interface DbCrew {
   }>;
 }
 
+interface DatabaseError {
+  code?: string;
+  message?: string;
+  details?: unknown;
+  [key: string]: unknown;
+}
+
+interface ErrorContext extends Record<string, unknown> {
+  action: string;
+  input?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
 class CrewService {
   private readonly BUCKET_NAME = "crewLogos";
 
   constructor() {
-    this.initializeStorage();
+    this.initializeStorage().catch((error) => {
+      logger.error(logger.createError(ErrorCode.STORAGE_ERROR), {
+        action: "initializeStorage",
+        details: { error },
+      });
+    });
   }
 
   private async initializeStorage() {
@@ -155,72 +176,178 @@ class CrewService {
     }
   }
 
-  // 크루 생성
-  async createCrew(input: CreateCrewInput): Promise<CrewWithDetails> {
-    const { data: crew, error: crewError } = await supabase
-      .from("crews")
-      .insert({
-        name: input.name,
-        description: input.description,
-        instagram: input.instagram,
-      })
-      .select()
-      .single();
+  private async validateInput(input: CreateCrewInput) {
+    if (!input.name || input.name.length < 2 || input.name.length > 100) {
+      throw logger.createError(ErrorCode.INVALID_CREW_NAME);
+    }
+    if (!input.description) {
+      throw logger.createError(ErrorCode.INVALID_DESCRIPTION);
+    }
+    if (input.instagram?.includes("@")) {
+      throw logger.createError(ErrorCode.INVALID_INSTAGRAM);
+    }
+    if (!input.location.main_address) {
+      throw logger.createError(ErrorCode.INVALID_LOCATION);
+    }
+    if (!input.activity_days.length) {
+      throw logger.createError(ErrorCode.INVALID_ACTIVITY_DAYS);
+    }
+    if (input.age_range.min_age > input.age_range.max_age) {
+      throw logger.createError(ErrorCode.INVALID_AGE_RANGE);
+    }
+  }
 
-    if (crewError) throw crewError;
+  private async validateImage(file: File) {
+    const validTypes = ["image/jpeg", "image/png", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      throw logger.createError(ErrorCode.INVALID_FILE_TYPE);
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      throw logger.createError(ErrorCode.FILE_TOO_LARGE);
+    }
+  }
 
-    // 로고 이미지 업로드
-    let logo_image_url: string | undefined;
-    if (input.logo_image) {
-      const uploadedUrl = await this.uploadImage(input.logo_image, crew.id);
-      if (uploadedUrl) {
-        logo_image_url = uploadedUrl;
-        // 이미지 URL 업데이트
-        await supabase
-          .from("crews")
-          .update({ logo_image_url })
-          .eq("id", crew.id);
-      }
+  private async handleDatabaseError(
+    error: DatabaseError,
+    context: ErrorContext
+  ) {
+    if (error.code === "23505") {
+      throw logger.createError(ErrorCode.DUPLICATE_CREW_NAME, {
+        originalError: error,
+        metadata: context,
+      });
+    }
+    if (error.code === "23503") {
+      throw logger.createError(ErrorCode.FOREIGN_KEY_VIOLATION, {
+        originalError: error,
+        metadata: context,
+      });
     }
 
-    // 위치 정보 저장
-    const { error: locationError } = await supabase
-      .from("crew_locations")
-      .insert({
-        crew_id: crew.id,
-        ...input.location,
-      });
-
-    if (locationError) throw locationError;
-
-    // 활동 요일 저장
-    const { error: daysError } = await supabase
-      .from("crew_activity_days")
-      .insert(
-        input.activity_days.map((day) => ({
-          crew_id: crew.id,
-          day_of_week: day,
-        }))
-      );
-
-    if (daysError) throw daysError;
-
-    // 연령대 저장
-    const { error: ageError } = await supabase.from("crew_age_ranges").insert({
-      crew_id: crew.id,
-      ...input.age_range,
+    logger.error(logger.createError(ErrorCode.SERVER_ERROR), {
+      action: context.action,
+      details: { error, ...context },
     });
+    throw logger.createError(ErrorCode.SERVER_ERROR);
+  }
 
-    if (ageError) throw ageError;
+  // 크루 생성
+  async createCrew(input: CreateCrewInput): Promise<CrewWithDetails> {
+    try {
+      await this.validateInput(input);
 
-    // 생성된 크루 정보 반환
-    return {
-      ...crew,
-      logo_image_url,
-      location: input.location,
-      activity_days: input.activity_days,
-      age_range: input.age_range,
-    };
+      // 이미지 검증 및 압축, 업로드 수행
+      let logo_image_url: string | undefined;
+      if (input.logo_image) {
+        try {
+          await this.validateImage(input.logo_image);
+
+          // 이미지 압축
+          const compressedImage = await compressImageFile(input.logo_image);
+
+          // 압축된 이미지 업로드
+          const uploadedUrl = await this.uploadImage(
+            compressedImage,
+            crypto.randomUUID()
+          );
+          if (!uploadedUrl) {
+            throw logger.createError(ErrorCode.UPLOAD_FAILED);
+          }
+          logo_image_url = uploadedUrl;
+        } catch (error) {
+          if ((error as AppError).code === ErrorCode.COMPRESSION_FAILED) {
+            throw error; // 압축 실패는 상위로 전파
+          }
+          logger.error(logger.createError(ErrorCode.UPLOAD_FAILED), {
+            action: "upload_image",
+            details: {
+              error,
+              fileName: input.logo_image.name,
+              fileSize: input.logo_image.size,
+              fileType: input.logo_image.type,
+            },
+          });
+          throw logger.createError(ErrorCode.UPLOAD_FAILED);
+        }
+      }
+
+      // 크루 기본 정보 저장
+      const { data: crew, error: crewError } = await supabase
+        .from("crews")
+        .insert({
+          name: input.name,
+          description: input.description,
+          instagram: input.instagram,
+          logo_image_url,
+        })
+        .select()
+        .single();
+
+      if (crewError) {
+        throw crewError;
+      }
+
+      // 위치 정보 저장
+      const { error: locationError } = await supabase
+        .from("crew_locations")
+        .insert({
+          crew_id: crew.id,
+          ...input.location,
+        });
+
+      if (locationError) {
+        throw locationError;
+      }
+
+      // 활동 요일 저장
+      const { error: daysError } = await supabase
+        .from("crew_activity_days")
+        .insert(
+          input.activity_days.map((day) => ({
+            crew_id: crew.id,
+            day_of_week: day,
+          }))
+        );
+
+      if (daysError) {
+        throw daysError;
+      }
+
+      // 연령대 저장
+      const { error: ageError } = await supabase
+        .from("crew_age_ranges")
+        .insert({
+          crew_id: crew.id,
+          ...input.age_range,
+        });
+
+      if (ageError) {
+        throw ageError;
+      }
+
+      return {
+        ...crew,
+        logo_image_url,
+        location: input.location,
+        activity_days: input.activity_days,
+        age_range: input.age_range,
+      };
+    } catch (error) {
+      await this.handleDatabaseError(error as DatabaseError, {
+        action: "create_crew",
+        input: {
+          ...input,
+          logo_image: input.logo_image
+            ? {
+                name: input.logo_image.name,
+                size: input.logo_image.size,
+                type: input.logo_image.type,
+              }
+            : undefined,
+        },
+      });
+      throw error;
+    }
   }
 
   // 크루 목록 조회 (필터링 포함)

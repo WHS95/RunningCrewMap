@@ -6,10 +6,23 @@ import { crewService } from "@/lib/services/crew.service";
 import type { CreateCrewInput } from "@/lib/types/crewInsert";
 import { FormLayout } from "@/components/layout/FormLayout";
 import { ACTIVITY_DAYS } from "@/lib/types/crewInsert";
+import { ErrorMessages, AppError, ErrorCode } from "@/lib/types/error";
+import { ResultDialog } from "@/components/dialog/ResultDialog";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    isSuccess: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    isSuccess: true,
+  });
   const [formData, setFormData] = useState<CreateCrewInput>({
     name: "",
     description: "",
@@ -31,25 +44,40 @@ export default function RegisterPage() {
 
     try {
       setIsLoading(true);
-
-      // 필수 필드 검증
-      if (!formData.name) throw new Error("크루명을 입력해주세요.");
-      if (!formData.description) throw new Error("크루 소개를 입력해주세요.");
-      if (!formData.location.main_address)
-        throw new Error("활동 장소를 입력해주세요.");
-      if (formData.activity_days.length === 0)
-        throw new Error("활동 요일을 선택해주세요.");
-
       await crewService.createCrew(formData);
 
-      router.push("/");
+      // 성공 팝업 표시
+      setDialogState({
+        isOpen: true,
+        title: "크루 등록 완료! 🎉",
+        description: "크루가 성공적으로 등록되었습니다. 홈으로 이동합니다.",
+        isSuccess: true,
+      });
+
+      // 팝업이 닫히면 홈으로 이동
+      setTimeout(() => {
+        router.push("/");
+      }, 2000);
     } catch (error) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("크루 등록에 실패했습니다.");
+      const appError = error as AppError;
+
+      // 이미지 압축 성공은 팝업으로 표시하지 않음
+      if (appError.code !== ErrorCode.FILE_COMPRESSED) {
+        setDialogState({
+          isOpen: true,
+          title: "크루 등록 실패",
+          description:
+            ErrorMessages[appError.code] || "알 수 없는 오류가 발생했습니다.",
+          isSuccess: false,
+        });
       }
-      console.error("Failed to create crew:", error);
+
+      // 개발자를 위한 상세 로그
+      console.error("Failed to create crew:", {
+        code: appError.code,
+        message: appError.message,
+        details: appError.details,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -269,6 +297,14 @@ export default function RegisterPage() {
           </div>
         </form>
       </div>
+
+      <ResultDialog
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        title={dialogState.title}
+        description={dialogState.description}
+        isSuccess={dialogState.isSuccess}
+      />
     </FormLayout>
   );
 }
