@@ -50,7 +50,8 @@ export default function RegisterPage() {
       setDialogState({
         isOpen: true,
         title: "크루 등록 완료! 🎉",
-        description: "크루가 성공적으로 등록되었습니다. 홈으로 이동합니다.",
+        description:
+          "크루가 성공적으로 등록되었습니다. 관리자 승인 후 지도에 표시됩니다. 홈으로 이동합니다.",
         isSuccess: true,
       });
 

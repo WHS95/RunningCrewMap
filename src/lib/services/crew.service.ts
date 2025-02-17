@@ -279,6 +279,7 @@ class CrewService {
           description: input.description,
           instagram: input.instagram,
           logo_image_url,
+          is_visible: false,
         })
         .select()
         .single();
