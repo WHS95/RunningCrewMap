@@ -15,6 +15,7 @@ export function FormLayout({ title, children }: FormLayoutProps) {
       className='flex flex-col min-h-screen'
       style={{
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
+        paddingBottom: CSS_VARIABLES.MOBILE_NAV_PADDING,
       }}
     >
       {/* 헤더 */}
