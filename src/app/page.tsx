@@ -16,8 +16,8 @@ const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
 
 // 서울시청 좌표 (기본값)
 const DEFAULT_CENTER = {
-  lat: 37.5666805,
-  lng: 126.9784147,
+  lat: 37.513,
+  lng: 127.0598,
 };
 
 // 크루 데이터를 저장할 전역 캐시
@@ -68,24 +68,24 @@ export default function Home() {
     }
 
     const geoOptions = {
-      timeout: 1000,
+      timeout: 1500, // 타임아웃 시간 증가
       maximumAge: 0,
       enableHighAccuracy: false,
     };
 
     navigator.geolocation.getCurrentPosition(
-      () => {
+      (position) => {
         setCenter({
-          lat: 37.5666805,
-          lng: 126.9784147,
+          // lat: 37.5666805,
+          // lng: 126.9784147,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
         });
         setIsLoading(false);
       },
       () => {
-        console
-          .log
-          // "위치 정보를 가져올 수 없어 기본 위치(서울시청)를 사용합니다."
-          ();
+        console.log("위치 정보를 가져올 수 없어 기본 위치를 사용합니다.");
+        setCenter(DEFAULT_CENTER);
         setIsLoading(false);
       },
       geoOptions
@@ -135,7 +135,7 @@ export default function Home() {
           width='100%'
           height='100%'
           initialCenter={center}
-          initialZoom={14}
+          initialZoom={10} // 초기 줌 레벨 조정
           crews={crews}
         />
       </div>

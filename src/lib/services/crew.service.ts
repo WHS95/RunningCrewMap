@@ -133,7 +133,11 @@ class CrewService {
       console.log("업로드 시작...");
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(this.BUCKET_NAME)
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: "31536000", // 1년
+          contentType: file.type,
+          upsert: true,
+        });
 
       if (uploadError) {
         console.error("업로드 실패:", {
@@ -144,16 +148,25 @@ class CrewService {
       }
       console.log("업로드 성공:", uploadData);
 
-      // 공개 URL 가져오기
+      // 공개 URL 가져오기 (캐시 버스팅을 위한 타임스탬프 추가)
       console.log("공개 URL 생성 중...");
       const { data } = supabase.storage
         .from(this.BUCKET_NAME)
-        .getPublicUrl(fileName);
+        .getPublicUrl(fileName, {
+          transform: {
+            quality: 75,
+            width: 96,
+            height: 96,
+          },
+        });
 
-      console.log("생성된 공개 URL:", data.publicUrl);
+      const publicUrl = new URL(data.publicUrl);
+      publicUrl.searchParams.set("v", timestamp.toString());
+
+      console.log("생성된 공개 URL:", publicUrl.toString());
       console.log("=== 이미지 업로드 완료 ===");
 
-      return data.publicUrl;
+      return publicUrl.toString();
     } catch (error) {
       console.error("=== 이미지 업로드 실패 ===");
       console.error("에러 상세 정보:", {
@@ -383,20 +396,29 @@ class CrewService {
     if (error) throw error;
 
     // 응답 데이터 형식 변환 및 위치 기반 필터링
-    let crews = (data as DbCrew[]).map((crew) => ({
-      ...crew,
-      location: {
-        main_address: crew.crew_locations[0].main_address,
-        detail_address: crew.crew_locations[0].detail_address,
-        latitude: crew.crew_locations[0].latitude,
-        longitude: crew.crew_locations[0].longitude,
-      },
-      activity_days: crew.crew_activity_days.map((d) => d.day_of_week),
-      age_range: {
-        min_age: crew.crew_age_ranges[0].min_age,
-        max_age: crew.crew_age_ranges[0].max_age,
-      },
-    }));
+    let crews = (data as DbCrew[]).map((crew) => {
+      // 이미지 URL이 유효한지 확인하고, 유효하지 않은 경우 undefined로 설정
+      const logo_image_url =
+        crew.logo_image_url && this.isValidImageUrl(crew.logo_image_url)
+          ? crew.logo_image_url
+          : undefined;
+
+      return {
+        ...crew,
+        logo_image_url,
+        location: {
+          main_address: crew.crew_locations[0].main_address,
+          detail_address: crew.crew_locations[0].detail_address,
+          latitude: crew.crew_locations[0].latitude,
+          longitude: crew.crew_locations[0].longitude,
+        },
+        activity_days: crew.crew_activity_days.map((d) => d.day_of_week),
+        age_range: {
+          min_age: crew.crew_age_ranges[0].min_age,
+          max_age: crew.crew_age_ranges[0].max_age,
+        },
+      };
+    });
 
     // 위치 기반 필터링 (클라이언트 측에서 처리)
     if (options?.location) {
@@ -472,6 +494,20 @@ class CrewService {
         max_age: crew.crew_age_ranges[0].max_age,
       },
     };
+  }
+
+  // 이미지 URL 유효성 검사
+  private isValidImageUrl(url: string): boolean {
+    try {
+      const parsedUrl = new URL(url);
+      return (
+        parsedUrl.protocol === "https:" &&
+        parsedUrl.hostname.includes("supabase.co") &&
+        /\.(jpg|jpeg|png|gif)$/i.test(parsedUrl.pathname)
+      );
+    } catch {
+      return false;
+    }
   }
 }
 
