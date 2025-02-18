@@ -4,6 +4,7 @@ import type {
   CreateCrewInput,
   CrewFilterOptions,
 } from "@/lib/types/crewInsert";
+import { Crew } from "@/lib/types/crew";
 import { logger } from "@/lib/utils/logger";
 import { ErrorCode, AppError } from "@/lib/types/error";
 import { compressImageFile } from "@/lib/utils/imageCompression";
@@ -363,13 +364,18 @@ class CrewService {
   }
 
   // 크루 목록 조회 (필터링 포함)
-  async getCrews(options?: CrewFilterOptions): Promise<CrewWithDetails[]> {
-    let query = supabase.from("crews").select(`
+  async getCrews(options?: CrewFilterOptions): Promise<Crew[]> {
+    let query = supabase
+      .from("crews")
+      .select(
+        `
         *,
         crew_locations (*),
         crew_activity_days (day_of_week),
         crew_age_ranges (*)
-      `);
+      `
+      )
+      .eq("is_visible", true); // 승인된 크루만 조회
 
     // 활동 요일 필터링
     if (options?.activity_day) {
@@ -393,28 +399,38 @@ class CrewService {
     const { data, error } = await query;
     if (error) throw error;
 
-    // 응답 데이터 형식 변환 및 위치 기반 필터링
+    // crews.json 형식으로 데이터 변환
     let crews = (data as DbCrew[]).map((crew) => {
-      // 이미지 URL이 유효한지 확인하고, 유효하지 않은 경우 undefined로 설정
-      const logo_image_url =
-        crew.logo_image_url && this.isValidImageUrl(crew.logo_image_url)
-          ? crew.logo_image_url
-          : undefined;
+      // 활동 요일 문자열로 변환
+      const activityDays = crew.crew_activity_days.map((d) => d.day_of_week);
+      const activityDay =
+        activityDays.length > 1
+          ? `매주 ${activityDays.join(", ")}`
+          : `매주 ${activityDays[0]}`;
+
+      // 연령대 문자열로 변환
+      const ageRange = crew.crew_age_ranges[0]
+        ? `${crew.crew_age_ranges[0].min_age}~${crew.crew_age_ranges[0].max_age}대`
+        : "전 연령대";
 
       return {
-        ...crew,
-        logo_image_url,
+        id: crew.id,
+        name: crew.name,
+        // 리얼 줄바꿈을 적용하기 위해서 줄바꿈 문자를 추가
+        description: crew.description.replace(/\\n/g, "\n"),
         location: {
+          lat: crew.crew_locations[0].latitude,
+          lng: crew.crew_locations[0].longitude,
+          address:
+            crew.crew_locations[0].detail_address ||
+            crew.crew_locations[0].main_address,
           main_address: crew.crew_locations[0].main_address,
-          detail_address: crew.crew_locations[0].detail_address,
-          latitude: crew.crew_locations[0].latitude,
-          longitude: crew.crew_locations[0].longitude,
         },
-        activity_days: crew.crew_activity_days.map((d) => d.day_of_week),
-        age_range: {
-          min_age: crew.crew_age_ranges[0].min_age,
-          max_age: crew.crew_age_ranges[0].max_age,
-        },
+        instagram: crew.instagram,
+        logo_image: crew.logo_image_url,
+        created_at: crew.created_at,
+        activity_day: activityDay,
+        age_range: ageRange,
       };
     });
 
@@ -425,8 +441,8 @@ class CrewService {
         const distance = this.calculateDistance(
           latitude,
           longitude,
-          crew.location.latitude,
-          crew.location.longitude
+          crew.location.lat,
+          crew.location.lng
         );
         return distance <= radius;
       });

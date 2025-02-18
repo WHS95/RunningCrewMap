@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { crewService } from "@/lib/services";
+// import { crewService } from "@/lib/services";
+import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 // import { CrewList } from "@/components/crew/CrewList";
@@ -53,7 +54,7 @@ export default function Home() {
         return;
       }
 
-      const data = await crewService.getAllCrews();
+      const data = await crewService.getCrews();
       crewsCache = data;
       setCrews(data);
     } catch (err: unknown) {
