@@ -156,47 +156,18 @@ export default function AdminCrewPage() {
             className='flex items-center justify-between p-4 border rounded-lg'
           >
             <div
-              className='flex items-center gap-4 flex-1 cursor-pointer'
+              className='flex items-center flex-1 gap-4 cursor-pointer'
               onClick={() => handleCrewClick(crew)}
             >
               {/* 크루 로고 */}
               {crew.logo_image_url ? (
-                <div className='relative w-12 h-12'>
-                  <Image
-                    src={crew.logo_image_url}
-                    alt={`${crew.name} 로고`}
-                    fill
-                    className='object-cover rounded-full'
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      if (target.parentElement) {
-                        target.parentElement.innerHTML = `
-                          <div class="flex items-center justify-center w-full h-full text-xl font-medium rounded-full bg-muted">
-                            ${crew.name.charAt(0)}
-                          </div>
-                        `;
-                      }
-                      console.warn(
-                        `Failed to load image for crew: ${crew.name}`,
-                        crew.logo_image_url
-                      );
-                    }}
-                    loading='eager'
-                    sizes='(max-width: 48px) 100vw, 48px'
-                    priority={true}
-                    quality={75}
-                    placeholder='blur'
-                    blurDataURL={`data:image/svg+xml;base64,${btoa(
-                      `<svg width="48" height="48" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100%" height="100%" fill="#f3f4f6"/>
-                        <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#6b7280" font-size="20">${crew.name.charAt(
-                          0
-                        )}</text>
-                      </svg>`
-                    )}`}
-                  />
-                </div>
+                <Image
+                  src={crew.logo_image_url}
+                  alt={`${crew.name} 로고`}
+                  width={48}
+                  height={48}
+                  className='object-cover rounded-full'
+                />
               ) : (
                 <div className='flex items-center justify-center w-12 h-12 text-xl font-medium rounded-full bg-muted'>
                   {crew.name.charAt(0)}

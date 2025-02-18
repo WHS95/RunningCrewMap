@@ -152,13 +152,9 @@ class CrewService {
       console.log("공개 URL 생성 중...");
       const { data } = supabase.storage
         .from(this.BUCKET_NAME)
-        .getPublicUrl(fileName, {
-          transform: {
-            quality: 75,
-            width: 96,
-            height: 96,
-          },
-        });
+        .getPublicUrl(fileName);
+
+      console.log("======data", data);
 
       const publicUrl = new URL(data.publicUrl);
       publicUrl.searchParams.set("v", timestamp.toString());
@@ -263,6 +259,8 @@ class CrewService {
             compressedImage,
             crypto.randomUUID()
           );
+          console.log("uploadedUrl", uploadedUrl);
+
           if (!uploadedUrl) {
             throw logger.createError(ErrorCode.UPLOAD_FAILED);
           }
