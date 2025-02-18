@@ -149,7 +149,7 @@ export default function Home() {
         setIsLoading(false);
       },
       () => {
-        console.log("위치 정보를 가져올 수 없어 기본 위치를 사용합니다.");
+        // console.log("위치 정보를 가져올 수 없어 기본 위치를 사용합니다.");
         setCenter(DEFAULT_CENTER);
         setIsLoading(false);
       },

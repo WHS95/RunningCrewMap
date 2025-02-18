@@ -19,7 +19,7 @@ interface CrewDetailViewProps {
 export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
   if (!crew) return null;
 
-  console.log("crew", crew);
+  // console.log("crew", crew);
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>

@@ -91,13 +91,13 @@ class CrewService {
     crewId: string
   ): Promise<string | null> {
     try {
-      console.log("=== 이미지 업로드 시작 ===");
-      console.log("파일 정보:", {
-        name: file.name,
-        type: file.type,
-        size: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
-      });
-      console.log("크루 ID:", crewId);
+      // console.log("=== 이미지 업로드 시작 ===");
+      // console.log("파일 정보:", {
+      //   name: file.name,
+      //   type: file.type,
+      //   size: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      // });
+      // console.log("크루 ID:", crewId);
 
       // 파일 크기 검증
       if (file.size > 2 * 1024 * 1024) {
@@ -120,15 +120,15 @@ class CrewService {
       const timestamp = new Date().getTime();
       const fileExt = file.name.split(".").pop();
       const fileName = `${crewId}_${timestamp}.${fileExt}`;
-      console.log("생성된 파일명:", fileName);
+      // console.log("생성된 파일명:", fileName);
 
       // 버킷 확인
-      const { data: buckets } = await supabase.storage.listBuckets();
-      console.log(
-        "사용 가능한 버킷:",
-        buckets?.map((b) => b.name)
-      );
-      console.log("현재 사용할 버킷:", this.BUCKET_NAME);
+      // const { data: buckets } = await supabase.storage.listBuckets();
+      // console.log(
+      //   "사용 가능한 버킷:",
+      //   buckets?.map((b) => b.name)
+      // );
+      // console.log("현재 사용할 버킷:", this.BUCKET_NAME);
 
       // 이미지 업로드
       console.log("업로드 시작...");
@@ -155,12 +155,12 @@ class CrewService {
         .from(this.BUCKET_NAME)
         .getPublicUrl(fileName);
 
-      console.log("======data", data);
+      // console.log("======data", data);
 
       const publicUrl = new URL(data.publicUrl);
       publicUrl.searchParams.set("v", timestamp.toString());
 
-      console.log("생성된 공개 URL:", publicUrl.toString());
+      // console.log("생성된 공개 URL:", publicUrl.toString());
       console.log("=== 이미지 업로드 완료 ===");
 
       return publicUrl.toString();
@@ -260,7 +260,7 @@ class CrewService {
             compressedImage,
             crypto.randomUUID()
           );
-          console.log("uploadedUrl", uploadedUrl);
+          // console.log("uploadedUrl", uploadedUrl);
 
           if (!uploadedUrl) {
             throw logger.createError(ErrorCode.UPLOAD_FAILED);
