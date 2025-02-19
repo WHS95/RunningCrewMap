@@ -2,7 +2,7 @@
 
 import { CSS_VARIABLES } from "@/lib/constants";
 import { useState } from "react";
-import { crewService } from "@/lib/services";
+import { crewService } from "@/lib/services/crew.service";
 import { Crew } from "@/lib/types/crew";
 import { useEffect } from "react";
 import Image from "next/image";
@@ -17,7 +17,7 @@ export default function HomePage() {
   useEffect(() => {
     const loadCrews = async () => {
       try {
-        const data = await crewService.getAllCrews();
+        const data = await crewService.getCrews();
         setCrews(data);
       } catch (error) {
         console.error("Failed to load crews:", error);
@@ -48,26 +48,9 @@ export default function HomePage() {
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
-      {/* 공지사항 섹션 */}
-      <section className='p-4 border-b'>
-        <h2 className='mb-4 text-lg font-medium'>❗️공지사항</h2>
-        <div className='space-y-2'>
-          <div className='p-4 rounded-lg bg-accent/50'>
-            <h3 className='font-medium'>서비스 오픈 안내</h3>
-            <p className='mt-1 text-sm text-muted-foreground'>
-              🏃🏼‍♂️러너하우스가 드디어 베타 오픈했습니다. <br />
-              크루등록 방법은 메뉴 탭 이용해주세요😉
-            </p>
-            {/* <time className='block mt-2 text-xs text-muted-foreground'>
-              2024.02.08
-            </time> */}
-          </div>
-        </div>
-      </section>
-
       {/* 러닝크루 소개 섹션 */}
       <section className='p-4'>
-        <h2 className='mb-4 text-lg font-medium'>🏃‍♂️ 러닝크루</h2>
+        <h2 className='mb-4 text-lg font-medium'>🏃‍♂️전국 러닝 크루</h2>
         <div className='grid grid-cols-3 gap-4 md:gap-6'>
           {crews.map((crew) => (
             <button
