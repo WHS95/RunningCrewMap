@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     "러닝 이벤트",
     "런하우스",
   ],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png" },
+    ],
+  },
 };
 
 export default function EventsLayout({

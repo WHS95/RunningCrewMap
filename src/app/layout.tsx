@@ -43,14 +43,17 @@ export const metadata: Metadata = {
     images: ["/logo.png"],
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png" },
+    ],
+    shortcut: ["/favicon-32x32.png"],
     apple: [
-      { url: "/apple-icon.png" },
-      { url: "/apple-icon-72x72.png", sizes: "72x72", type: "image/png" },
-      { url: "/apple-icon-114x114.png", sizes: "114x114", type: "image/png" },
+      { url: "/apple-touch-icon.png" },
+      { url: "/apple-touch-icon.png", sizes: "72x72", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "114x114", type: "image/png" },
     ],
   },
-  manifest: "/manifest.json",
   viewport: {
     width: "device-width",
     initialScale: 1,
