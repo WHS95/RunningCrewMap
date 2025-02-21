@@ -1,15 +1,86 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { Header } from "@/components/layout/Header";
-// import { EXTERNAL_LINKS } from "@/lib/constants";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "러닝 크루 지도",
-  description: "다양한 러닝 크루들을 한눈에 확인하세요",
+  metadataBase: new URL("https://running-crew-map.vercel.app"),
+  title: {
+    default: "런하우스 | 전국 러닝크루 지도",
+    template: "%s | 러닝크루맵",
+  },
+  description: "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요.",
+  applicationName: "런하우스",
+  keywords: ["러닝", "러닝크루", "달리기", "러닝맵", "러닝 커뮤니티"],
+  authors: [{ name: "RunningCrewMap" }],
+  creator: "RunningCrewMap",
+  publisher: "RunningCrewMap",
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: "https://running-crew-map.vercel.app",
+    title: "런하우스 | 전국 러닝크루 지도",
+    description: "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요.",
+    siteName: "런하우스",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "런하우스 대표 이미지",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "런하우스 | 전국 러닝크루 지도",
+    description: "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요.",
+    creator: "@runningcrewmap",
+    images: ["/logo.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: [
+      { url: "/apple-icon.png" },
+      { url: "/apple-icon-72x72.png", sizes: "72x72", type: "image/png" },
+      { url: "/apple-icon-114x114.png", sizes: "114x114", type: "image/png" },
+    ],
+  },
+  manifest: "/manifest.json",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "google-site-verification=YOUR_CODE",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "런하우스",
+  },
+  formatDetection: {
+    telephone: true,
+  },
+  themeColor: "#ffffff",
+  category: "sports",
 };
 
 export default function RootLayout({
@@ -17,7 +88,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const RUNNING_EVENTS = "http://www.marathon.pe.kr/schedule_index.html";
   return (
     <html lang='ko' suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
@@ -26,6 +96,7 @@ export default function RootLayout({
           <main>{children}</main>
           <MobileNav />
         </div>
+        <Toaster />
       </body>
     </html>
   );
