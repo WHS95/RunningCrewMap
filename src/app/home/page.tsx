@@ -50,7 +50,9 @@ export default function HomePage() {
     >
       {/* 러닝크루 소개 섹션 */}
       <section className='p-4'>
-        <h2 className='mb-4 text-lg font-medium'>🏃‍♂️전국 러닝 크루</h2>
+        <p className='mb-4 text-lg font-medium'>
+          🏃‍♂️ 전국 {crews.length}개의 크루들과 함께합니다
+        </p>
         <div className='grid grid-cols-3 gap-4 md:gap-6'>
           {crews.map((crew) => (
             <button

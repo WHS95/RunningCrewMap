@@ -7,6 +7,7 @@ export interface Crew {
   created_at: string;
   activity_day?: string;
   age_range?: string;
+  is_visible?: boolean;
   location: {
     lat: number;
     lng: number;

@@ -149,58 +149,79 @@ export default function AdminCrewPage() {
 
   return (
     <FormLayout title='크루 관리'>
-      <div className='space-y-4'>
-        {crews.map((crew) => (
-          <div
-            key={crew.id}
-            className='flex items-center justify-between p-4 border rounded-lg'
-          >
-            <div
-              className='flex items-center flex-1 gap-4 cursor-pointer'
-              onClick={() => handleCrewClick(crew)}
-            >
-              {/* 크루 로고 */}
-              {crew.logo_image_url ? (
-                <Image
-                  src={crew.logo_image_url}
-                  alt={`${crew.name} 로고`}
-                  width={48}
-                  height={48}
-                  className='object-cover rounded-full'
-                />
-              ) : (
-                <div className='flex items-center justify-center w-12 h-12 text-xl font-medium rounded-full bg-muted'>
-                  {crew.name.charAt(0)}
-                </div>
-              )}
-
-              {/* 크루 정보 */}
+      {isLoading ? (
+        <div className='flex items-center justify-center flex-1'>
+          <div className='text-lg'>로딩 중...</div>
+        </div>
+      ) : (
+        <div className='space-y-4'>
+          {/* 크루 통계 */}
+          <div className='p-4 border rounded-lg bg-accent/10'>
+            <div className='flex items-center gap-3 text-sm'>
               <div>
-                <h2 className='font-medium'>{crew.name}</h2>
-                <p className='text-sm text-muted-foreground'>
-                  {crew.location.main_address}
-                </p>
+                <span className='text-muted-foreground'>전체:</span>{" "}
+                <span className='font-medium'>{crews.length}</span>
+              </div>
+              <div className='w-px h-4 bg-border' />
+              <div>
+                <span className='text-muted-foreground'>숨김:</span>{" "}
+                <span className='font-medium'>
+                  {crews.filter((crew) => !crew.is_visible).length}
+                </span>
               </div>
             </div>
-
-            {/* 표시 여부 토글 */}
-            <div
-              className='flex items-center gap-2'
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className='text-sm text-muted-foreground'>
-                {crew.is_visible ? "표시" : "숨김"}
-              </span>
-              <Switch
-                checked={crew.is_visible}
-                onCheckedChange={(checked) =>
-                  toggleCrewVisibility(crew.id, checked)
-                }
-              />
-            </div>
           </div>
-        ))}
-      </div>
+
+          {/* 크루 목록 */}
+          {crews.map((crew) => (
+            <div
+              key={crew.id}
+              className='flex items-center justify-between p-4 border rounded-lg'
+            >
+              <div
+                className='flex items-center flex-1 gap-4 cursor-pointer'
+                onClick={() => handleCrewClick(crew)}
+              >
+                {/* 크루 로고 */}
+                {crew.logo_image_url ? (
+                  <Image
+                    src={crew.logo_image_url}
+                    alt={`${crew.name} 로고`}
+                    width={48}
+                    height={48}
+                    className='object-cover rounded-full'
+                  />
+                ) : (
+                  <div className='flex items-center justify-center w-12 h-12 text-xl font-medium rounded-full bg-muted'>
+                    {crew.name.charAt(0)}
+                  </div>
+                )}
+
+                {/* 크루 정보 */}
+                <div>
+                  <h2 className='font-medium'>{crew.name}</h2>
+                  <p className='text-sm text-muted-foreground'>
+                    {crew.location.main_address}
+                  </p>
+                </div>
+              </div>
+
+              {/* 표시 여부 토글 */}
+              <div
+                className='flex items-center gap-2'
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Switch
+                  checked={crew.is_visible}
+                  onCheckedChange={(checked) =>
+                    toggleCrewVisibility(crew.id, checked)
+                  }
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 크루 상세 정보 팝업 */}
       <CrewDetailView
