@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types/crewInsert";
 import { Crew } from "@/lib/types/crew";
 import { logger } from "@/lib/utils/logger";
-import { ErrorCode, AppError } from "@/lib/types/error";
+import { ErrorCode } from "@/lib/types/error";
 import { compressImageFile } from "@/lib/utils/imageCompression";
 
 // Supabase 응답 타입 정의
@@ -204,6 +204,19 @@ class CrewService {
     if (!input.location.main_address) {
       throw logger.createError(ErrorCode.INVALID_LOCATION);
     }
+
+    // 위치 정보 유효성 검사
+    try {
+      this.validateLocation(input.location);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw logger.createError(ErrorCode.INVALID_LOCATION, {
+          errorMessage: error.message,
+        });
+      }
+      throw error;
+    }
+
     if (!input.activity_days.length) {
       throw logger.createError(ErrorCode.INVALID_ACTIVITY_DAYS);
     }
@@ -282,26 +295,24 @@ class CrewService {
           if (!uploadedUrl) {
             throw logger.createError(ErrorCode.UPLOAD_FAILED);
           }
+
           logo_image_url = uploadedUrl;
         } catch (error) {
-          if ((error as AppError).code === ErrorCode.COMPRESSION_FAILED) {
-            throw error; // 압축 실패는 상위로 전파
+          if (
+            error instanceof Error &&
+            "code" in error &&
+            error.code === ErrorCode.FILE_TOO_LARGE
+          ) {
+            // 파일 크기 초과 에러는 압축 시도 후 발생한 것이므로 그대로 전파
+            throw error;
           }
-          logger.error(logger.createError(ErrorCode.UPLOAD_FAILED), {
-            action: "upload_image",
-            details: {
-              error,
-              fileName: input.logo_image.name,
-              fileSize: input.logo_image.size,
-              fileType: input.logo_image.type,
-            },
-          });
-          throw logger.createError(ErrorCode.UPLOAD_FAILED);
+          // 이미지 처리 중 오류가 발생해도 크루 생성은 계속 진행
+          console.error("이미지 처리 중 오류:", error);
         }
       }
 
-      // 크루 기본 정보 저장
-      const { data: crew, error: crewError } = await supabase
+      // 트랜잭션 시작
+      const { data: crewData, error: crewError } = await supabase
         .from("crews")
         .insert({
           name: input.name,
@@ -309,98 +320,147 @@ class CrewService {
           instagram: input.instagram,
           logo_image_url,
           founded_date: input.founded_date,
-          is_visible: false,
         })
-        .select()
+        .select("id")
         .single();
 
       if (crewError) {
-        throw crewError;
+        await this.handleDatabaseError(crewError as unknown as DatabaseError, {
+          action: "createCrew",
+          input: input as unknown as Record<string, unknown>,
+        });
       }
 
-      // 위치 정보 저장 (지도 표시 위치)
+      const crewId = crewData!.id;
+
+      // 위치 정보 저장
       const { error: locationError } = await supabase
         .from("crew_locations")
         .insert({
-          crew_id: crew.id,
-          ...input.location,
+          crew_id: crewId,
+          main_address: input.location.main_address,
+          detail_address: input.location.detail_address,
+          latitude: input.location.latitude,
+          longitude: input.location.longitude,
         });
 
       if (locationError) {
-        throw locationError;
+        await this.handleDatabaseError(
+          locationError as unknown as DatabaseError,
+          {
+            action: "createCrewLocation",
+            input: { crewId, location: input.location } as Record<
+              string,
+              unknown
+            >,
+          }
+        );
       }
 
-      // 활동 장소들 저장 (여러 개 가능)
-      if (input.activity_locations && input.activity_locations.length > 0) {
-        try {
-          const { error: activityLocationsError } = await supabase
-            .from("crew_activity_locations")
-            .insert(
-              input.activity_locations.map((location) => ({
-                crew_id: crew.id,
-                location_name: location,
-              }))
-            );
+      // 연령대 정보 저장
+      const { error: ageRangeError } = await supabase
+        .from("crew_age_ranges")
+        .insert({
+          crew_id: crewId,
+          min_age: input.age_range.min_age,
+          max_age: input.age_range.max_age,
+        });
 
-          if (activityLocationsError) {
-            console.error("활동 장소 저장 실패:", activityLocationsError);
-            // 활동 장소 저장 실패는 크루 생성 자체를 실패시키지 않음
+      if (ageRangeError) {
+        await this.handleDatabaseError(
+          ageRangeError as unknown as DatabaseError,
+          {
+            action: "createCrewAgeRange",
+            input: { crewId, ageRange: input.age_range } as Record<
+              string,
+              unknown
+            >,
           }
-        } catch (error) {
-          console.error("활동 장소 저장 중 예외 발생:", error);
-          // 활동 장소 저장 실패는 크루 생성 자체를 실패시키지 않음
-        }
+        );
       }
 
       // 활동 요일 저장
-      const { error: daysError } = await supabase
+      const activityDaysData = input.activity_days.map((day) => ({
+        crew_id: crewId,
+        day_of_week: day,
+      }));
+
+      const { error: activityDaysError } = await supabase
         .from("crew_activity_days")
-        .insert(
-          input.activity_days.map((day) => ({
-            crew_id: crew.id,
-            day_of_week: day,
-          }))
+        .insert(activityDaysData);
+
+      if (activityDaysError) {
+        await this.handleDatabaseError(
+          activityDaysError as unknown as DatabaseError,
+          {
+            action: "createCrewActivityDays",
+            input: { crewId, activityDays: input.activity_days } as Record<
+              string,
+              unknown
+            >,
+          }
+        );
+      }
+
+      // 활동 장소 저장 (있는 경우)
+      if (input.activity_locations && input.activity_locations.length > 0) {
+        const activityLocationsData = input.activity_locations.map(
+          (location) => ({
+            crew_id: crewId,
+            location_name: location,
+          })
         );
 
-      if (daysError) {
-        throw daysError;
+        const { error: activityLocationsError } = await supabase
+          .from("crew_activity_locations")
+          .insert(activityLocationsData);
+
+        if (activityLocationsError) {
+          await this.handleDatabaseError(
+            activityLocationsError as unknown as DatabaseError,
+            {
+              action: "createCrewActivityLocations",
+              input: {
+                crewId,
+                activityLocations: input.activity_locations,
+              } as Record<string, unknown>,
+            }
+          );
+        }
       }
 
-      // 연령대 저장
-      const { error: ageError } = await supabase
-        .from("crew_age_ranges")
-        .insert({
-          crew_id: crew.id,
-          ...input.age_range,
-        });
-
-      if (ageError) {
-        throw ageError;
-      }
-
+      // 생성된 크루 정보 반환
       return {
-        ...crew,
+        id: crewId,
+        name: input.name,
+        description: input.description,
+        instagram: input.instagram,
         logo_image_url,
-        location: input.location,
+        founded_date: input.founded_date,
+        location: {
+          main_address: input.location.main_address,
+          detail_address: input.location.detail_address,
+          latitude: input.location.latitude,
+          longitude: input.location.longitude,
+        },
+        age_range: {
+          min_age: input.age_range.min_age,
+          max_age: input.age_range.max_age,
+        },
         activity_days: input.activity_days,
-        age_range: input.age_range,
         activity_locations: input.activity_locations || [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
     } catch (error) {
-      await this.handleDatabaseError(error as DatabaseError, {
-        action: "create_crew",
-        input: {
-          ...input,
-          logo_image: input.logo_image
-            ? {
-                name: input.logo_image.name,
-                size: input.logo_image.size,
-                type: input.logo_image.type,
-              }
-            : undefined,
-        },
+      if (error instanceof Error && "code" in error) {
+        throw error;
+      }
+      logger.error(logger.createError(ErrorCode.SERVER_ERROR), {
+        action: "createCrew",
+        details: { error, input },
       });
-      throw error;
+      throw logger.createError(ErrorCode.SERVER_ERROR);
     }
   }
 
@@ -599,6 +659,7 @@ class CrewService {
         founded_date,
         crew_locations (
           main_address,
+          detail_address,
           latitude,
           longitude
         ),
@@ -637,6 +698,7 @@ class CrewService {
         lat: crew.crew_locations[0]?.latitude || 0,
         lng: crew.crew_locations[0]?.longitude || 0,
         main_address: crew.crew_locations[0]?.main_address || "주소 없음",
+        address: crew.crew_locations[0]?.detail_address || "",
       },
       activity_locations:
         crew.crew_activity_locations?.map((loc) => loc.location_name) || [],
@@ -654,6 +716,254 @@ class CrewService {
       .eq("id", crewId);
 
     if (error) throw error;
+  }
+
+  // 위치 정보 유효성 검사
+  private validateLocation(location: { latitude: number; longitude: number }) {
+    // 데이터베이스 스키마 제약 검사
+    // latitude는 numeric(10, 8) - 소수점 앞 최대 2자리, 소수점 뒤 최대 8자리
+    // longitude는 numeric(11, 8) - 소수점 앞 최대 3자리, 소수점 뒤 최대 8자리
+
+    // 위도 범위 검사 (-99.99999999 ~ 99.99999999)
+    if (location.latitude < -99.99999999 || location.latitude > 99.99999999) {
+      throw new Error(
+        "위도 값이 유효한 범위를 벗어났습니다. -99.99999999에서 99.99999999 사이의 값을 입력해주세요."
+      );
+    }
+
+    // 경도 범위 검사 (-999.99999999 ~ 999.99999999)
+    if (
+      location.longitude < -999.99999999 ||
+      location.longitude > 999.99999999
+    ) {
+      throw new Error(
+        "경도 값이 유효한 범위를 벗어났습니다. -999.99999999에서 999.99999999 사이의 값을 입력해주세요."
+      );
+    }
+
+    // 소수점 자릿수 검사
+    const latStr = location.latitude.toString();
+    const lngStr = location.longitude.toString();
+
+    // 소수점 이하 자릿수 확인
+    const latDecimalPlaces = latStr.includes(".")
+      ? latStr.split(".")[1].length
+      : 0;
+    const lngDecimalPlaces = lngStr.includes(".")
+      ? lngStr.split(".")[1].length
+      : 0;
+
+    if (latDecimalPlaces > 8) {
+      throw new Error(
+        "위도 값의 소수점 이하 자릿수는 최대 8자리까지 가능합니다."
+      );
+    }
+
+    if (lngDecimalPlaces > 8) {
+      throw new Error(
+        "경도 값의 소수점 이하 자릿수는 최대 8자리까지 가능합니다."
+      );
+    }
+
+    // 한국의 위경도 범위 검사
+    // 위도(latitude): 33° ~ 39° (북위)
+    // 경도(longitude): 124° ~ 132° (동경)
+    const isInKoreaRange =
+      location.latitude >= 33 &&
+      location.latitude <= 39 &&
+      location.longitude >= 124 &&
+      location.longitude <= 132;
+
+    // 한국 범위를 벗어나면 경고만 하고 진행 (다른 국가의 크루도 등록 가능하도록)
+    if (!isInKoreaRange) {
+      console.warn(
+        "입력된 위경도 값이 한국의 일반적인 범위를 벗어났습니다:",
+        location
+      );
+    }
+  }
+
+  // 크루 정보 업데이트
+  async updateCrew(
+    crewId: string,
+    updateData: {
+      name: string;
+      description: string;
+      instagram?: string;
+      location: {
+        main_address: string;
+        detail_address?: string;
+        latitude: number;
+        longitude: number;
+      };
+      activity_locations?: string[];
+      activity_days: ActivityDay[];
+      founded_date?: string;
+      age_range?: {
+        min_age: number;
+        max_age: number;
+      };
+    }
+  ): Promise<void> {
+    try {
+      // 위치 정보 유효성 검사
+      this.validateLocation(updateData.location);
+
+      // 트랜잭션 처리를 위해 여러 업데이트를 순차적으로 실행
+
+      // 1. 기본 크루 정보 업데이트
+      const { error: crewError } = await supabase
+        .from("crews")
+        .update({
+          name: updateData.name,
+          description: updateData.description,
+          instagram: updateData.instagram || null,
+          founded_date: updateData.founded_date || undefined,
+        })
+        .eq("id", crewId);
+
+      if (crewError) throw crewError;
+
+      // 2. 위치 정보 업데이트
+      const { error: locationError } = await supabase
+        .from("crew_locations")
+        .update({
+          main_address: updateData.location.main_address,
+          detail_address: updateData.location.detail_address,
+          latitude: updateData.location.latitude,
+          longitude: updateData.location.longitude,
+        })
+        .eq("crew_id", crewId);
+
+      if (locationError) throw locationError;
+
+      // 3. 활동 요일 업데이트 (기존 데이터 삭제 후 새로 추가)
+      // 3-1. 기존 활동 요일 삭제
+      const { error: deleteActivityDaysError } = await supabase
+        .from("crew_activity_days")
+        .delete()
+        .eq("crew_id", crewId);
+
+      if (deleteActivityDaysError) throw deleteActivityDaysError;
+
+      // 3-2. 새 활동 요일 추가
+      const { error: insertActivityDaysError } = await supabase
+        .from("crew_activity_days")
+        .insert(
+          updateData.activity_days.map((day) => ({
+            crew_id: crewId,
+            day_of_week: day,
+          }))
+        );
+
+      if (insertActivityDaysError) throw insertActivityDaysError;
+
+      // 4. 연령대 업데이트 (있는 경우)
+      if (updateData.age_range) {
+        const { error: ageRangeError } = await supabase
+          .from("crew_age_ranges")
+          .update({
+            min_age: updateData.age_range.min_age,
+            max_age: updateData.age_range.max_age,
+          })
+          .eq("crew_id", crewId);
+
+        if (ageRangeError) throw ageRangeError;
+      }
+
+      // 5. 활동 장소 업데이트 (기존 데이터 삭제 후 새로 추가)
+      if (
+        updateData.activity_locations &&
+        updateData.activity_locations.length > 0
+      ) {
+        // 5-1. 기존 활동 장소 삭제
+        const { error: deleteActivityLocationsError } = await supabase
+          .from("crew_activity_locations")
+          .delete()
+          .eq("crew_id", crewId);
+
+        if (deleteActivityLocationsError) throw deleteActivityLocationsError;
+
+        // 5-2. 새 활동 장소 추가
+        const { error: insertActivityLocationsError } = await supabase
+          .from("crew_activity_locations")
+          .insert(
+            updateData.activity_locations.map((location) => ({
+              crew_id: crewId,
+              location_name: location,
+            }))
+          );
+
+        if (insertActivityLocationsError) throw insertActivityLocationsError;
+      }
+    } catch (error) {
+      console.error("크루 정보 업데이트 실패:", error);
+      throw error;
+    }
+  }
+
+  // 크루 삭제
+  async deleteCrew(crewId: string): Promise<void> {
+    try {
+      // 크루 정보 조회 (로고 이미지 URL 확인을 위해)
+      const { data: crew, error: getError } = await supabase
+        .from("crews")
+        .select("logo_image_url")
+        .eq("id", crewId)
+        .single();
+
+      if (getError) {
+        throw logger.createError(ErrorCode.SERVER_ERROR, {
+          originalError: getError,
+          metadata: { action: "deleteCrew", crewId },
+        });
+      }
+
+      // 로고 이미지가 있으면 스토리지에서 삭제
+      if (crew?.logo_image_url) {
+        try {
+          // URL에서 파일 이름 추출
+          const url = new URL(crew.logo_image_url);
+          const pathParts = url.pathname.split("/");
+          const fileName = pathParts[pathParts.length - 1].split("?")[0]; // 쿼리 파라미터 제거
+
+          // 스토리지에서 이미지 삭제
+          const { error: deleteImageError } = await supabase.storage
+            .from(this.BUCKET_NAME)
+            .remove([fileName]);
+
+          if (deleteImageError) {
+            // 이미지 삭제 실패는 로깅만 하고 크루 삭제는 계속 진행
+            console.error("크루 로고 이미지 삭제 실패:", deleteImageError);
+          }
+        } catch (imageError) {
+          // 이미지 처리 중 오류는 로깅만 하고 크루 삭제는 계속 진행
+          console.error("크루 로고 이미지 처리 중 오류:", imageError);
+        }
+      }
+
+      // 크루 삭제 (ON DELETE CASCADE로 인해 관련 데이터도 모두 삭제됨)
+      const { error: deleteError } = await supabase
+        .from("crews")
+        .delete()
+        .eq("id", crewId);
+
+      if (deleteError) {
+        throw logger.createError(ErrorCode.SERVER_ERROR, {
+          originalError: deleteError,
+          metadata: { action: "deleteCrew", crewId },
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error && "code" in error) {
+        throw error;
+      }
+      logger.error(logger.createError(ErrorCode.SERVER_ERROR), {
+        action: "deleteCrew",
+        details: { error, crewId },
+      });
+      throw logger.createError(ErrorCode.SERVER_ERROR);
+    }
   }
 }
 

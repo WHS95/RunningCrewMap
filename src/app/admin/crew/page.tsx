@@ -8,16 +8,31 @@ import { FormLayout } from "@/components/layout/FormLayout";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import type { Crew } from "@/lib/types/crew";
 import { crewService } from "@/lib/services/crew.service";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface AdminCrew extends Crew {
   is_visible: boolean;
 }
 
 export default function AdminCrewPage() {
+  const router = useRouter();
   const [crews, setCrews] = useState<AdminCrew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [crewToDelete, setCrewToDelete] = useState<AdminCrew | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchCrews();
@@ -63,6 +78,41 @@ export default function AdminCrewPage() {
   const handleCrewClick = (crew: AdminCrew) => {
     setSelectedCrew(crew);
     setIsDetailOpen(true);
+  };
+
+  const handleEditCrew = (crew: AdminCrew) => {
+    // 수정 페이지로 이동
+    router.push(`/admin/crew/edit/${crew.id}`);
+  };
+
+  const handleDeleteClick = (crew: AdminCrew, e: React.MouseEvent) => {
+    e.stopPropagation(); // 이벤트 버블링 방지
+    setCrewToDelete(crew);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCrew = async () => {
+    if (!crewToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      // 크루 삭제 API 호출
+      await crewService.deleteCrew(crewToDelete.id);
+
+      toast.success(`${crewToDelete.name} 크루가 삭제되었습니다.`);
+
+      // 로컬 상태에서 삭제된 크루 제거
+      setCrews((prev) => prev.filter((crew) => crew.id !== crewToDelete.id));
+
+      // 삭제 다이얼로그 닫기
+      setIsDeleteDialogOpen(false);
+      setCrewToDelete(null);
+    } catch (error) {
+      console.error("크루 삭제 실패:", error);
+      toast.error("크루 삭제에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -129,11 +179,30 @@ export default function AdminCrewPage() {
               </div>
             </div>
 
-            {/* 표시 여부 토글 */}
+            {/* 관리 버튼 그룹 */}
             <div
               className='flex items-center gap-2'
               onClick={(e) => e.stopPropagation()}
             >
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => handleEditCrew(crew)}
+                title='크루 정보 수정'
+              >
+                <Pencil className='w-4 h-4' />
+              </Button>
+
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={(e) => handleDeleteClick(crew, e)}
+                className='text-destructive hover:text-destructive/90 hover:bg-destructive/10'
+                title='크루 삭제'
+              >
+                <Trash2 className='w-4 h-4' />
+              </Button>
+
               <Switch
                 checked={crew.is_visible}
                 onCheckedChange={(checked) =>
@@ -154,6 +223,38 @@ export default function AdminCrewPage() {
           setSelectedCrew(null);
         }}
       />
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className='flex items-center gap-2'>
+              <AlertTriangle className='w-5 h-5 text-destructive' />
+              크루 삭제 확인
+            </DialogTitle>
+            <DialogDescription>
+              이 작업은 되돌릴 수 없습니다. 정말로{" "}
+              <strong>{crewToDelete?.name}</strong> 크루를 삭제하시겠습니까?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className='gap-2 sm:justify-end'>
+            <Button
+              variant='outline'
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              취소
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleDeleteCrew}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "삭제 중..." : "삭제"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </FormLayout>
   );
 }
