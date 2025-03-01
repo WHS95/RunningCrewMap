@@ -1,13 +1,163 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { crewService } from "@/lib/services/crew.service";
-import type { CreateCrewInput } from "@/lib/types/crewInsert";
+import type { CreateCrewInput, ActivityDay } from "@/lib/types/crewInsert";
 import { FormLayout } from "@/components/layout/FormLayout";
 import { ACTIVITY_DAYS } from "@/lib/types/crewInsert";
 import { AppError, ErrorCode } from "@/lib/types/error";
 import { ResultDialog } from "@/components/dialog/ResultDialog";
+
+// 날짜 선택 컴포넌트 Props 타입 정의
+interface DatePickerProps {
+  value: string;
+  onChange: (date: string) => void;
+  maxDate: string;
+  disabled?: boolean;
+}
+
+// 커스텀 날짜 선택 컴포넌트
+const DatePicker = ({
+  value,
+  onChange,
+  maxDate,
+  disabled = false,
+}: DatePickerProps) => {
+  // 현재 선택된 날짜 분해
+  const [selectedDate, setSelectedDate] = useState<{
+    year: number;
+    month: number;
+    day: number;
+  }>(() => {
+    const date = new Date(value);
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1, // JavaScript의 월은 0부터 시작
+      day: date.getDate(),
+    };
+  });
+
+  // 최대 날짜 분해
+  const maxDateObj = new Date(maxDate);
+  const maxYear = maxDateObj.getFullYear();
+  const maxMonth = maxDateObj.getMonth() + 1;
+  const maxDay = maxDateObj.getDate();
+
+  // 년도 범위 생성 (1990년부터 현재 년도까지)
+  const years = Array.from({ length: maxYear - 1989 }, (_, i) => 1990 + i);
+
+  // 월 범위 생성 (1-12)
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  // 선택된 년/월에 따른 일 범위 생성
+  const getDaysInMonth = (year: number, month: number) => {
+    // 해당 월의 마지막 날짜 구하기
+    const lastDay = new Date(year, month, 0).getDate();
+    return Array.from({ length: lastDay }, (_, i) => i + 1);
+  };
+
+  const days = getDaysInMonth(selectedDate.year, selectedDate.month);
+
+  // 날짜 변경 시 부모 컴포넌트에 알림
+  useEffect(() => {
+    // 선택된 일이 해당 월의 최대 일수를 초과하는 경우 조정
+    const daysInMonth = getDaysInMonth(selectedDate.year, selectedDate.month);
+    const adjustedDay = Math.min(selectedDate.day, daysInMonth.length);
+
+    if (adjustedDay !== selectedDate.day) {
+      setSelectedDate((prev) => ({ ...prev, day: adjustedDay }));
+    }
+
+    // 날짜 문자열 생성 (YYYY-MM-DD 형식)
+    const formattedMonth = selectedDate.month.toString().padStart(2, "0");
+    const formattedDay = adjustedDay.toString().padStart(2, "0");
+    const dateString = `${selectedDate.year}-${formattedMonth}-${formattedDay}`;
+
+    onChange(dateString);
+  }, [selectedDate, onChange]);
+
+  // 최대 날짜 제한 적용
+  const isDateDisabled = (year: number, month: number, day: number) => {
+    if (year > maxYear) return true;
+    if (year === maxYear && month > maxMonth) return true;
+    if (year === maxYear && month === maxMonth && day > maxDay) return true;
+    return false;
+  };
+
+  return (
+    <div className='flex space-x-2'>
+      {/* 년도 선택 */}
+      <div className='flex-1'>
+        <select
+          value={selectedDate.year}
+          onChange={(e) =>
+            setSelectedDate({ ...selectedDate, year: parseInt(e.target.value) })
+          }
+          className='w-full px-3 py-2 bg-white border rounded-lg appearance-none'
+          disabled={disabled}
+        >
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 월 선택 */}
+      <div className='flex-1'>
+        <select
+          value={selectedDate.month}
+          onChange={(e) =>
+            setSelectedDate({
+              ...selectedDate,
+              month: parseInt(e.target.value),
+            })
+          }
+          className='w-full px-3 py-2 bg-white border rounded-lg appearance-none'
+          disabled={disabled}
+        >
+          {months.map((month) => (
+            <option
+              key={month}
+              value={month}
+              disabled={isDateDisabled(selectedDate.year, month, 1)}
+            >
+              {month}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 일 선택 */}
+      <div className='flex-1'>
+        <select
+          value={selectedDate.day}
+          onChange={(e) =>
+            setSelectedDate({ ...selectedDate, day: parseInt(e.target.value) })
+          }
+          className='w-full px-3 py-2 bg-white border rounded-lg appearance-none'
+          disabled={disabled}
+        >
+          {days.map((day) => (
+            <option
+              key={day}
+              value={day}
+              disabled={isDateDisabled(
+                selectedDate.year,
+                selectedDate.month,
+                day
+              )}
+            >
+              {day}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,34 +173,135 @@ export default function RegisterPage() {
     description: "",
     isSuccess: true,
   });
-  const [formData, setFormData] = useState<CreateCrewInput>({
-    name: "",
-    description: "",
-    instagram: "",
-    location: {
-      main_address: "",
-      latitude: 37.5665,
-      longitude: 126.978,
-    },
-    activity_days: [],
-    age_range: {
-      min_age: 20,
-      max_age: 60,
-    },
-  });
+
+  // 오늘 날짜를 YYYY-MM-DD 형식으로 가져오기
+  const todayDate = new Date().toISOString().split("T")[0];
+
+  // 활동 장소 목록 상태
+  const [activityLocations, setActivityLocations] = useState<string[]>([]);
+  // 새 활동 장소 입력 상태
+  const [newLocation, setNewLocation] = useState("");
+
+  // 폼 데이터 상태
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [foundedDate, setFoundedDate] = useState(todayDate);
+  const [mainAddress, setMainAddress] = useState("");
+  const [activityDays, setActivityDays] = useState<ActivityDay[]>([]);
+  const [minAge, setMinAge] = useState(20);
+  const [maxAge, setMaxAge] = useState(60);
+  const [logoImage, setLogoImage] = useState<File | undefined>(undefined);
+
+  // 연령대 변경 핸들러
+  const handleMinAgeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0 && value <= 100) {
+      // 최소 연령이 최대 연령보다 크면 최대 연령도 함께 변경
+      if (value > maxAge) {
+        setMaxAge(value);
+      }
+      setMinAge(value);
+    }
+  };
+
+  const handleMaxAgeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0 && value <= 100) {
+      // 최대 연령이 최소 연령보다 작으면 최소 연령도 함께 변경
+      if (value < minAge) {
+        setMinAge(value);
+      }
+      setMaxAge(value);
+    }
+  };
+
+  // 폼 데이터를 제출 시 조합
+  const getFormData = (): CreateCrewInput => {
+    return {
+      name,
+      description,
+      instagram,
+      founded_date: foundedDate,
+      logo_image: logoImage,
+      location: {
+        main_address: mainAddress,
+        latitude: 37.5665,
+        longitude: 126.978,
+      },
+      activity_days: activityDays,
+      age_range: {
+        min_age: minAge,
+        max_age: maxAge,
+      },
+      activity_locations: activityLocations,
+    };
+  };
+
+  // 활동 장소 추가 함수
+  const addActivityLocation = () => {
+    if (!newLocation.trim()) return;
+
+    // 중복 체크
+    if (activityLocations.includes(newLocation.trim())) {
+      setDialogState({
+        isOpen: true,
+        title: "중복된 활동 장소",
+        description: "이미 추가된 활동 장소입니다.",
+        isSuccess: false,
+      });
+      return;
+    }
+
+    setActivityLocations([...activityLocations, newLocation.trim()]);
+    setNewLocation("");
+  };
+
+  // 키보드 엔터키 처리 함수
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // 폼 제출 방지
+      addActivityLocation();
+    }
+  };
+
+  // 활동 장소 삭제 함수
+  const removeActivityLocation = (index: number) => {
+    const updatedLocations = [...activityLocations];
+    updatedLocations.splice(index, 1);
+    setActivityLocations(updatedLocations);
+  };
+
+  // 활동 요일 토글 핸들러
+  const toggleActivityDay = (day: ActivityDay) => {
+    if (isLoading) return;
+
+    setActivityDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  // 파일 변경 핸들러
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoImage(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       setIsLoading(true);
+      const formData = getFormData();
 
       // 필수 필드 검증
       if (!formData.name.trim()) {
         setDialogState({
           isOpen: true,
-          title: "크루명 입력 필요",
-          description: "크루명을 입력해주세요.",
+          title: "크루 이름 입력 필요",
+          description: "크루 이름을 입력해주세요.",
           isSuccess: false,
         });
         return;
@@ -66,11 +317,36 @@ export default function RegisterPage() {
         return;
       }
 
+      if (!formData.founded_date) {
+        setDialogState({
+          isOpen: true,
+          title: "크루 개설일 입력 필요",
+          description: "크루 개설일을 선택해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      // 개설일 미래 날짜 검증
+      const selectedDate = new Date(formData.founded_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // 시간 정보 제거하여 날짜만 비교
+
+      if (selectedDate > today) {
+        setDialogState({
+          isOpen: true,
+          title: "개설일 날짜 오류",
+          description: "크루 개설일은 오늘 이후의 날짜가 될 수 없습니다.",
+          isSuccess: false,
+        });
+        return;
+      }
+
       if (!formData.location.main_address.trim()) {
         setDialogState({
           isOpen: true,
-          title: "활동 장소 입력 필요",
-          description: "주요 활동 장소를 입력해주세요.",
+          title: "활동 장소",
+          description: "지도에 표시될 대표 위치",
           isSuccess: false,
         });
         return;
@@ -229,6 +505,12 @@ export default function RegisterPage() {
       } else if (appError.code === ErrorCode.INVALID_AGE_RANGE) {
         errorTitle = "연령대 범위 오류";
         errorDescription = "올바른 연령대 범위를 선택해주세요.";
+      } else if (appError.code === ErrorCode.INVALID_FOUNDED_DATE) {
+        errorTitle = "개설일 오류";
+        errorDescription = "올바른 크루 개설일을 선택해주세요.";
+      } else if (appError.code === ErrorCode.FUTURE_FOUNDED_DATE) {
+        errorTitle = "개설일 날짜 오류";
+        errorDescription = "크루 개설일은 오늘 이후의 날짜가 될 수 없습니다.";
       }
 
       setDialogState({
@@ -248,16 +530,14 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* 크루명 */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>
-              크루명
+            <label className='text-sm font-bold'>
+              크루 이름
               <span className='ml-1 text-red-500'>*</span>
             </label>
             <input
               type='text'
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className='w-full px-3 py-2 border rounded-lg'
               required
               placeholder='크루 이름을 입력해주세요'
@@ -267,52 +547,114 @@ export default function RegisterPage() {
 
           {/* 인스타그램 */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>Instagram</label>
+            <label className='text-sm font-bold'>Instagram</label>
+            <span className='ml-1 text-red-500'>*</span>
             <div className='relative'>
               <span className='absolute left-3 top-2 text-muted-foreground'>
                 @
               </span>
               <input
                 type='text'
-                value={formData.instagram}
-                onChange={(e) =>
-                  setFormData({ ...formData, instagram: e.target.value })
-                }
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
                 className='w-full px-3 py-2 border rounded-lg pl-7'
+                required
                 placeholder='인스타그램 아이디'
                 disabled={isLoading}
               />
             </div>
           </div>
 
-          {/* 활동 위치 */}
+          {/* 크루 개설일 - 커스텀 날짜 선택기로 변경 */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>
-              메인 활동 장소
+            <label className='text-sm font-bold'>
+              크루 개설일
               <span className='ml-1 text-red-500'>*</span>
             </label>
-            <input
-              type='text'
-              value={formData.location.main_address}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  location: {
-                    ...formData.location,
-                    main_address: e.target.value,
-                  },
-                })
-              }
-              className='w-full px-3 py-2 border rounded-lg'
-              required
-              placeholder='메인 활동 장소를 입력해주세요 (예: 한강공원 잠원지구)'
+            <DatePicker
+              value={foundedDate}
+              onChange={(date) => setFoundedDate(date)}
+              maxDate={todayDate}
               disabled={isLoading}
             />
           </div>
 
+          {/* 활동 장소들 - 여러 개 추가 가능 */}
+          <div className='space-y-2'>
+            <label className='text-sm font-bold'>
+              활동 장소
+              <span className='ml-1 text-red-500'>*</span>
+            </label>
+
+            <div className='relative'>
+              <input
+                type='text'
+                value={newLocation}
+                onChange={(e) => setNewLocation(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className='w-full px-3 py-2 pr-20 border rounded-lg'
+                placeholder='반포 한강공원'
+                disabled={isLoading}
+              />
+              <button
+                type='button'
+                onClick={addActivityLocation}
+                className='absolute px-3 py-1 text-sm transition-colors bg-gray-100 border rounded-lg right-1 top-1 hover:bg-gray-200'
+                disabled={isLoading || !newLocation.trim()}
+              >
+                추가
+              </button>
+            </div>
+
+            {/* 추가된 활동 장소 목록 */}
+            {activityLocations.length > 0 && (
+              <div className='mt-2 space-y-2'>
+                <p className='text-xs text-gray-500'>활동 장소:</p>
+                <div className='flex flex-wrap gap-2'>
+                  {activityLocations.map((location, index) => (
+                    <div
+                      key={index}
+                      className='flex items-center bg-gray-100 px-3 py-1.5 rounded-full text-sm'
+                    >
+                      <span>{location}</span>
+                      <button
+                        type='button'
+                        onClick={() => removeActivityLocation(index)}
+                        className='ml-2 text-gray-500 hover:text-red-500'
+                        disabled={isLoading}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 지도 표시 위치 - 하나만 입력 가능 */}
+          <div className='space-y-2'>
+            <label className='text-sm font-bold'>
+              지도 표시 위치
+              <span className='ml-1 text-red-500'>*</span>
+            </label>
+            <input
+              type='text'
+              value={mainAddress}
+              onChange={(e) => setMainAddress(e.target.value)}
+              className='w-full px-3 py-2 border rounded-lg'
+              required
+              placeholder='서울 강남터미널역'
+              disabled={isLoading}
+            />
+            <p className='text-xs text-gray-500'>
+              * 이 위치가 지도 상에 핀으로 표시됩니다.
+            </p>
+          </div>
+
           {/* 활동 요일 */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>
+            <label className='text-sm font-bold'>
               정기 러닝 요일
               <span className='ml-1 text-red-500'>*</span>
             </label>
@@ -321,17 +663,9 @@ export default function RegisterPage() {
                 <button
                   key={day}
                   type='button'
-                  onClick={() => {
-                    if (isLoading) return;
-                    setFormData((prev) => ({
-                      ...prev,
-                      activity_days: prev.activity_days.includes(day)
-                        ? prev.activity_days.filter((d) => d !== day)
-                        : [...prev.activity_days, day],
-                    }));
-                  }}
+                  onClick={() => toggleActivityDay(day)}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                    formData.activity_days.includes(day)
+                    activityDays.includes(day)
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-input hover:bg-accent"
                   } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -344,74 +678,50 @@ export default function RegisterPage() {
           </div>
 
           {/* 연령대 */}
-          <div className='space-y-4'>
-            <div className='flex items-center justify-between'>
-              <label className='text-sm font-medium'>
-                모집 연령대
-                <span className='ml-1 text-red-500'>*</span>
-              </label>
-              <span className='text-sm text-muted-foreground'>
-                {formData.age_range.min_age} ~ {formData.age_range.max_age}
-              </span>
-            </div>
-            <div className='relative h-4 my-2'>
-              <div className='absolute left-0 right-0 h-1 -translate-y-1/2 bg-gray-200 rounded-full '>
-                <div
-                  className='absolute inset-y-0 bg-black rounded-full'
-                  style={{
-                    left: `${(formData.age_range.min_age / 100) * 100}%`,
-                    right: `${100 - (formData.age_range.max_age / 100) * 100}%`,
-                  }}
-                ></div>
-              </div>
-              <input
-                type='range'
-                min='0'
-                max='100'
-                value={formData.age_range.min_age}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (value < formData.age_range.max_age) {
-                    setFormData((prev) => ({
-                      ...prev,
-                      age_range: { ...prev.age_range, min_age: value },
-                    }));
-                  }
-                }}
-                className='absolute inset-0 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:translate-y-[-50%]'
+          <div className='space-y-2'>
+            <label className='text-sm font-bold'>
+              모집 연령대
+              <span className='ml-1 text-red-500'>*</span>
+            </label>
+            <div className='flex items-center space-x-2'>
+              <select
+                value={minAge}
+                onChange={handleMinAgeChange}
+                className='w-24 px-3 py-2 text-center bg-white border rounded-lg appearance-none'
                 disabled={isLoading}
-              />
-              <input
-                type='range'
-                min='0'
-                max='100'
-                value={formData.age_range.max_age}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (value > formData.age_range.min_age) {
-                    setFormData((prev) => ({
-                      ...prev,
-                      age_range: { ...prev.age_range, max_age: value },
-                    }));
-                  }
-                }}
-                className='absolute inset-0 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:translate-y-[-50%]'
+              >
+                {Array.from({ length: 101 }, (_, i) => (
+                  <option key={`min-${i}`} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+              <span className='text-gray-500'>~</span>
+              <select
+                value={maxAge}
+                onChange={handleMaxAgeChange}
+                className='w-24 px-3 py-2 text-center bg-white border rounded-lg appearance-none'
                 disabled={isLoading}
-              />
+              >
+                {Array.from({ length: 101 }, (_, i) => (
+                  <option key={`max-${i}`} value={i} disabled={i < minAge}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+              <span className='ml-2 text-sm text-gray-500'>세</span>
             </div>
           </div>
 
           {/* 크루 소개 */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>
+            <label className='text-sm font-bold'>
               크루 소개글
               <span className='ml-1 text-red-500'>*</span>
             </label>
             <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className='w-full px-3 py-2 border rounded-lg min-h-[120px]'
               required
               placeholder='크루를 소개해주세요'
@@ -421,19 +731,18 @@ export default function RegisterPage() {
 
           {/* 로고 이미지 */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>크루 로고</label>
+            <label className='text-sm font-bold'>
+              크루 로고
+              <span className='ml-1 text-red-500'>*</span>
+            </label>
             <input
               type='file'
-              accept='image/*'
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setFormData({ ...formData, logo_image: file });
-                }
-              }}
+              accept='image/jpeg, image/png'
+              onChange={handleFileChange}
               className='w-full'
               disabled={isLoading}
             />
+            <p className='text-xs text-gray-500'>* JPG, PNG</p>
           </div>
 
           {/* 버튼 */}

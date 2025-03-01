@@ -57,6 +57,7 @@ export async function POST(request: Request) {
       logo_image_url: undefined, // Will be updated after file upload
       created_at: now,
       updated_at: now,
+      founded_date: data.founded_date,
       location: {
         main_address: data.location.main_address,
         detail_address: data.location.detail_address,
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
         min_age: data.age_range.min_age,
         max_age: data.age_range.max_age,
       },
+      activity_locations: data.activity_locations || [],
     };
 
     crews.push(newCrew);

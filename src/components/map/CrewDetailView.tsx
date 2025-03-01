@@ -88,7 +88,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                   <div className='flex items-center gap-1.5 text-sm text-muted-foreground'>
                     <Calendar className='w-4 h-4' />
                     <span>
-                      {new Date(crew.created_at)
+                      {new Date(crew.founded_date || crew.created_at)
                         .toLocaleDateString("ko-KR", {
                           year: "numeric",
                           month: "2-digit",
@@ -108,9 +108,16 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
               <div className='flex items-start gap-3 p-3 rounded-lg bg-accent/50'>
                 <MapPin className='w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5' />
                 <div>
+                  {/* <p className='mb-1 text-sm font-medium'>활동 지역</p>
                   <p className='text-sm text-muted-foreground'>
                     {crew.location.main_address}
-                  </p>
+                  </p> */}
+                  {crew.activity_locations &&
+                    crew.activity_locations.length > 0 && (
+                      <p className='text-sm text-muted-foreground'>
+                        {crew.activity_locations.join(", ")}
+                      </p>
+                    )}
                 </div>
               </div>
 

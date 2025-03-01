@@ -3,6 +3,7 @@ import type {
   CrewWithDetails,
   CreateCrewInput,
   CrewFilterOptions,
+  ActivityDay,
 } from "@/lib/types/crewInsert";
 import { Crew } from "@/lib/types/crew";
 import { logger } from "@/lib/utils/logger";
@@ -16,6 +17,7 @@ interface DbCrew {
   description: string;
   instagram?: string;
   logo_image_url?: string;
+  founded_date: string;
   created_at: string;
   updated_at: string;
   crew_locations: Array<{
@@ -30,6 +32,9 @@ interface DbCrew {
   crew_age_ranges: Array<{
     min_age: number;
     max_age: number;
+  }>;
+  crew_activity_locations?: Array<{
+    location_name: string;
   }>;
 }
 
@@ -205,6 +210,18 @@ class CrewService {
     if (input.age_range.min_age > input.age_range.max_age) {
       throw logger.createError(ErrorCode.INVALID_AGE_RANGE);
     }
+    if (!input.founded_date) {
+      throw logger.createError(ErrorCode.INVALID_FOUNDED_DATE);
+    }
+
+    // 개설일이 미래 날짜인지 검증
+    const selectedDate = new Date(input.founded_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 시간 정보 제거하여 날짜만 비교
+
+    if (selectedDate > today) {
+      throw logger.createError(ErrorCode.FUTURE_FOUNDED_DATE);
+    }
   }
 
   private async validateImage(file: File) {
@@ -291,6 +308,7 @@ class CrewService {
           description: input.description,
           instagram: input.instagram,
           logo_image_url,
+          founded_date: input.founded_date,
           is_visible: false,
         })
         .select()
@@ -300,7 +318,7 @@ class CrewService {
         throw crewError;
       }
 
-      // 위치 정보 저장
+      // 위치 정보 저장 (지도 표시 위치)
       const { error: locationError } = await supabase
         .from("crew_locations")
         .insert({
@@ -310,6 +328,28 @@ class CrewService {
 
       if (locationError) {
         throw locationError;
+      }
+
+      // 활동 장소들 저장 (여러 개 가능)
+      if (input.activity_locations && input.activity_locations.length > 0) {
+        try {
+          const { error: activityLocationsError } = await supabase
+            .from("crew_activity_locations")
+            .insert(
+              input.activity_locations.map((location) => ({
+                crew_id: crew.id,
+                location_name: location,
+              }))
+            );
+
+          if (activityLocationsError) {
+            console.error("활동 장소 저장 실패:", activityLocationsError);
+            // 활동 장소 저장 실패는 크루 생성 자체를 실패시키지 않음
+          }
+        } catch (error) {
+          console.error("활동 장소 저장 중 예외 발생:", error);
+          // 활동 장소 저장 실패는 크루 생성 자체를 실패시키지 않음
+        }
       }
 
       // 활동 요일 저장
@@ -344,6 +384,7 @@ class CrewService {
         location: input.location,
         activity_days: input.activity_days,
         age_range: input.age_range,
+        activity_locations: input.activity_locations || [],
       };
     } catch (error) {
       await this.handleDatabaseError(error as DatabaseError, {
@@ -372,7 +413,8 @@ class CrewService {
         *,
         crew_locations (*),
         crew_activity_days (day_of_week),
-        crew_age_ranges (*)
+        crew_age_ranges (*),
+        crew_activity_locations (location_name)
       `
       )
       .eq("is_visible", true); // 승인된 크루만 조회
@@ -413,6 +455,11 @@ class CrewService {
         ? `${crew.crew_age_ranges[0].min_age}~${crew.crew_age_ranges[0].max_age}대`
         : "전 연령대";
 
+      // 활동 장소들 추출
+      const activityLocations = crew.crew_activity_locations
+        ? crew.crew_activity_locations.map((loc) => loc.location_name)
+        : [];
+
       return {
         id: crew.id,
         name: crew.name,
@@ -429,8 +476,10 @@ class CrewService {
         instagram: crew.instagram,
         logo_image: crew.logo_image_url,
         created_at: crew.created_at,
+        founded_date: crew.founded_date,
         activity_day: activityDay,
         age_range: ageRange,
+        activity_locations: activityLocations,
       };
     });
 
@@ -484,7 +533,8 @@ class CrewService {
         *,
         crew_locations (*),
         crew_activity_days (day_of_week),
-        crew_age_ranges (*)
+        crew_age_ranges (*),
+        crew_activity_locations (location_name)
       `
       )
       .eq("id", id)
@@ -494,6 +544,12 @@ class CrewService {
     if (!data) return null;
 
     const crew = data as DbCrew;
+
+    // 활동 장소들 추출
+    const activityLocations = crew.crew_activity_locations
+      ? crew.crew_activity_locations.map((loc) => loc.location_name)
+      : [];
+
     return {
       ...crew,
       location: {
@@ -502,11 +558,14 @@ class CrewService {
         latitude: crew.crew_locations[0].latitude,
         longitude: crew.crew_locations[0].longitude,
       },
-      activity_days: crew.crew_activity_days.map((d) => d.day_of_week),
+      activity_days: crew.crew_activity_days.map(
+        (d) => d.day_of_week as ActivityDay
+      ),
       age_range: {
         min_age: crew.crew_age_ranges[0].min_age,
         max_age: crew.crew_age_ranges[0].max_age,
       },
+      activity_locations: activityLocations,
     };
   }
 
@@ -522,6 +581,79 @@ class CrewService {
     } catch {
       return false;
     }
+  }
+
+  // 관리자용 크루 목록 조회
+  async getAdminCrews(): Promise<(Crew & { is_visible: boolean })[]> {
+    const { data, error } = await supabase
+      .from("crews")
+      .select(
+        `
+        id,
+        name,
+        logo_image_url,
+        is_visible,
+        description,
+        instagram,
+        created_at,
+        founded_date,
+        crew_locations (
+          main_address,
+          latitude,
+          longitude
+        ),
+        crew_activity_days (
+          day_of_week
+        ),
+        crew_age_ranges (
+          min_age,
+          max_age
+        ),
+        crew_activity_locations (
+          location_name
+        )
+      `
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return data.map((crew) => ({
+      id: crew.id,
+      name: crew.name,
+      description: crew.description,
+      instagram: crew.instagram,
+      logo_image: crew.logo_image_url,
+      created_at: crew.created_at,
+      founded_date: crew.founded_date,
+      is_visible: crew.is_visible,
+      activity_day: crew.crew_activity_days
+        ?.map((d) => d.day_of_week)
+        .join(", "),
+      age_range: crew.crew_age_ranges?.[0]
+        ? `${crew.crew_age_ranges[0].min_age}~${crew.crew_age_ranges[0].max_age}세`
+        : undefined,
+      location: {
+        lat: crew.crew_locations[0]?.latitude || 0,
+        lng: crew.crew_locations[0]?.longitude || 0,
+        main_address: crew.crew_locations[0]?.main_address || "주소 없음",
+      },
+      activity_locations:
+        crew.crew_activity_locations?.map((loc) => loc.location_name) || [],
+    }));
+  }
+
+  // 크루 표시 상태 업데이트
+  async updateCrewVisibility(
+    crewId: string,
+    isVisible: boolean
+  ): Promise<void> {
+    const { error } = await supabase
+      .from("crews")
+      .update({ is_visible: isVisible })
+      .eq("id", crewId);
+
+    if (error) throw error;
   }
 }
 

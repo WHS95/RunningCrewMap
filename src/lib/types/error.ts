@@ -6,6 +6,8 @@ export enum ErrorCode {
   INVALID_LOCATION = "INVALID_LOCATION",
   INVALID_ACTIVITY_DAYS = "INVALID_ACTIVITY_DAYS",
   INVALID_AGE_RANGE = "INVALID_AGE_RANGE",
+  INVALID_FOUNDED_DATE = "INVALID_FOUNDED_DATE",
+  FUTURE_FOUNDED_DATE = "FUTURE_FOUNDED_DATE",
 
   // 파일 업로드 에러
   FILE_TOO_LARGE = "FILE_TOO_LARGE",
@@ -45,6 +47,8 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   INVALID_LOCATION: "활동 장소를 입력해주세요.",
   INVALID_ACTIVITY_DAYS: "활동 요일을 선택해주세요.",
   INVALID_AGE_RANGE: "올바른 연령대 범위를 선택해주세요.",
+  INVALID_FOUNDED_DATE: "올바른 크루 개설일을 선택해주세요.",
+  FUTURE_FOUNDED_DATE: "크루 개설일은 오늘 이후의 날짜가 될 수 없습니다.",
 
   FILE_TOO_LARGE:
     "이미지 크기는 2MB 이하여야 합니다. 자동으로 압축을 시도합니다.",

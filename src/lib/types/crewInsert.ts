@@ -4,6 +4,7 @@ export interface Crew {
   description: string;
   instagram?: string;
   logo_image_url?: string;
+  founded_date: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,30 +39,33 @@ export interface CreateCrewInput {
   description: string;
   instagram?: string;
   logo_image?: File;
+  founded_date: string;
   location: {
     main_address: string;
     detail_address?: string;
     latitude: number;
     longitude: number;
   };
-  activity_days: string[];
+  activity_days: ActivityDay[];
   age_range: {
     min_age: number;
     max_age: number;
   };
+  activity_locations?: string[];
 }
 
 export interface CrewWithDetails extends Crew {
   location: Omit<CrewLocation, "id" | "crew_id" | "created_at">;
-  activity_days: string[];
+  activity_days: ActivityDay[];
   age_range: {
     min_age: number;
     max_age: number;
   };
+  activity_locations?: string[];
 }
 
 export interface CrewFilterOptions {
-  activity_day?: string;
+  activity_day?: ActivityDay;
   min_age?: number;
   max_age?: number;
   location?: {
