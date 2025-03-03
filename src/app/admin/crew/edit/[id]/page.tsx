@@ -81,9 +81,7 @@ export default function EditCrewPage() {
 
         // 연령대 설정
         if (crewData.age_range) {
-          const [minAgeStr, maxAgeStr] = crewData.age_range
-            .split("~")[0]
-            .split("~");
+          const [minAgeStr, maxAgeStr] = crewData.age_range.split("~");
           const min = parseInt(minAgeStr);
           const max = parseInt(maxAgeStr);
           if (!isNaN(min)) setMinAge(min);
