@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FormLayout } from "@/components/layout/FormLayout";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,12 @@ import Image from "next/image";
 import { Crew } from "@/lib/types/crew";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ACTIVITY_DAYS, ActivityDay } from "@/lib/types/crewInsert";
+
+// DatabaseError 인터페이스 추가
+interface DatabaseError {
+  message?: string;
+  [key: string]: unknown;
+}
 
 export default function EditCrewPage() {
   const params = useParams();
@@ -44,6 +50,11 @@ export default function EditCrewPage() {
   const [foundedDate, setFoundedDate] = useState("");
   const [minAge, setMinAge] = useState<number>(0);
   const [maxAge, setMaxAge] = useState<number>(100);
+
+  // 로고 이미지 상태 추가
+  const [logoImage, setLogoImage] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 크루 정보 로드
   useEffect(() => {
@@ -110,7 +121,34 @@ export default function EditCrewPage() {
     };
 
     loadCrew();
+
+    // 컴포넌트 언마운트 시 임시 URL 정리
+    return () => {
+      if (logoPreview) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
   }, [crewId, router]);
+
+  // 파일 변경 핸들러 추가
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 이전 미리보기 URL이 있다면 메모리 해제
+      if (logoPreview) {
+        URL.revokeObjectURL(logoPreview);
+      }
+
+      setLogoImage(file);
+      // 미리보기 URL 생성
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  // 파일 선택 버튼 클릭 핸들러
+  const handleSelectFile = () => {
+    fileInputRef.current?.click();
+  };
 
   // 활동 장소 추가
   const handleAddActivityLocation = () => {
@@ -179,6 +217,25 @@ export default function EditCrewPage() {
     try {
       setIsSaving(true);
 
+      let updatedImageUrl = crew.logo_image;
+      // 새 이미지가 선택된 경우 업로드
+      if (logoImage) {
+        try {
+          const uploadedUrl = await crewService.uploadCrewLogo(
+            logoImage,
+            crewId
+          );
+          if (uploadedUrl) {
+            updatedImageUrl = uploadedUrl;
+          }
+        } catch (error) {
+          console.error("이미지 업로드 실패:", error);
+          toast.error("이미지 업로드에 실패했습니다.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // 크루 정보 업데이트
       await crewService.updateCrew(crewId, {
         name,
@@ -197,6 +254,7 @@ export default function EditCrewPage() {
           min_age: minAge,
           max_age: maxAge,
         },
+        logo_image_url: updatedImageUrl,
       });
 
       // 크루 표시 상태 업데이트
@@ -209,7 +267,11 @@ export default function EditCrewPage() {
 
       // 데이터베이스 오류 메시지 처리
       if (error && typeof error === "object" && "message" in error) {
-        toast.error("크루 정보 업데이트에 실패했습니다.");
+        toast.error(
+          `크루 정보 업데이트에 실패했습니다: ${
+            (error as DatabaseError).message
+          }`
+        );
       } else {
         toast.error("크루 정보 업데이트에 실패했습니다.");
       }
@@ -243,26 +305,57 @@ export default function EditCrewPage() {
 
       <form onSubmit={handleSubmit} className='space-y-6'>
         {/* 크루 로고 */}
-        <div className='flex items-center gap-4'>
-          {crew?.logo_image ? (
-            <Image
-              src={crew.logo_image}
-              alt={`${crew.name} 로고`}
-              width={64}
-              height={64}
-              className='object-cover rounded-full'
-            />
-          ) : (
-            <div className='flex items-center justify-center w-16 h-16 text-2xl font-medium rounded-full bg-muted'>
-              {name.charAt(0)}
+        <div className='p-4 space-y-4 border rounded-lg'>
+          <h3 className='font-medium'>크루 로고</h3>
+          <div className='flex items-center gap-4'>
+            {/* 로고 이미지 표시 */}
+            <div className='relative w-20 h-20 overflow-hidden rounded-full'>
+              {logoPreview ? (
+                <Image
+                  src={logoPreview}
+                  alt={`${name} 로고 미리보기`}
+                  fill
+                  className='object-cover'
+                />
+              ) : crew?.logo_image ? (
+                <Image
+                  src={crew.logo_image}
+                  alt={`${name} 로고`}
+                  fill
+                  className='object-cover'
+                />
+              ) : (
+                <div className='flex items-center justify-center w-full h-full text-2xl font-medium rounded-full bg-muted'>
+                  {name.charAt(0)}
+                </div>
+              )}
             </div>
-          )}
-          <div>
-            <h2 className='text-lg font-medium'>{name}</h2>
-            <p className='text-sm text-muted-foreground'>
-              {new Date(crew?.created_at || "").toLocaleDateString("ko-KR")}{" "}
-              등록
-            </p>
+
+            <div className='flex flex-col gap-2'>
+              <input
+                type='file'
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept='image/jpeg,image/png,image/gif'
+                className='hidden'
+              />
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleSelectFile}
+                className='text-sm'
+              >
+                로고 이미지 변경
+              </Button>
+              {logoImage && (
+                <p className='text-xs text-muted-foreground'>
+                  {logoImage.name} ({Math.round(logoImage.size / 1024)}KB)
+                </p>
+              )}
+              <p className='text-xs text-muted-foreground'>
+                최대 2MB, JPG, PNG, GIF 형식만 지원
+              </p>
+            </div>
           </div>
         </div>
 

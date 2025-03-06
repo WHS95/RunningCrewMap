@@ -191,6 +191,23 @@ class CrewService {
     }
   }
 
+  // 크루 로고 업로드를 위한 공개 메서드 추가
+  async uploadCrewLogo(file: File, crewId: string): Promise<string | null> {
+    try {
+      // 이미지 유효성 검사
+      await this.validateImage(file);
+
+      // 이미지 압축 (옵션)
+      const compressedFile = await compressImageFile(file);
+
+      // 이미지 업로드
+      return await this.uploadImage(compressedFile || file, crewId);
+    } catch (error) {
+      console.error("로고 업로드 실패:", error);
+      throw error;
+    }
+  }
+
   private async validateInput(input: CreateCrewInput) {
     if (!input.name || input.name.length < 2 || input.name.length > 100) {
       throw logger.createError(ErrorCode.INVALID_CREW_NAME);
@@ -803,6 +820,7 @@ class CrewService {
         min_age: number;
         max_age: number;
       };
+      logo_image_url?: string; // 로고 이미지 URL 추가
     }
   ): Promise<void> {
     try {
@@ -819,6 +837,7 @@ class CrewService {
           description: updateData.description,
           instagram: updateData.instagram || null,
           founded_date: updateData.founded_date || undefined,
+          logo_image_url: updateData.logo_image_url || undefined,
         })
         .eq("id", crewId);
 

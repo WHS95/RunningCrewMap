@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 
 export default function AdminDashboardPage() {
   return (
-    <div className='container mx-auto py-8 px-4'>
-      <h1 className='text-3xl font-bold mb-8'>관리자 대시보드</h1>
+    <div className='container px-4 py-8 mx-auto'>
+      <h1 className='mb-8 text-3xl font-bold'>관리자 대시보드</h1>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
         {/* 관리자 메뉴 항목 */}
         <AdminMenuItem
           title='크루 관리'
@@ -34,8 +34,8 @@ interface AdminMenuItemProps {
 function AdminMenuItem({ title, description, link }: AdminMenuItemProps) {
   return (
     <Link href={link}>
-      <div className='border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow'>
-        <h2 className='text-xl font-semibold mb-2'>{title}</h2>
+      <div className='p-6 transition-shadow bg-white border rounded-lg shadow-sm hover:shadow-md'>
+        <h2 className='mb-2 text-xl font-semibold'>{title}</h2>
         <p className='text-gray-600'>{description}</p>
       </div>
     </Link>
