@@ -446,7 +446,7 @@ export default function RegisterPage() {
         isOpen: true,
         title: "크루 등록 완료! 🎉",
         description:
-          "크루가 성공적으로 등록되었습니다. 관리자 승인 후 지도에 표시됩니다. 로고 및 수정을 원하시면 메뉴-문의 바리스타에게 문의해주세요.",
+          "크루가 성공적으로 등록되었습니다. 관리자 승인 후 지도에 표시됩니다.",
         isSuccess: true,
       });
 
