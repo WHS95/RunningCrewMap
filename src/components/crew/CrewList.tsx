@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Crew } from "@/lib/types/crew";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowUpRight, MapPin, ChevronUp } from "lucide-react";
 
 interface CrewListProps {
   crews: Crew[];
@@ -86,11 +86,25 @@ const groupCrewsByProvince = (crews: Crew[]) => {
 };
 
 export const CrewList = ({ crews, onSelect }: CrewListProps) => {
+  // 리스트 컨테이너에 대한 ref
+  const listContainerRef = useRef<HTMLDivElement>(null);
+
+  // 상단으로 스크롤하는 함수
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   // 지역별로 그룹화된 크루 목록 메모이제이션
   const groupedCrews = useMemo(() => groupCrewsByProvince(crews), [crews]);
 
   return (
-    <div className='h-full overflow-auto text-black bg-white'>
+    <div
+      ref={listContainerRef}
+      className='relative h-full overflow-auto text-black bg-white'
+    >
       <div className='px-4 pt-4 pb-2'>
         <p className='text-sm text-gray-600'>총 {crews.length}개의 크루</p>
       </div>
@@ -151,11 +165,11 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
                           {crew.location.address || crew.location.main_address}
                         </p>
                       )}
-                      {/* {crew.instagram && (
+                      {crew.instagram && (
                         <p className='mt-1 text-xs text-blue-600'>
                           {crew.instagram}
                         </p>
-                      )} */}
+                      )}
                     </div>
                   </div>
                 ))}
@@ -164,6 +178,15 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
           ))}
         </div>
       )}
+
+      {/* 항상 표시되는 스크롤 상단 이동 버튼 */}
+      <button
+        onClick={scrollToTop}
+        className='fixed bottom-24 right-4 z-[100] flex items-center justify-center w-11 h-11 bg-gray-400 rounded-full shadow-lg focus:outline-none hover:bg-gray-500 active:bg-gray-600 active:scale-95 transition-all duration-200'
+        aria-label='맨 위로 스크롤'
+      >
+        <ChevronUp className='w-6 h-6 text-white' />
+      </button>
     </div>
   );
 };
