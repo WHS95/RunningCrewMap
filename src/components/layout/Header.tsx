@@ -18,8 +18,8 @@ export function Header() {
         </button> */}
 
         <div className='w-6 h-6'></div>
-        <a href='/home' className='text-lg font-medium text-white'>
-          RUNNER HOUSE
+        <a href='/home' className='text-lg font-extrabold text-white'>
+          RUN HOUSE CLUB
         </a>
 
         <div className='w-6 h-6'></div>

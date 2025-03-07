@@ -43,12 +43,12 @@ export const HomeHeader = ({
       { id: string; name: string; count: number }
     > = {
       seoul: { id: "seoul", name: "서울", count: 0 },
-      gyeonggi: { id: "gyeonggi", name: "경기도", count: 0 },
-      gangwon: { id: "gangwon", name: "강원도", count: 0 },
-      gyeongsang: { id: "gyeongsang", name: "경상도", count: 0 },
-      jeolla: { id: "jeolla", name: "전라도", count: 0 },
-      chungcheong: { id: "chungcheong", name: "충청도", count: 0 },
-      jeju: { id: "jeju", name: "제주도", count: 0 },
+      gyeonggi: { id: "gyeonggi", name: "경기", count: 0 },
+      gangwon: { id: "gangwon", name: "강원", count: 0 },
+      gyeongsang: { id: "gyeongsang", name: "경상", count: 0 },
+      jeolla: { id: "jeolla", name: "전라", count: 0 },
+      chungcheong: { id: "chungcheong", name: "충청", count: 0 },
+      jeju: { id: "jeju", name: "제주", count: 0 },
     };
 
     // 각 크루의 주소를 분석하여 지역 카운트 증가
@@ -85,8 +85,11 @@ export const HomeHeader = ({
       .filter((region) => region.count > 0) // 크루가 있는 지역만 표시
       .sort((a, b) => b.count - a.count);
 
+    // "전체" 항목에 전체 크루 수 설정
+    const allRegion = { ...BASE_REGIONS[0], count: crews.length };
+
     // "전체" 항목을 맨 앞에 추가하고 반환
-    return [...BASE_REGIONS, ...sortedRegions];
+    return [allRegion, ...sortedRegions];
   }, [crews]);
 
   return (
@@ -128,7 +131,7 @@ export const HomeHeader = ({
                 onClick={() => onRegionChange(region.id)}
               >
                 {region.name}
-                {region.id !== "all" && region.count > 0 && (
+                {region.count > 0 && (
                   <span className='ml-1 text-xs text-gray-400'>
                     ({region.count})
                   </span>
