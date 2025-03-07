@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 // import { crewService } from "@/lib/services";
 import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-// import { CrewList } from "@/components/crew/CrewList";
+import { CrewList } from "@/components/crew/CrewList";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorCode, AppError } from "@/lib/types/error";
+import { HomeHeader, ViewMode } from "@/components/layout/HomeHeader";
+import { CrewDetailView } from "@/components/map/CrewDetailView";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -30,7 +32,13 @@ export default function Home() {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(true);
-  // const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+  const [activeView, setActiveView] = useState<ViewMode>("map");
+  const [selectedRegion, setSelectedRegion] = useState("all");
+  const [filteredCrews, setFilteredCrews] = useState<Crew[]>([]);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 캐시 무효화 이벤트 리스너 등록
   useEffect(() => {
@@ -133,7 +141,7 @@ export default function Home() {
     }
 
     const geoOptions = {
-      timeout: 1500, // 타임아웃 시간 증가
+      timeout: 1500,
       maximumAge: 0,
       enableHighAccuracy: false,
     };
@@ -141,15 +149,12 @@ export default function Home() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setCenter({
-          // lat: 37.5666805,
-          // lng: 126.9784147,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
         setIsLoading(false);
       },
       () => {
-        // console.log("위치 정보를 가져올 수 없어 기본 위치를 사용합니다.");
         setCenter(DEFAULT_CENTER);
         setIsLoading(false);
       },
@@ -157,53 +162,203 @@ export default function Home() {
     );
   }, []);
 
+  // 지역에 따른 크루 필터링
+  const filterCrewsByRegion = useCallback(() => {
+    if (selectedRegion === "all") {
+      setFilteredCrews(crews);
+      return;
+    }
+
+    const filtered = crews.filter((crew) => {
+      const address = crew.location.address || crew.location.main_address || "";
+      const addressLower = address.toLowerCase();
+
+      // 기본 지역 필터링 로직
+      switch (selectedRegion) {
+        case "seoul":
+          return addressLower.includes("서울");
+        case "gyeonggi":
+          return addressLower.includes("경기");
+        case "gangwon":
+          return addressLower.includes("강원");
+        case "gyeongsang":
+          return (
+            addressLower.includes("경상") ||
+            addressLower.includes("경북") ||
+            addressLower.includes("경남")
+          );
+        case "jeolla":
+          return (
+            addressLower.includes("전라") ||
+            addressLower.includes("전북") ||
+            addressLower.includes("전남")
+          );
+        case "chungcheong":
+          return (
+            addressLower.includes("충청") ||
+            addressLower.includes("충북") ||
+            addressLower.includes("충남")
+          );
+        case "jeju":
+          return addressLower.includes("제주");
+        default:
+          return true;
+      }
+    });
+
+    setFilteredCrews(filtered);
+  }, [crews, selectedRegion]);
+
+  // 선택된 지역이 변경될 때 크루 필터링
+  useEffect(() => {
+    filterCrewsByRegion();
+  }, [selectedRegion, crews, filterCrewsByRegion]);
+
   // 초기 데이터 로딩
   useEffect(() => {
     loadCrews();
   }, []);
 
-  // const handleCrewSelect = (crew: Crew) => {
-  //   setSelectedCrew(crew);
-  // };
+  // 초기 크루 데이터 설정
+  useEffect(() => {
+    setFilteredCrews(crews);
+  }, [crews]);
+
+  // 크루 선택 핸들러 (리스트 뷰와 지도 뷰 모두에서 사용)
+  const handleCrewSelect = (crew: Crew) => {
+    setSelectedCrew(crew);
+    setIsDetailOpen(true);
+  };
+
+  // 상세 정보 닫기 핸들러
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
+    setSelectedCrew(null);
+  };
+
+  // 지역 변경 핸들러
+  const handleRegionChange = (region: string) => {
+    setSelectedRegion(region);
+  };
+
+  // 뷰 모드 변경 핸들러
+  const handleViewChange = (view: ViewMode) => {
+    setActiveView(view);
+  };
+
+  // 로딩 타임아웃 설정 (안전장치)
+  useEffect(() => {
+    // 1초 이상 로딩이 지속되면 강제로 로딩 완료 처리
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (!mapLoaded) {
+        console.log("Loading timeout - force completing");
+        setMapLoaded(true);
+      }
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 1000);
+
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [mapLoaded, isLoading]);
+
+  // 지도 로딩 완료 핸들러
+  const handleMapLoad = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    setMapLoaded(true);
+  };
 
   // 크루 목록 컴포넌트 메모이제이션
-  // const crewListComponent = useMemo(
-  //   () => <CrewList crews={crews} onSelect={handleCrewSelect} />,
-  //   [crews]
-  // );
+  const crewListComponent = useMemo(
+    () => <CrewList crews={filteredCrews} onSelect={handleCrewSelect} />,
+    [filteredCrews, handleCrewSelect]
+  );
 
-  if (isLoading) {
+  // 뷰 변경 시 로딩 상태 초기화
+  useEffect(() => {
+    if (activeView === "list") {
+      // 리스트 뷰로 변경 시 지도 로딩 상태는 고려하지 않음
+      setMapLoaded(true);
+    }
+  }, [activeView]);
+
+  // 지도 뷰에서는 지도와 마커 모두 로드될 때까지 로딩 표시
+  // 리스트 뷰에서는 위치 정보만 로드되면 표시
+  const showLoading =
+    (activeView === "map" && (!mapLoaded || isLoading)) ||
+    (activeView === "list" && isLoading);
+
+  if (showLoading) {
     return (
       <div style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}>
-        <LoadingSpinner message='위치 정보를 불러오는 중' />
+        <LoadingSpinner
+          message={isLoading ? "위치 정보를 불러오는 중" : "지도를 불러오는 중"}
+        />
       </div>
     );
   }
 
   return (
     <div
-      className='relative flex flex-col md:flex-row'
+      className='relative flex flex-col'
       style={{
         height: CSS_VARIABLES.CONTENT_HEIGHT,
-        paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
-      {/* 데스크톱: 왼쪽 사이드바 */}
-      {/* <div className='hidden border-r md:block w-80'>{crewListComponent}</div> */}
-
-      {/* 지도 */}
+      {/* 헤더 영역에 맞추어 상단 패딩, 간격 없이 바로 연결 */}
       <div
-        className='flex-1'
-        style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
+        style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING, marginTop: "-1px" }}
       >
-        <NaverMap
-          width='100%'
-          height='100%'
-          initialCenter={center}
-          initialZoom={10} // 초기 줌 레벨 조정
+        {/* 통합 헤더 */}
+        <HomeHeader
+          activeView={activeView}
+          onViewChange={handleViewChange}
+          selectedRegion={selectedRegion}
+          onRegionChange={handleRegionChange}
           crews={crews}
         />
       </div>
+
+      {/* 뷰 컨테이너 */}
+      <div className='flex-1'>
+        {/* 지도 뷰 */}
+        {activeView === "map" && (
+          <div
+            className='flex-1'
+            style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
+          >
+            <NaverMap
+              width='100%'
+              height='100%'
+              initialCenter={center}
+              initialZoom={13} // 초기 줌 레벨 조정 (값을 높이면 더 가까이, 낮추면 더 멀리 보임)
+              crews={crews}
+              selectedCrew={selectedCrew}
+              onMapLoad={handleMapLoad}
+            />
+          </div>
+        )}
+
+        {/* 리스트 뷰 */}
+        {activeView === "list" && (
+          <div className='w-full h-full overflow-auto'>{crewListComponent}</div>
+        )}
+      </div>
+
+      {/* 크루 상세 정보 (리스트 뷰에서 선택했을 때만 표시) */}
+      {activeView === "list" && (
+        <CrewDetailView
+          crew={selectedCrew}
+          isOpen={isDetailOpen}
+          onClose={handleDetailClose}
+        />
+      )}
     </div>
   );
 }

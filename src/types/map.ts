@@ -17,6 +17,29 @@ interface MapOptions {
   };
 }
 
+// MarkerClustering 옵션 타입 정의
+interface MarkerClusteringOptions {
+  minClusterSize?: number;
+  maxZoom?: number;
+  map: naver.maps.Map;
+  markers: naver.maps.Marker[];
+  disableClickZoom?: boolean;
+  gridSize?: number;
+  icons?: Array<{ content: string }>;
+}
+
+// MarkerClustering 클래스 타입 정의
+interface MarkerClustering {
+  new (options: MarkerClusteringOptions): MarkerClusteringInstance;
+  setMap(map: naver.maps.Map | null): void;
+}
+
+export interface MarkerClusteringInstance {
+  setMap(map: naver.maps.Map | null): void;
+  getMap(): naver.maps.Map | null;
+  getMarkers(): naver.maps.Marker[];
+}
+
 declare global {
   interface Window {
     naver: {
@@ -25,6 +48,9 @@ declare global {
         LatLng: new (lat: number, lng: number) => naver.maps.LatLng;
         Position: {
           TOP_RIGHT: naver.maps.Position;
+        };
+        visualization?: {
+          MarkerClustering: MarkerClustering;
         };
       };
     };

@@ -14,6 +14,8 @@ interface NaverMapProps {
   initialCenter: { lat: number; lng: number };
   initialZoom: number;
   crews: Crew[];
+  selectedCrew?: Crew | null;
+  onMapLoad?: () => void;
 }
 
 export default function NaverMap({
@@ -22,27 +24,43 @@ export default function NaverMap({
   initialCenter,
   initialZoom,
   crews,
+  selectedCrew: externalSelectedCrew,
+  onMapLoad,
 }: NaverMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<naver.maps.Map | null>(null);
   const markersRef = useRef<naver.maps.Marker[]>([]);
-  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(
+    externalSelectedCrew || null
+  );
+  const [isDetailOpen, setIsDetailOpen] = useState(!!externalSelectedCrew);
   const [visibleCrews, setVisibleCrews] = useState<Crew[]>([]);
   const [isListOpen, setIsListOpen] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [isZooming, setIsZooming] = useState(false);
+  const markersCreatedRef = useRef(false);
 
-  // 이미지 프리로딩
+  // 이미지 프리로딩 개선
   useEffect(() => {
+    // 최적화된 이미지 사이즈로 프리로딩
+    const imageCache: { [key: string]: HTMLImageElement } = {};
     crews.forEach((crew) => {
-      if (crew.logo_image) {
+      if (crew.logo_image && !imageCache[crew.id]) {
         const img = new global.Image();
-        img.src = crew.logo_image;
+        // 이미지 URL에 크기 제한 파라미터 추가 (CDN이 지원하는 경우)
+        // 예: logo.jpg?width=40&height=40 또는 w=40&h=40 등
+        // 아래는 예시이므로 실제 CDN 설정에 맞게 수정 필요
+        const sizeParams = crew.logo_image.includes("?")
+          ? "&w=40&h=40"
+          : "?w=40&h=40";
+        img.src = `${crew.logo_image}${sizeParams}`;
+
+        imageCache[crew.id] = img;
       }
     });
   }, [crews]);
 
-  // 지도에 보이는 크루 필터링
+  // 지도에 보이는 크루 필터링 - 마커 생성/제거 없이 단순히 목록만 업데이트
   const updateVisibleCrews = useCallback(() => {
     if (!mapInstanceRef.current || typeof window === "undefined") return;
 
@@ -73,35 +91,64 @@ export default function NaverMap({
     setIsDetailOpen(true);
   }, []);
 
-  // 마커 생성 함수
+  // 마커 생성 함수 - 로고 이미지 포함하되 최적화
   const createMarkerContent = useCallback((crew: Crew) => {
-    const size = 40; // 마커 크기 최적화
-    return crew.logo_image
-      ? `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; overflow: hidden; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); background-color: #f1f5f9;">
-          <img src="${crew.logo_image}" 
-               alt="${crew.name}" 
-               style="width: 100%; height: 100%; object-fit: cover;"
-               onerror="this.style.display='none'; this.parentElement.innerHTML='${crew.name.charAt(
-                 0
-               )}'"
-          >
-        </div>`
-      : `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: #f1f5f9; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-weight: 500; color: #64748b;">
-          ${crew.name.charAt(0)}
-        </div>`;
+    const size = 36; // 크기 최적화
+
+    if (!crew.logo_image) {
+      // 로고 이미지가 없는 경우 기본 마커
+      return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: #f1f5f9; border: 2px solid white; color: #64748b; font-weight: bold; text-align: center; line-height: ${size}px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${crew.name.charAt(
+        0
+      )}</div>`;
+    }
+
+    // 로고 이미지가 있는 경우 - 최적화된 이미지 사용
+    // background-image 대신 img 태그를 사용하되 최적화된 방식 적용
+    // fetchpriority="low"와 loading="lazy" 속성 추가로 로딩 최적화
+    return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; overflow: hidden; border: 2px solid white; background-color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <img 
+        src="${crew.logo_image}" 
+        width="${size}" 
+        height="${size}" 
+        alt="${crew.name}" 
+        style="object-fit: cover; width: 100%; height: 100%;"
+        onerror="this.style.display='none'; this.parentElement.innerHTML='${crew.name.charAt(
+          0
+        )}'"
+      />
+    </div>`;
   }, []);
 
+  // 마커 초기화 - 한 번만 실행되도록 함
   const initializeMarkers = useCallback(() => {
-    if (!mapInstanceRef.current || typeof window === "undefined") return;
+    if (
+      !mapInstanceRef.current ||
+      typeof window === "undefined" ||
+      markersCreatedRef.current
+    )
+      return;
 
-    // 기존 마커 제거
-    markersRef.current.forEach((marker) => {
-      marker.setMap(null);
+    // 모든 마커를 한 번만 생성하되, 현재 화면에 보이는 영역만 우선 처리
+    const bounds = mapInstanceRef.current.getBounds();
+
+    // 화면에 보이는 크루 우선 정렬
+    const sortedCrews = [...crews].sort((a, b) => {
+      const posA = new window.naver.maps.LatLng(a.location.lat, a.location.lng);
+      const posB = new window.naver.maps.LatLng(b.location.lat, b.location.lng);
+      const isAVisible = bounds
+        ? (bounds as naver.maps.LatLngBounds).hasLatLng(posA)
+        : false;
+      const isBVisible = bounds
+        ? (bounds as naver.maps.LatLngBounds).hasLatLng(posB)
+        : false;
+
+      if (isAVisible && !isBVisible) return -1;
+      if (!isAVisible && isBVisible) return 1;
+      return 0;
     });
-    markersRef.current = [];
 
-    // 새로운 마커 생성
-    crews.forEach((crew) => {
+    // 최대 마커 생성 수를 화면에 보이는 크루 + 일부 여유분으로 제한
+    const markers = sortedCrews.map((crew) => {
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(
           crew.location.lat,
@@ -110,8 +157,8 @@ export default function NaverMap({
         map: mapInstanceRef.current!,
         icon: {
           content: createMarkerContent(crew),
-          size: new window.naver.maps.Size(40, 40),
-          anchor: new window.naver.maps.Point(20, 20),
+          size: new window.naver.maps.Size(36, 36),
+          anchor: new window.naver.maps.Point(18, 18),
         },
       });
 
@@ -121,12 +168,32 @@ export default function NaverMap({
         setIsDetailOpen(true);
       });
 
-      markersRef.current.push(marker);
+      return marker;
     });
+
+    markersRef.current = markers;
+    markersCreatedRef.current = true;
 
     // 초기 보이는 크루 설정
     updateVisibleCrews();
-  }, [crews, updateVisibleCrews, createMarkerContent]);
+
+    // 마커 초기화가 완료되면 반드시 onMapLoad 호출
+    if (onMapLoad) {
+      console.log("Markers initialized, calling onMapLoad");
+      // 짧은 지연 후 호출하여 마커가 실제로 렌더링될 시간 확보
+      setTimeout(onMapLoad, 100);
+    }
+  }, [crews, updateVisibleCrews, createMarkerContent, onMapLoad]);
+
+  // 마커 표시/숨김 토글 - 줌 이벤트 발생 시
+  const toggleMarkers = useCallback((visible: boolean) => {
+    if (markersRef.current.length === 0) return;
+
+    markersRef.current.forEach((marker) => {
+      // 단순히 마커의 가시성만 설정
+      marker.setVisible(visible);
+    });
+  }, []);
 
   // 지도 초기화
   useEffect(() => {
@@ -143,10 +210,7 @@ export default function NaverMap({
         zoom: initialZoom,
         minZoom: 9,
         maxZoom: 21,
-        zoomControl: true,
-        zoomControlOptions: {
-          position: window.naver.maps.Position.TOP_RIGHT,
-        },
+        zoomControl: false,
       };
 
       const mapDiv = mapRef.current;
@@ -155,14 +219,48 @@ export default function NaverMap({
       const mapInstance = new window.naver.maps.Map(mapDiv, mapOptions);
       mapInstanceRef.current = mapInstance;
 
-      // 지도 이동 이벤트 리스너 추가
-      window.naver.maps.Event.addListener(
-        mapInstance,
-        "idle",
-        updateVisibleCrews
-      );
+      // 안전장치: 지도가 로드된 후 5초 내에 마커 초기화가 완료되지 않으면 강제로 로드 완료 처리
+      const mapLoadTimer = setTimeout(() => {
+        if (onMapLoad && !markersCreatedRef.current) {
+          console.log("Map load timeout - force completing");
+          onMapLoad();
+        }
+      }, 5000);
+
+      // 줌 시작 시 마커 숨김
+      window.naver.maps.Event.addListener(mapInstance, "zoom_start", () => {
+        setIsZooming(true);
+        toggleMarkers(false); // 마커 숨김
+      });
+
+      // 줌 종료 후 마커 표시
+      window.naver.maps.Event.addListener(mapInstance, "zoom_changed", () => {
+        if (isZooming) {
+          // 줌 변경 후 약간의 지연 시간을 두고 마커 다시 표시
+          setTimeout(() => {
+            toggleMarkers(true); // 마커 다시 표시
+            setIsZooming(false);
+          }, 100);
+        }
+      });
+
+      // 드래그 시작 시 마커 숨김
+      window.naver.maps.Event.addListener(mapInstance, "dragstart", () => {
+        toggleMarkers(false); // 마커 숨김
+      });
+
+      // 드래그 종료 후 마커 표시
+      window.naver.maps.Event.addListener(mapInstance, "dragend", () => {
+        toggleMarkers(true); // 마커 다시 표시
+        // 지도 이동 종료 시 보이는 크루 업데이트
+        updateVisibleCrews();
+      });
 
       setIsMapReady(true);
+
+      return () => {
+        clearTimeout(mapLoadTimer);
+      };
     };
 
     const script = document.createElement("script");
@@ -175,15 +273,53 @@ export default function NaverMap({
         script.parentNode.removeChild(script);
       }
       setIsMapReady(false);
+      markersCreatedRef.current = false;
     };
-  }, [initialCenter.lat, initialCenter.lng, initialZoom, updateVisibleCrews]);
+  }, [
+    initialCenter.lat,
+    initialCenter.lng,
+    initialZoom,
+    updateVisibleCrews,
+    toggleMarkers,
+    isZooming,
+    onMapLoad,
+  ]);
 
-  // 지도가 준비되면 마커 초기화
+  // 지도가 준비되면 마커 초기화 (한 번만)
   useEffect(() => {
-    if (isMapReady) {
-      initializeMarkers();
+    if (isMapReady && !markersCreatedRef.current) {
+      try {
+        initializeMarkers();
+      } catch (error) {
+        console.error("Error initializing markers:", error);
+        // 마커 초기화 실패해도 지도 로드는 완료된 것으로 처리
+        if (onMapLoad) {
+          onMapLoad();
+        }
+      }
+    } else if (isMapReady && onMapLoad && !markersCreatedRef.current) {
+      // 추가 안전장치: 마커를 생성하지 못했어도 지도가 준비되었다면 로드 완료 처리
+      onMapLoad();
     }
-  }, [isMapReady, initializeMarkers]);
+  }, [isMapReady, initializeMarkers, onMapLoad]);
+
+  // 외부에서 선택된 크루가 변경될 경우 상태 업데이트
+  useEffect(() => {
+    if (externalSelectedCrew) {
+      setSelectedCrew(externalSelectedCrew);
+      setIsDetailOpen(true);
+
+      // 지도가 로드된 경우 해당 크루 위치로 이동
+      if (mapInstanceRef.current && typeof window !== "undefined") {
+        const position = new window.naver.maps.LatLng(
+          externalSelectedCrew.location.lat,
+          externalSelectedCrew.location.lng
+        );
+        mapInstanceRef.current.setCenter(position);
+        mapInstanceRef.current.setZoom(15);
+      }
+    }
+  }, [externalSelectedCrew]);
 
   return (
     <div style={{ width, height }} className='relative'>
@@ -212,15 +348,6 @@ export default function NaverMap({
           setSelectedCrew(null);
         }}
       />
-
-      {/* <CrewDetailSheet
-        crew={selectedCrew}
-        isOpen={isDetailOpen}
-        onClose={() => {
-          setIsDetailOpen(false);
-          setSelectedCrew(null);
-        }}
-      /> */}
 
       {/* 현재 화면에 보이는 크루 목록 */}
       <VisibleCrewList

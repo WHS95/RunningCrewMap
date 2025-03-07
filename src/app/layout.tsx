@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     siteName: "런하우스",
     images: [
       {
-        url: "/logo.png",
-        width: 1200,
-        height: 630,
+        url: "/android-chrome-512x512.png",
+        width: 512,
+        height: 512,
         alt: "런하우스 대표 이미지",
       },
     ],
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     title: "런하우스 | 전국 러닝크루 지도",
     description: "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요.",
     creator: "@runningcrewmap",
-    images: ["/logo.png"],
+    images: ["/android-chrome-512x512.png"],
   },
   icons: {
     icon: [
