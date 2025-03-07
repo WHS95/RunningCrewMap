@@ -165,11 +165,6 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
                           {crew.location.address || crew.location.main_address}
                         </p>
                       )}
-                      {crew.instagram && (
-                        <p className='mt-1 text-xs text-blue-600'>
-                          {crew.instagram}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}
