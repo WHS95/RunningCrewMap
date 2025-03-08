@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import { AppError } from "../errors/app-error";
-import { ErrorCode } from "../errors/error-codes";
+import { createClient, PostgrestError } from "@supabase/supabase-js";
+import { AppError } from "@/lib/errors/app-error";
+import { ErrorCode } from "@/lib/errors/error-codes";
 
 // 데이터베이스에서 가져온 서브3 기록 타입
 interface DbRecord {
@@ -22,7 +22,7 @@ interface DbRecord {
 }
 
 // 클라이언트에 반환되는 서브3 기록 타입
-export interface Record {
+export interface RecordItem {
   id: string;
   runnerName: string;
   birthYear: number;
@@ -64,18 +64,10 @@ export interface RecordFilterOptions {
   offset?: number; // 페이지네이션 오프셋
 }
 
-// 데이터베이스 에러 타입
-interface DatabaseError {
-  code?: string;
-  message?: string;
-  details?: unknown;
-  [key: string]: unknown;
-}
-
 // 에러 컨텍스트 타입
-interface ErrorContext extends Record<string, unknown> {
+interface ErrorContext {
   action: string;
-  input?: Record<string, unknown>;
+  input?: unknown;
   metadata?: Record<string, unknown>;
 }
 
@@ -100,42 +92,100 @@ export class RecordService {
 
     try {
       // 기록증 버킷이 존재하는지 확인
-      const { data: certBuckets } = await this.supabase.storage.listBuckets();
-      if (
-        !certBuckets?.find(
-          (bucket) => bucket.name === this.CERTIFICATE_BUCKET_NAME
-        )
-      ) {
-        await this.supabase.storage.createBucket(this.CERTIFICATE_BUCKET_NAME, {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-          allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
-        });
+      const { data: buckets } = await this.supabase.storage.listBuckets();
+      const certBucketExists = buckets?.some(
+        (bucket) => bucket.name === this.CERTIFICATE_BUCKET_NAME
+      );
+      const profileBucketExists = buckets?.some(
+        (bucket) => bucket.name === this.PROFILE_BUCKET_NAME
+      );
+
+      // 버킷 생성 또는 확인 - 오류 처리 개선
+      if (!certBucketExists) {
+        try {
+          await this.supabase.storage.createBucket(
+            this.CERTIFICATE_BUCKET_NAME,
+            {
+              public: true,
+              fileSizeLimit: 5242880, // 5MB
+              allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+            }
+          );
+        } catch (bucketError: unknown) {
+          // RLS 정책 위반 오류는 관리자 페이지 접근 시 무시
+          console.warn(
+            "기록증 버킷 생성 중 오류 발생 (무시됨):",
+            bucketError instanceof Error
+              ? bucketError.message
+              : String(bucketError)
+          );
+
+          // 버킷이 이미 존재하는 오류는 무시
+          if (
+            bucketError instanceof Error &&
+            bucketError.message?.includes("already exists")
+          ) {
+            console.info("기록증 버킷이 이미 존재합니다.");
+          }
+
+          // 다른 치명적인 오류는 재발생
+          if (
+            bucketError instanceof Error &&
+            !bucketError.message?.includes(
+              "violates row-level security policy"
+            ) &&
+            !bucketError.message?.includes("already exists")
+          ) {
+            throw bucketError;
+          }
+        }
       }
 
-      // 프로필 버킷이 존재하는지 확인
-      const { data: profileBuckets } =
-        await this.supabase.storage.listBuckets();
-      if (
-        !profileBuckets?.find(
-          (bucket) => bucket.name === this.PROFILE_BUCKET_NAME
-        )
-      ) {
-        await this.supabase.storage.createBucket(this.PROFILE_BUCKET_NAME, {
-          public: true,
-          fileSizeLimit: 2097152, // 2MB
-          allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
-        });
+      if (!profileBucketExists) {
+        try {
+          await this.supabase.storage.createBucket(this.PROFILE_BUCKET_NAME, {
+            public: true,
+            fileSizeLimit: 2097152, // 2MB
+            allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+          });
+        } catch (bucketError: unknown) {
+          // RLS 정책 위반 오류는 관리자 페이지 접근 시 무시
+          console.warn(
+            "프로필 버킷 생성 중 오류 발생 (무시됨):",
+            bucketError instanceof Error
+              ? bucketError.message
+              : String(bucketError)
+          );
+
+          // 버킷이 이미 존재하는 오류는 무시
+          if (
+            bucketError instanceof Error &&
+            bucketError.message?.includes("already exists")
+          ) {
+            console.info("프로필 버킷이 이미 존재합니다.");
+          }
+
+          // 다른 치명적인 오류는 재발생
+          if (
+            bucketError instanceof Error &&
+            !bucketError.message?.includes(
+              "violates row-level security policy"
+            ) &&
+            !bucketError.message?.includes("already exists")
+          ) {
+            throw bucketError;
+          }
+        }
       }
 
       this.storageInitialized = true;
     } catch (error) {
+      // 오류가 발생해도 기능 지속 가능하도록 처리
       console.error("스토리지 초기화 오류:", error);
-      throw new AppError({
-        code: ErrorCode.STORAGE_INITIALIZATION_FAILED,
-        message: "이미지 스토리지 초기화에 실패했습니다.",
-        details: error,
-      });
+
+      // 읽기 전용 기능에 대해서는 오류를 발생시키지 않음
+      // (관리자 페이지에서는 버킷 생성 실패해도 조회는 가능하도록)
+      this.storageInitialized = true;
     }
   }
 
@@ -313,13 +363,13 @@ export class RecordService {
 
   // 데이터베이스 에러 처리
   private async handleDatabaseError(
-    error: DatabaseError,
+    error: PostgrestError | unknown,
     context: ErrorContext
   ) {
     console.error(`DB Error during ${context.action}:`, error);
 
     // 중복 키 에러
-    if (error.code === "23505") {
+    if (error instanceof PostgrestError && error.code === "23505") {
       if (error.message?.includes("runner_name")) {
         throw new AppError({
           code: ErrorCode.DUPLICATE_ENTRY,
@@ -330,7 +380,7 @@ export class RecordService {
     }
 
     // 외래 키 제약조건 에러
-    if (error.code === "23503") {
+    if (error instanceof PostgrestError && error.code === "23503") {
       throw new AppError({
         code: ErrorCode.FOREIGN_KEY_VIOLATION,
         message: "관련 데이터를 찾을 수 없습니다.",
@@ -347,7 +397,7 @@ export class RecordService {
   }
 
   // 서브3 기록 생성
-  async createRecord(input: CreateRecordInput): Promise<Record> {
+  async createRecord(input: CreateRecordInput): Promise<RecordItem> {
     try {
       // 입력값 유효성 검증
       await this.validateInput(input);
@@ -419,7 +469,7 @@ export class RecordService {
   }
 
   // 서브3 기록 목록 조회
-  async getRecords(options?: RecordFilterOptions): Promise<Record[]> {
+  async getRecords(options?: RecordFilterOptions): Promise<RecordItem[]> {
     try {
       let query = this.supabase
         .from("hall_of_fame_entries")
@@ -481,7 +531,7 @@ export class RecordService {
         });
       }
 
-      return data.map(this.transformDbRecordToRecord);
+      return (data ?? []).map(this.transformDbRecordToRecord);
     } catch (error) {
       if (error instanceof AppError) {
         throw error;
@@ -497,7 +547,7 @@ export class RecordService {
   }
 
   // 특정 서브3 기록 조회
-  async getRecord(id: string): Promise<Record | null> {
+  async getRecord(id: string): Promise<RecordItem | null> {
     try {
       const { data, error } = await this.supabase
         .from("hall_of_fame_entries")
@@ -590,7 +640,7 @@ export class RecordService {
   }
 
   // 승인 대기 중인 서브3 기록 목록 조회 (관리자 기능)
-  async getPendingRecords(): Promise<Record[]> {
+  async getPendingRecords(): Promise<RecordItem[]> {
     try {
       const { data, error } = await this.supabase
         .from("hall_of_fame_entries")
@@ -604,7 +654,7 @@ export class RecordService {
         });
       }
 
-      return data.map(this.transformDbRecordToRecord);
+      return (data ?? []).map(this.transformDbRecordToRecord);
     } catch (error) {
       if (error instanceof AppError) {
         throw error;
@@ -665,7 +715,7 @@ export class RecordService {
   }
 
   // DB 레코드를 클라이언트 레코드로 변환
-  private transformDbRecordToRecord(dbRecord: DbRecord): Record {
+  private transformDbRecordToRecord(dbRecord: DbRecord): RecordItem {
     // 현재 나이 계산
     const currentYear = new Date().getFullYear();
     const age = currentYear - dbRecord.birth_year;

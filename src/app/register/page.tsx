@@ -3,11 +3,22 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { crewService } from "@/lib/services/crew.service";
-import type { CreateCrewInput, ActivityDay } from "@/lib/types/crewInsert";
-import { FormLayout } from "@/components/layout/FormLayout";
-import { ACTIVITY_DAYS } from "@/lib/types/crewInsert";
 import { AppError, ErrorCode } from "@/lib/types/error";
 import { ResultDialog } from "@/components/dialog/ResultDialog";
+import { X, Upload } from "lucide-react";
+import MImage from "next/image";
+
+// Import types
+import {
+  CreateCrewInput,
+  JoinMethod,
+  ActivityDay,
+  ACTIVITY_DAYS,
+} from "@/lib/types/crewInsert";
+
+// UI Components - 실제 사용하는 컴포넌트만 임포트
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // 날짜 선택 컴포넌트 Props 타입 정의
 interface DatePickerProps {
@@ -159,6 +170,8 @@ const DatePicker = ({
   );
 };
 
+import { PhotoUploadStrategyFactory } from "@/lib/strategies/photo-upload.strategy";
+
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -193,6 +206,20 @@ export default function RegisterPage() {
   const [maxAge, setMaxAge] = useState(60);
   const [logoImage, setLogoImage] = useState<File | undefined>(undefined);
 
+  // 가입 방식 상태
+  const [useInstagramDm, setUseInstagramDm] = useState(true);
+  const [useOpenChat, setUseOpenChat] = useState(false);
+  const [useOtherJoinMethod, setUseOtherJoinMethod] = useState(false);
+  const [openChatLink, setOpenChatLink] = useState("");
+  const [otherJoinLink, setOtherJoinLink] = useState("");
+  // const [otherJoinDescription, setOtherJoinDescription] = useState("");
+
+  // 크루 사진 상태
+  const [crewPhotos, setCrewPhotos] = useState<File[]>([]);
+
+  // 사진 업로드 전략 가져오기
+  const photoUploadStrategy = PhotoUploadStrategyFactory.getStrategy();
+
   // 연령대 변경 핸들러
   const handleMinAgeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = parseInt(e.target.value);
@@ -218,6 +245,30 @@ export default function RegisterPage() {
 
   // 폼 데이터를 제출 시 조합
   const getFormData = (): CreateCrewInput => {
+    // 가입 방식 생성
+    const joinMethods: JoinMethod[] = [];
+
+    if (useInstagramDm) {
+      joinMethods.push({
+        method_type: "instagram_dm",
+      });
+    }
+
+    if (useOpenChat && openChatLink.trim()) {
+      joinMethods.push({
+        method_type: "open_chat",
+        link_url: openChatLink.trim(),
+      });
+    }
+
+    if (useOtherJoinMethod && otherJoinLink.trim()) {
+      joinMethods.push({
+        method_type: "other",
+        link_url: otherJoinLink.trim(),
+        description: "",
+      });
+    }
+
     return {
       name,
       description,
@@ -226,6 +277,7 @@ export default function RegisterPage() {
       logo_image: logoImage,
       location: {
         main_address: mainAddress,
+        detail_address: "",
         latitude: 37.5665,
         longitude: 126.978,
       },
@@ -235,6 +287,8 @@ export default function RegisterPage() {
         max_age: maxAge,
       },
       activity_locations: activityLocations,
+      join_methods: joinMethods.length > 0 ? joinMethods : undefined,
+      photos: crewPhotos.length > 0 ? crewPhotos : undefined,
     };
   };
 
@@ -289,11 +343,50 @@ export default function RegisterPage() {
     }
   };
 
+  // 크루 사진 추가 핸들러
+  const handleCrewPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    // 새 사진을 추가할 수 있는지 전략 패턴을 이용해 검증
+    const newPhotos = Array.from(files);
+    const validationResult = photoUploadStrategy.validatePhotos(
+      crewPhotos,
+      newPhotos
+    );
+
+    if (!validationResult.isValid) {
+      setDialogState({
+        isOpen: true,
+        title: validationResult.errorTitle || "오류",
+        description:
+          validationResult.errorMessage ||
+          "사진 업로드 중 오류가 발생했습니다.",
+        isSuccess: false,
+      });
+      return;
+    }
+
+    // 파일을 처리하고 상태에 추가
+    setCrewPhotos([...crewPhotos, ...newPhotos]);
+
+    // 파일 입력 초기화 (동일한 파일 재선택 가능하게)
+    e.target.value = "";
+  };
+
+  // 크루 사진 삭제 핸들러
+  const removeCrewPhoto = (index: number) => {
+    const updatedPhotos = [...crewPhotos];
+    updatedPhotos.splice(index, 1);
+    setCrewPhotos(updatedPhotos);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      setIsLoading(true);
+      // 폼 데이터 가져오기
       const formData = getFormData();
 
       // 필수 필드 검증
@@ -342,11 +435,15 @@ export default function RegisterPage() {
         return;
       }
 
-      if (!formData.location.main_address.trim()) {
+      // main_address NULL 체크 수정
+      if (
+        !formData.location.main_address ||
+        !formData.location.main_address.trim()
+      ) {
         setDialogState({
           isOpen: true,
-          title: "활동 장소",
-          description: "지도에 표시될 대표 위치",
+          title: "활동 장소 입력 필요",
+          description: "지도에 표시될 대표 위치를 입력해주세요.",
           isSuccess: false,
         });
         return;
@@ -356,7 +453,7 @@ export default function RegisterPage() {
         setDialogState({
           isOpen: true,
           title: "활동 요일 선택 필요",
-          description: "정기 러닝 요일을 하나 이상 선택해주세요.",
+          description: "최소 하나 이상의 활동 요일을 선택해주세요.",
           isSuccess: false,
         });
         return;
@@ -373,55 +470,49 @@ export default function RegisterPage() {
         return;
       }
 
+      // 가입 방식 검증
+      if (!useInstagramDm && !useOpenChat && !useOtherJoinMethod) {
+        setDialogState({
+          isOpen: true,
+          title: "가입 방식 선택 필요",
+          description: "최소 하나 이상의 가입 방식을 선택해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      if (useOpenChat && !openChatLink.trim()) {
+        setDialogState({
+          isOpen: true,
+          title: "오픈채팅 링크 입력 필요",
+          description: "오픈채팅 가입 방식을 선택한 경우 링크를 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      if (useOtherJoinMethod && !otherJoinLink.trim()) {
+        setDialogState({
+          isOpen: true,
+          title: "기타 가입 방식 링크 입력 필요",
+          description: "기타 가입 방식을 선택한 경우 링크를 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
       // 이미지 파일 검증
       if (formData.logo_image) {
-        const fileSize = formData.logo_image.size / (1024 * 1024); // MB로 변환
-        const validTypes = ["image/jpeg", "image/png", "image/gif"];
-
-        // 파일 형식 검증
-        if (!validTypes.includes(formData.logo_image.type)) {
+        // 로고 이미지 검증
+        const logoFile = formData.logo_image;
+        if (logoFile.size > 5 * 1024 * 1024) {
           setDialogState({
             isOpen: true,
-            title: "지원하지 않는 파일 형식",
-            description: `현재 파일: ${formData.logo_image.type}\n지원 형식: JPG, PNG, GIF\n\n다른 이미지를 선택해주세요.`,
+            title: "이미지 크기 초과",
+            description: "로고 이미지 파일 크기는 5MB 이하여야 합니다.",
             isSuccess: false,
           });
           return;
-        }
-
-        // 파일 크기 검증 및 자동 압축 시도
-        if (fileSize > 2) {
-          try {
-            setDialogState({
-              isOpen: true,
-              title: "이미지 압축 시작",
-              description: `현재 크기: ${fileSize.toFixed(
-                1
-              )}MB\n2MB 이하로 자동 압축을 시도합니다.`,
-              isSuccess: true,
-            });
-          } catch (error) {
-            const compressionError = error as AppError;
-            if (compressionError.code === ErrorCode.COMPRESSION_FAILED) {
-              setDialogState({
-                isOpen: true,
-                title: "이미지 압축 실패",
-                description:
-                  "이미지 압축에 실패했습니다. 더 작은 크기의 이미지를 사용하거나 다른 이미지를 선택해주세요.",
-                isSuccess: false,
-              });
-              return;
-            }
-
-            setDialogState({
-              isOpen: true,
-              title: "이미지 처리 오류",
-              description:
-                "이미지 처리 중 오류가 발생했습니다. 다른 이미지를 선택해주세요.",
-              isSuccess: false,
-            });
-            return;
-          }
         }
 
         // 이미지 파일명 검증
@@ -439,7 +530,57 @@ export default function RegisterPage() {
         }
       }
 
-      await crewService.createCrew(formData);
+      // 크루 사진 검증
+      if (formData.photos && formData.photos.length > 0) {
+        // 사진 개수 검증
+        if (formData.photos.length > photoUploadStrategy.getMaxPhotoCount()) {
+          setDialogState({
+            isOpen: true,
+            title: "사진 개수 초과",
+            description: `크루 사진은 최대 ${photoUploadStrategy.getMaxPhotoCount()}개까지만 업로드할 수 있습니다.`,
+            isSuccess: false,
+          });
+          return;
+        }
+
+        // 모든 사진 파일 크기 검증
+        for (const photo of formData.photos) {
+          if (photo.size > 5 * 1024 * 1024) {
+            setDialogState({
+              isOpen: true,
+              title: "이미지 크기 초과",
+              description: `사진 '${photo.name}'의 파일 크기가 5MB를 초과합니다.`,
+              isSuccess: false,
+            });
+            return;
+          }
+
+          // 이미지 파일명 검증
+          const invalidChars = /[\\/:*?"<>|]/;
+          if (invalidChars.test(photo.name)) {
+            setDialogState({
+              isOpen: true,
+              title: "잘못된 파일명",
+              description: `파일 '${photo.name}'의 이름에 특수문자를 사용할 수 없습니다.`,
+              isSuccess: false,
+            });
+            return;
+          }
+        }
+      }
+
+      // crewInsert.ts의 CreateCrewInput 타입에 맞게 데이터 변환
+      const typeSafeInput: CreateCrewInput = {
+        ...formData,
+        location: {
+          main_address: formData.location.main_address,
+          detail_address: "",
+          latitude: formData.location.latitude,
+          longitude: formData.location.longitude,
+        },
+      };
+
+      await crewService.createCrew(typeSafeInput);
 
       // 성공 팝업 표시
       setDialogState({
@@ -473,7 +614,7 @@ export default function RegisterPage() {
           "이미지 크기가 2MB를 초과합니다. 더 작은 이미지를 사용해주세요.";
       } else if (appError.code === ErrorCode.INVALID_FILE_TYPE) {
         errorTitle = "잘못된 파일 형식";
-        errorDescription = "JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.";
+        errorDescription = "JPG, PNG 형식의 이미지만 업로드 가능합니다.";
       } else if (appError.code === ErrorCode.UPLOAD_FAILED) {
         errorTitle = "업로드 실패";
         errorDescription =
@@ -525,7 +666,19 @@ export default function RegisterPage() {
   };
 
   return (
-    <FormLayout title='러닝크루 등록'>
+    <main className='max-w-5xl py-6 space-y-8'>
+      <div className='flex items-center justify-between'>
+        <button
+          onClick={() => router.push("/")}
+          className='flex items-center text-sm font-medium text-gray-600 hover:text-gray-900'
+        >
+          <X className='w-4 h-4 mr-1' />
+          취소
+        </button>
+        <h1 className='text-2xl font-bold text-center'>러닝크루 등록</h1>
+        <div className='w-16'></div> {/* 양쪽 정렬을 위한 빈 공간 */}
+      </div>
+
       <div className='p-4'>
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* 크루명 */}
@@ -648,7 +801,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             <p className='text-xs text-gray-500'>
-              * 이 위치가 지도 상에 핀으로 표시됩니다.
+              *해당 위치가 지도에 크루 표시 위치가 됩니다
             </p>
           </div>
 
@@ -745,9 +898,179 @@ export default function RegisterPage() {
             <p className='text-xs text-gray-500'>* JPG, PNG</p>
           </div>
 
+          {/* 가입 방식 설정 섹션 */}
+          <div className='space-y-2'>
+            <label className='text-sm font-bold'>
+              가입 방식 설정
+              <span className='ml-1 text-red-500'>*</span>
+            </label>
+            <p className='mb-3 text-sm text-gray-500'>
+              크루에 가입하기 위한 방법을 설정해주세요. 최소 하나 이상의 방법이
+              필요합니다.
+            </p>
+
+            {/* 가입 방식 버튼 그룹 */}
+            <div className='flex flex-wrap gap-2 mb-4'>
+              <button
+                type='button'
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  useInstagramDm
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                onClick={() => setUseInstagramDm(!useInstagramDm)}
+              >
+                인스타그램 DM
+              </button>
+              <button
+                type='button'
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  useOpenChat
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                onClick={() => setUseOpenChat(!useOpenChat)}
+              >
+                오픈채팅
+              </button>
+              <button
+                type='button'
+                className={`px-3 py-1.5 text-sm rounded-full ${
+                  useOtherJoinMethod
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                onClick={() => setUseOtherJoinMethod(!useOtherJoinMethod)}
+              >
+                기타 방식
+              </button>
+            </div>
+
+            {/* 인스타그램 경고 메시지 */}
+            {useInstagramDm && !instagram}
+
+            {/* 오픈채팅 링크 입력 */}
+            {useOpenChat && (
+              <div className='mt-3 mb-4'>
+                <Label htmlFor='open-chat-link' className='block mb-1 text-sm'>
+                  오픈채팅 링크
+                </Label>
+                <Input
+                  id='open-chat-link'
+                  type='url'
+                  placeholder='https://open.kakao.com/...'
+                  value={openChatLink}
+                  onChange={(e) => setOpenChatLink(e.target.value)}
+                  className='w-full'
+                />
+              </div>
+            )}
+
+            {/* 기타 가입 방식 입력 */}
+            {useOtherJoinMethod && (
+              <div className='mt-3 mb-4 space-y-3'>
+                <div>
+                  <Label
+                    htmlFor='other-join-link'
+                    className='block mb-1 text-sm'
+                  >
+                    기타 가입 링크
+                  </Label>
+                  <Input
+                    id='other-join-link'
+                    type='url'
+                    placeholder='https://...'
+                    value={otherJoinLink}
+                    onChange={(e) => setOtherJoinLink(e.target.value)}
+                    className='w-full'
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 크루 대표 활동 사진 업로드 섹션 */}
+          <div className='space-y-2'>
+            <label className='text-sm font-bold'>
+              크루 대표 활동 사진 업로드
+            </label>
+            <p className='mb-3 text-sm text-gray-500'>
+              크루 대표 활동 사진을 업로드해주세요. 최대{" "}
+              {photoUploadStrategy.getMaxPhotoCount()}개까지 업로드 가능합니다.
+            </p>
+            <div className='space-y-4'>
+              {/* 현재 선택된 사진 표시 */}
+              {crewPhotos.length > 0 && (
+                <div className='grid grid-cols-3 gap-4'>
+                  {crewPhotos.map((photo, index) => (
+                    <div key={index} className='relative'>
+                      <div className='flex items-center justify-center overflow-hidden bg-gray-100 rounded-md aspect-square'>
+                        <MImage
+                          src={URL.createObjectURL(photo)}
+                          alt={`크루 사진 ${index + 1}`}
+                          className='object-cover w-full h-full'
+                          fill
+                          sizes='100%'
+                          unoptimized={true}
+                        />
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => removeCrewPhoto(index)}
+                        className='absolute p-1 text-white bg-red-500 rounded-full -top-2 -right-2'
+                        aria-label='사진 삭제'
+                      >
+                        <X className='w-4 h-4' />
+                      </button>
+                    </div>
+                  ))}
+                  {/* 빈 슬롯 표시 */}
+                  {Array.from({
+                    length:
+                      photoUploadStrategy.getMaxPhotoCount() -
+                      crewPhotos.length,
+                  }).map((_, index) => (
+                    <div
+                      key={`empty-${index}`}
+                      className='flex items-center justify-center bg-gray-100 border-2 border-gray-300 border-dashed rounded-md aspect-square'
+                    >
+                      <span className='text-xs text-gray-400'>빈 슬롯</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 사진 업로드 버튼 */}
+              {crewPhotos.length < photoUploadStrategy.getMaxPhotoCount() && (
+                <Label
+                  htmlFor='crew-photos'
+                  className='flex items-center justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-gray-400 focus:outline-none'
+                >
+                  <span className='flex flex-col items-center space-y-2'>
+                    <Upload className='w-6 h-6 text-gray-600' />
+                    <span className='font-medium text-gray-600'>
+                      사진 추가하기 ({crewPhotos.length}/
+                      {photoUploadStrategy.getMaxPhotoCount()})
+                    </span>
+                    <span className='text-xs text-gray-500'>
+                      최대 5MB, JPG, PNG 파일 지원
+                    </span>
+                  </span>
+                  <input
+                    id='crew-photos'
+                    type='file'
+                    accept='image/*'
+                    className='hidden'
+                    onChange={handleCrewPhotoChange}
+                  />
+                </Label>
+              )}
+            </div>
+          </div>
+
           {/* 안내 문구 */}
           <div className='py-2 text-sm text-center text-gray-600'>
-            <p>💬 크루 로고 및 작성 내용 수정을 원하시면</p>
+            <p>크루 로고 및 작성 내용 수정을 원하시면</p>
             <p>메뉴-문의 버튼(카카오채널)로 연락 언제든 주세요</p>
           </div>
 
@@ -772,13 +1095,14 @@ export default function RegisterPage() {
         </form>
       </div>
 
+      {/* 결과 다이얼로그 */}
       <ResultDialog
         isOpen={dialogState.isOpen}
-        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        onClose={() => setDialogState({ ...dialogState, isOpen: false })}
         title={dialogState.title}
         description={dialogState.description}
         isSuccess={dialogState.isSuccess}
       />
-    </FormLayout>
+    </main>
   );
 }

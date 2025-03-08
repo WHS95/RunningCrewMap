@@ -53,43 +53,7 @@ interface ErrorContext extends Record<string, unknown> {
 
 class CrewService {
   private readonly BUCKET_NAME = "crewLogos";
-
-  constructor() {
-    this.initializeStorage().catch((error) => {
-      logger.error(logger.createError(ErrorCode.STORAGE_ERROR), {
-        action: "initializeStorage",
-        details: { error },
-      });
-    });
-  }
-
-  private async initializeStorage() {
-    try {
-      // 버킷 존재 여부 확인
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(
-        (bucket) => bucket.name === this.BUCKET_NAME
-      );
-
-      // 버킷이 없으면 생성
-      if (!bucketExists) {
-        const { error } = await supabase.storage.createBucket(
-          this.BUCKET_NAME,
-          {
-            public: true, // 공개 접근 허용
-            fileSizeLimit: 1024 * 1024 * 2, // 2MB 제한
-            allowedMimeTypes: ["image/jpeg", "image/png", "image/gif"], // 허용할 파일 형식
-          }
-        );
-
-        if (error) {
-          console.error("Failed to create storage bucket:", error);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to initialize storage:", error);
-    }
-  }
+  private readonly CREW_PHOTOS_BUCKET = "crewActivePicture";
 
   private async uploadImage(
     file: File,
@@ -115,9 +79,9 @@ class CrewService {
       console.log("파일 크기 검증 완료");
 
       // 파일 형식 검증
-      if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
+      if (!["image/jpeg", "image/png"].includes(file.type)) {
         console.error("잘못된 파일 형식:", file.type);
-        throw new Error("JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.");
+        throw new Error("JPG, PNG 형식의 이미지만 업로드 가능합니다.");
       }
       console.log("파일 형식 검증 완료");
 
@@ -291,39 +255,40 @@ class CrewService {
   // 크루 생성
   async createCrew(input: CreateCrewInput): Promise<CrewWithDetails> {
     try {
+      console.log("=== 크루 생성 시작 ===");
+      console.log("크루 기본 정보:", {
+        name: input.name,
+        instagram: input.instagram,
+        founded_date: input.founded_date,
+      });
+
       await this.validateInput(input);
+      console.log("입력값 검증 완료");
 
       // 이미지 검증 및 압축, 업로드 수행
       let logo_image_url: string | undefined;
       if (input.logo_image) {
         try {
+          console.log("로고 이미지 처리 시작");
           await this.validateImage(input.logo_image);
-
-          // 이미지 압축
           const compressedImage = await compressImageFile(input.logo_image);
-
-          // 압축된 이미지 업로드
           const uploadedUrl = await this.uploadImage(
             compressedImage,
             crypto.randomUUID()
           );
-          // console.log("uploadedUrl", uploadedUrl);
-
           if (!uploadedUrl) {
             throw logger.createError(ErrorCode.UPLOAD_FAILED);
           }
-
           logo_image_url = uploadedUrl;
+          console.log("로고 이미지 업로드 완료:", logo_image_url);
         } catch (error) {
           if (
             error instanceof Error &&
             "code" in error &&
             error.code === ErrorCode.FILE_TOO_LARGE
           ) {
-            // 파일 크기 초과 에러는 압축 시도 후 발생한 것이므로 그대로 전파
             throw error;
           }
-          // 이미지 처리 중 오류가 발생해도 크루 생성은 계속 진행
           console.error("이미지 처리 중 오류:", error);
         }
       }
@@ -419,7 +384,7 @@ class CrewService {
         );
       }
 
-      // 활동 장소 저장 (있는 경우)
+      // 활동 장소 저장
       if (input.activity_locations && input.activity_locations.length > 0) {
         const activityLocationsData = input.activity_locations.map(
           (location) => ({
@@ -445,6 +410,96 @@ class CrewService {
           );
         }
       }
+
+      // 가입 방식 저장
+      if (input.join_methods && input.join_methods.length > 0) {
+        const joinMethodsData = input.join_methods.map((method) => ({
+          crew_id: crewId,
+          method_type: method.method_type,
+          link_url: method.link_url,
+          description: method.description,
+        }));
+
+        const { error: joinMethodsError } = await supabase
+          .from("crew_join_methods")
+          .insert(joinMethodsData);
+
+        if (joinMethodsError) {
+          await this.handleDatabaseError(
+            joinMethodsError as unknown as DatabaseError,
+            {
+              action: "createCrewJoinMethods",
+              input: {
+                crewId,
+                joinMethods: input.join_methods,
+              } as Record<string, unknown>,
+            }
+          );
+        }
+      }
+
+      // 크루 대표 활동 사진 업로드 및 저장
+      if (input.photos && input.photos.length > 0) {
+        console.log(
+          `=== 크루 대표 활동 사진 ${input.photos.length}개 처리 시작 ===`
+        );
+        const photoUrls: string[] = [];
+
+        // 각 사진 파일을 순차적으로 업로드
+        for (let i = 0; i < input.photos.length; i++) {
+          const photo = input.photos[i];
+          console.log(
+            `사진 ${i + 1}/${input.photos.length} 업로드 시작:`,
+            photo.name
+          );
+          const photoUrl = await this.uploadCrewPhoto(photo, crewId);
+
+          if (photoUrl) {
+            console.log(`사진 ${i + 1} 업로드 성공:`, photoUrl);
+            photoUrls.push(photoUrl);
+          } else {
+            console.error(`사진 ${i + 1} 업로드 실패`);
+          }
+        }
+
+        console.log(
+          `총 ${photoUrls.length}/${input.photos.length}개 사진 업로드 완료`
+        );
+
+        // 업로드된 사진 URL을 DB에 저장
+        if (photoUrls.length > 0) {
+          console.log("크루 사진 DB 저장 시작");
+          const photoData = photoUrls.map((url, index) => ({
+            crew_id: crewId,
+            photo_url: url,
+            display_order: index,
+          }));
+
+          const { error: photosError } = await supabase
+            .from("crew_photos")
+            .insert(photoData);
+
+          if (photosError) {
+            console.error("크루 사진 DB 저장 실패:", photosError);
+            await this.handleDatabaseError(
+              photosError as unknown as DatabaseError,
+              {
+                action: "createCrewPhotos",
+                input: {
+                  crewId,
+                  photos: photoUrls,
+                } as Record<string, unknown>,
+              }
+            );
+          } else {
+            console.log("크루 사진 DB 저장 완료");
+          }
+        }
+      } else {
+        console.log("크루 대표 활동 사진 없음");
+      }
+
+      console.log("=== 크루 생성 완료 ===");
 
       // 생성된 크루 정보 반환
       return {
@@ -491,7 +546,11 @@ class CrewService {
         crew_locations (*),
         crew_activity_days (day_of_week),
         crew_age_ranges (*),
-        crew_activity_locations (location_name)
+        crew_activity_locations (location_name),
+        crew_photos (
+          photo_url,
+          display_order
+        )
       `
       )
       .eq("is_visible", true); // 승인된 크루만 조회
@@ -519,7 +578,11 @@ class CrewService {
     if (error) throw error;
 
     // crews.json 형식으로 데이터 변환
-    let crews = (data as DbCrew[]).map((crew) => {
+    let crews = (
+      data as (DbCrew & {
+        crew_photos: Array<{ photo_url: string; display_order: number }>;
+      })[]
+    ).map((crew) => {
       // 활동 요일 문자열로 변환
       const activityDays = crew.crew_activity_days.map((d) => d.day_of_week);
       const activityDay =
@@ -537,10 +600,16 @@ class CrewService {
         ? crew.crew_activity_locations.map((loc) => loc.location_name)
         : [];
 
+      // 사진들을 display_order로 정렬
+      const photos = crew.crew_photos
+        ? crew.crew_photos
+            .sort((a, b) => a.display_order - b.display_order)
+            .map((photo) => photo.photo_url)
+        : [];
+
       return {
         id: crew.id,
         name: crew.name,
-        // 리얼 줄바꿈을 적용하기 위해서 줄바꿈 문자를 추가
         description: crew.description.replace(/\\n/g, "\n"),
         location: {
           lat: crew.crew_locations[0].latitude,
@@ -557,6 +626,7 @@ class CrewService {
         activity_day: activityDay,
         age_range: ageRange,
         activity_locations: activityLocations,
+        photos: photos,
       };
     });
 
@@ -611,7 +681,11 @@ class CrewService {
         crew_locations (*),
         crew_activity_days (day_of_week),
         crew_age_ranges (*),
-        crew_activity_locations (location_name)
+        crew_activity_locations (location_name),
+        crew_photos (
+          photo_url,
+          display_order
+        )
       `
       )
       .eq("id", id)
@@ -620,11 +694,20 @@ class CrewService {
     if (error) throw error;
     if (!data) return null;
 
-    const crew = data as DbCrew;
+    const crew = data as DbCrew & {
+      crew_photos: Array<{ photo_url: string; display_order: number }>;
+    };
 
     // 활동 장소들 추출
     const activityLocations = crew.crew_activity_locations
       ? crew.crew_activity_locations.map((loc) => loc.location_name)
+      : [];
+
+    // 사진들을 display_order로 정렬
+    const photos = crew.crew_photos
+      ? crew.crew_photos
+          .sort((a, b) => a.display_order - b.display_order)
+          .map((photo) => photo.photo_url)
       : [];
 
     return {
@@ -643,6 +726,7 @@ class CrewService {
         max_age: crew.crew_age_ranges[0].max_age,
       },
       activity_locations: activityLocations,
+      photos: photos,
     };
   }
 
@@ -689,6 +773,10 @@ class CrewService {
         ),
         crew_activity_locations (
           location_name
+        ),
+        crew_photos (
+          photo_url,
+          display_order
         )
       `
       )
@@ -696,7 +784,38 @@ class CrewService {
 
     if (error) throw error;
 
-    return data.map((crew) => ({
+    interface AdminCrewData {
+      id: string;
+      name: string;
+      description: string;
+      instagram?: string;
+      logo_image_url?: string;
+      is_visible: boolean;
+      created_at: string;
+      founded_date: string;
+      crew_locations: Array<{
+        main_address: string;
+        detail_address?: string;
+        latitude: number;
+        longitude: number;
+      }>;
+      crew_activity_days: Array<{
+        day_of_week: string;
+      }>;
+      crew_age_ranges: Array<{
+        min_age: number;
+        max_age: number;
+      }>;
+      crew_activity_locations?: Array<{
+        location_name: string;
+      }>;
+      crew_photos?: Array<{
+        photo_url: string;
+        display_order: number;
+      }>;
+    }
+
+    return data.map((crew: AdminCrewData) => ({
       id: crew.id,
       name: crew.name,
       description: crew.description,
@@ -706,7 +825,7 @@ class CrewService {
       founded_date: crew.founded_date,
       is_visible: crew.is_visible,
       activity_day: crew.crew_activity_days
-        ?.map((d) => d.day_of_week)
+        ?.map((d: { day_of_week: string }) => d.day_of_week)
         .join(", "),
       age_range: crew.crew_age_ranges?.[0]
         ? `${crew.crew_age_ranges[0].min_age}~${crew.crew_age_ranges[0].max_age}세`
@@ -718,7 +837,14 @@ class CrewService {
         address: crew.crew_locations[0]?.detail_address || "",
       },
       activity_locations:
-        crew.crew_activity_locations?.map((loc) => loc.location_name) || [],
+        crew.crew_activity_locations?.map(
+          (loc: { location_name: string }) => loc.location_name
+        ) || [],
+      photos: crew.crew_photos
+        ? crew.crew_photos
+            .sort((a, b) => a.display_order - b.display_order)
+            .map((photo) => photo.photo_url)
+        : [],
     }));
   }
 
@@ -982,6 +1108,92 @@ class CrewService {
         details: { error, crewId },
       });
       throw logger.createError(ErrorCode.SERVER_ERROR);
+    }
+  }
+
+  private async uploadCrewPhoto(
+    file: File,
+    crewId: string
+  ): Promise<string | null> {
+    try {
+      console.log("=== 크루 대표 활동 사진 업로드 시작 ===");
+      console.log("파일 정보:", {
+        name: file.name,
+        type: file.type,
+        size: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      });
+      console.log("크루 ID:", crewId);
+      console.log("저장 버킷:", this.CREW_PHOTOS_BUCKET);
+
+      // 파일 크기 검증
+      if (file.size > 5 * 1024 * 1024) {
+        console.error(
+          "파일 크기 초과:",
+          `${(file.size / 1024 / 1024).toFixed(2)}MB`
+        );
+        throw logger.createError(ErrorCode.FILE_TOO_LARGE);
+      }
+      console.log("파일 크기 검증 완료");
+
+      // 파일 형식 검증
+      if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
+        console.error("잘못된 파일 형식:", file.type);
+        throw logger.createError(ErrorCode.INVALID_FILE_TYPE);
+      }
+      console.log("파일 형식 검증 완료");
+
+      // 파일명 생성
+      const timestamp = new Date().getTime();
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${crewId}_${timestamp}.${fileExt}`;
+      console.log("생성된 파일명:", fileName);
+
+      // 이미지 업로드
+      console.log("크루 대표 활동 사진 업로드 시작...");
+      const { error: uploadError } = await supabase.storage
+        .from(this.CREW_PHOTOS_BUCKET)
+        .upload(fileName, file, {
+          cacheControl: "31536000",
+          contentType: file.type,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("크루 대표 활동 사진 업로드 실패:", {
+          errorMessage: uploadError.message,
+          errorDetails: uploadError,
+        });
+        return null;
+      }
+      console.log("크루 대표 활동 사진 업로드 성공");
+
+      // 공개 URL 생성
+      console.log("공개 URL 생성 중...");
+      const { data } = supabase.storage
+        .from(this.CREW_PHOTOS_BUCKET)
+        .getPublicUrl(fileName);
+
+      const publicUrl = new URL(data.publicUrl);
+      publicUrl.searchParams.set("v", timestamp.toString());
+      console.log("생성된 공개 URL:", publicUrl.toString());
+      console.log("=== 크루 대표 활동 사진 업로드 완료 ===");
+
+      return publicUrl.toString();
+    } catch (error) {
+      console.error("=== 크루 대표 활동 사진 업로드 실패 ===");
+      console.error("에러 상세 정보:", {
+        error,
+        errorMessage:
+          error instanceof Error ? error.message : "알 수 없는 에러",
+        file: {
+          name: file.name,
+          type: file.type,
+          size: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        },
+        crewId,
+        bucket: this.CREW_PHOTOS_BUCKET,
+      });
+      return null;
     }
   }
 }

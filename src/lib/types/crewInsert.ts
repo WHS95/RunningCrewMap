@@ -9,6 +9,12 @@ export interface Crew {
   updated_at: string;
 }
 
+export interface JoinMethod {
+  method_type: "instagram_dm" | "open_chat" | "other";
+  link_url?: string;
+  description?: string;
+}
+
 export interface CrewLocation {
   id: string;
   crew_id: string;
@@ -34,6 +40,14 @@ export interface CrewAgeRange {
   created_at: string;
 }
 
+export interface CrewPhoto {
+  id: string;
+  crew_id: string;
+  photo_url: string;
+  display_order: number;
+  created_at: string;
+}
+
 export interface CreateCrewInput {
   name: string;
   description: string;
@@ -52,6 +66,8 @@ export interface CreateCrewInput {
     max_age: number;
   };
   activity_locations?: string[];
+  join_methods?: JoinMethod[];
+  photos?: File[];
 }
 
 export interface CrewWithDetails extends Crew {
@@ -62,6 +78,8 @@ export interface CrewWithDetails extends Crew {
     max_age: number;
   };
   activity_locations?: string[];
+  join_methods?: JoinMethod[];
+  photos?: string[];
 }
 
 export interface CrewFilterOptions {

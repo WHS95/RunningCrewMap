@@ -353,7 +353,7 @@ export default function EditCrewPage() {
                 </p>
               )}
               <p className='text-xs text-muted-foreground'>
-                최대 2MB, JPG, PNG, GIF 형식만 지원
+                최대 2MB, JPG, PNG 형식만 지원
               </p>
             </div>
           </div>

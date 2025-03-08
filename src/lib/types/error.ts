@@ -52,7 +52,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
 
   FILE_TOO_LARGE:
     "이미지 크기는 2MB 이하여야 합니다. 자동으로 압축을 시도합니다.",
-  INVALID_FILE_TYPE: "JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.",
+  INVALID_FILE_TYPE: "JPG, PNG 형식의 이미지만 업로드 가능합니다.",
   UPLOAD_FAILED: "이미지 업로드에 실패했습니다. 다시 시도해주세요.",
   FILE_COMPRESSED: "이미지가 자동으로 압축되었습니다.",
   COMPRESSION_FAILED:

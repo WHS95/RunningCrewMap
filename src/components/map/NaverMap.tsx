@@ -93,7 +93,7 @@ export default function NaverMap({
 
   // 마커 생성 함수 - 로고 이미지 포함하되 최적화
   const createMarkerContent = useCallback((crew: Crew) => {
-    const size = 36; // 크기 최적화
+    const size = 40; // 크기 최적화
 
     if (!crew.logo_image) {
       // 로고 이미지가 없는 경우 기본 마커

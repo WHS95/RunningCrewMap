@@ -16,6 +16,14 @@ export interface Crew {
     address?: string;
     main_address?: string;
   };
+  join_methods?: JoinMethod[];
+  photos?: string[];
+}
+
+export interface JoinMethod {
+  method_type: "instagram_dm" | "open_chat" | "other";
+  link_url?: string;
+  description?: string;
 }
 
 export interface CreateCrewInput {
@@ -28,8 +36,11 @@ export interface CreateCrewInput {
     main_address?: string;
   };
   instagram?: string;
-  logo_image?: string;
+  logo_image?: File;
   founded_date: string;
   activity_day?: string;
   age_range?: string;
+  activity_locations?: string[];
+  join_methods?: JoinMethod[];
+  photos?: File[];
 }
