@@ -1,7 +1,8 @@
 "use client";
 
-import { Crew } from "@/lib/types/crew";
-import { JoinMethod } from "@/lib/types/crewInsert";
+import { useState } from "react";
+import type { Crew } from "@/lib/types/crew";
+import { JoinMethod } from "@/lib/types/crew";
 import {
   Sheet,
   SheetContent,
@@ -18,7 +19,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
 
 interface CrewDetailViewProps {
   crew: Crew | null;
@@ -48,9 +48,27 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
     return locationText.length > 30; // 대략적인 기준, 필요에 따라 조정 가능
   };
 
-  if (!crew) return null;
+  if (!isOpen) return null;
 
-  // console.log("crew", crew);
+  if (!crew) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent
+          side='bottom'
+          className='h-[85vh] p-0 rounded-t-[10px] overflow-hidden z-[10000]'
+        >
+          <div className='flex items-center justify-center flex-1 h-full'>
+            <div className='text-center'>
+              <div className='w-10 h-10 mx-auto mb-4 border-4 rounded-full border-primary border-t-transparent animate-spin'></div>
+              <p className='text-gray-500 dark:text-gray-400'>
+                크루 정보를 불러오는 중...
+              </p>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -246,63 +264,56 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                   가입 방식
                 </h3>
                 <div className='flex gap-2 mt-1'>
-                  <a
-                    href='#'
-                    className='text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition'
-                    onClick={(e) => {
-                      e.preventDefault();
-                      // 인스타그램 DM 링크 처리
-                      if (crew.instagram) {
-                        window.open(
-                          `https://www.instagram.com/${crew.instagram.replace(
-                            "@",
-                            ""
-                          )}`,
-                          "_blank"
-                        );
-                      }
-                    }}
-                  >
-                    인스타그램 DM
-                  </a>
-                  <a
-                    href='#'
-                    className='text-xs px-3 py-1.5 rounded-full bg-accent/70 text-muted-foreground hover:bg-accent/90 transition'
-                    onClick={(e) => {
-                      e.preventDefault();
-                      // 오픈채팅 링크 처리
-                      const openChatMethod = crew.join_methods?.find(
-                        (method) => method.method_type === "open_chat"
-                      );
-                      if (openChatMethod?.link_url) {
-                        window.open(openChatMethod.link_url, "_blank");
-                      }
-                    }}
-                  >
-                    오픈채팅
-                  </a>
-
-                  {/* 기타 가입 방식이 있을 경우에만 표시 */}
-                  {crew.join_methods?.find(
+                  {crew.join_methods?.some(
+                    (method) => method.method_type === "instagram_dm"
+                  ) &&
+                    crew.instagram && (
+                      <a
+                        href='#'
+                        className='text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition'
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // 인스타그램 DM 링크 처리
+                          if (crew?.instagram) {
+                            window.open(
+                              `https://www.instagram.com/${crew.instagram.replace(
+                                "@",
+                                ""
+                              )}`,
+                              "_blank"
+                            );
+                          }
+                        }}
+                      >
+                        인스타그램 DM
+                      </a>
+                    )}
+                  {/* 기타 방식 버튼 - 오픈채팅과 기타 방식 통합 */}
+                  {(crew.join_methods?.find(
                     (method) => method.method_type === "other"
-                  ) && (
+                  ) ||
+                    crew.join_methods?.find(
+                      (method) => method.method_type === "open_chat"
+                    )) && (
                     <a
                       href='#'
-                      className='text-xs px-3 py-1.5 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition'
+                      className='text-xs px-3 py-1.5 rounded-full bg-accent/70 text-muted-foreground hover:bg-accent/90 transition'
                       onClick={(e) => {
                         e.preventDefault();
-                        // 기타 가입 방식 링크 처리
-                        const otherMethod = crew.join_methods?.find(
-                          (method) => method.method_type === "other"
-                        );
+                        // 기타 방식 또는 오픈채팅 링크 처리
+                        const otherMethod =
+                          crew.join_methods?.find(
+                            (method) => method.method_type === "other"
+                          ) ||
+                          crew.join_methods?.find(
+                            (method) => method.method_type === "open_chat"
+                          );
                         if (otherMethod?.link_url) {
                           window.open(otherMethod.link_url, "_blank");
                         }
                       }}
                     >
-                      {crew.join_methods?.find(
-                        (method) => method.method_type === "other"
-                      )?.description || "기타"}
+                      기타 방식
                     </a>
                   )}
                 </div>
@@ -328,8 +339,8 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
               <h3 className='mb-4 font-medium'>대표 사진</h3>
 
               {crew.photos && crew.photos.length > 0 ? (
-                <div className='w-full flex justify-center'>
-                  <div className='relative overflow-hidden rounded-lg w-full md:w-2/3 lg:w-1/2 aspect-square'>
+                <div className='flex justify-center w-full'>
+                  <div className='relative w-full overflow-hidden rounded-lg md:w-2/3 lg:w-1/2 aspect-square'>
                     <Image
                       src={crew.photos[0]}
                       alt={`${crew.name} 대표 사진`}
@@ -339,8 +350,8 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                   </div>
                 </div>
               ) : (
-                <div className='w-full flex justify-center'>
-                  <div className='relative overflow-hidden rounded-lg w-full md:w-2/3 lg:w-1/2 aspect-square bg-blue-500'>
+                <div className='flex justify-center w-full'>
+                  <div className='relative w-full overflow-hidden bg-blue-500 rounded-lg md:w-2/3 lg:w-1/2 aspect-square'>
                     <div className='absolute inset-0 flex items-center justify-center'>
                       <p className='text-sm text-white'>사진 없음</p>
                     </div>

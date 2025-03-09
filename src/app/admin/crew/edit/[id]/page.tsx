@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { crewService } from "@/lib/services/crew.service";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import { Crew } from "@/lib/types/crew";
@@ -20,6 +20,33 @@ import { ACTIVITY_DAYS, ActivityDay } from "@/lib/types/crewInsert";
 interface DatabaseError {
   message?: string;
   [key: string]: unknown;
+}
+
+// 크루 업데이트 데이터 인터페이스 추가
+interface CrewUpdateData {
+  name: string;
+  description: string;
+  instagram?: string;
+  location: {
+    main_address: string;
+    detail_address?: string;
+    latitude: number;
+    longitude: number;
+  };
+  activity_locations?: string[];
+  activity_days: ActivityDay[];
+  founded_date?: string;
+  age_range?: {
+    min_age: number;
+    max_age: number;
+  };
+  logo_image_url?: string;
+  use_instagram_dm?: boolean;
+  open_chat_link?: string;
+  crew_photos?: {
+    existing: string[];
+    new: string[];
+  };
 }
 
 export default function EditCrewPage() {
@@ -55,6 +82,19 @@ export default function EditCrewPage() {
   const [logoImage, setLogoImage] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 크루 활동 사진 상태 추가
+  const [crewPhotos, setCrewPhotos] = useState<File[]>([]);
+  const [crewPhotosPreviews, setCrewPhotosPreviews] = useState<string[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<
+    { url: string; id: string }[]
+  >([]);
+  const crewPhotosInputRef = useRef<HTMLInputElement>(null);
+
+  // 가입 경로 상태 추가
+  const [openChatLink, setOpenChatLink] = useState("");
+  const [useInstagramDm, setUseInstagramDm] = useState(false);
+  const [useOtherJoinMethod, setUseOtherJoinMethod] = useState(false);
 
   // 크루 정보 로드
   useEffect(() => {
@@ -111,6 +151,48 @@ export default function EditCrewPage() {
 
           setActivityDays(days);
         }
+
+        // 가입 경로 설정 (join_methods 배열 사용)
+        if (crewData.join_methods && crewData.join_methods.length > 0) {
+          // 인스타그램 DM 사용 여부 확인
+          const hasInstagramDm = crewData.join_methods.some(
+            (method) => method.method_type === "instagram_dm"
+          );
+          if (hasInstagramDm) {
+            setUseInstagramDm(true);
+          }
+
+          // 오픈채팅 링크 확인
+          const openChatMethod = crewData.join_methods.find(
+            (method) =>
+              method.method_type === "open_chat" ||
+              method.method_type === "other"
+          );
+          if (openChatMethod && openChatMethod.link_url) {
+            setOpenChatLink(openChatMethod.link_url);
+            setUseOtherJoinMethod(true);
+          }
+        } else {
+          // 이전 코드와의 호환성을 위한 처리 (나중에 제거 가능)
+          if (crewData.open_chat_link) {
+            setOpenChatLink(crewData.open_chat_link);
+            setUseOtherJoinMethod(true);
+          }
+
+          if (crewData.use_instagram_dm) {
+            setUseInstagramDm(true);
+          }
+        }
+
+        // 기존 크루 사진 설정
+        if (crewData.crew_photos && crewData.crew_photos.length > 0) {
+          setExistingPhotos(
+            crewData.crew_photos.map((photo) => ({
+              url: photo.photo_url,
+              id: photo.id,
+            }))
+          );
+        }
       } catch (error) {
         console.error("크루 정보 로드 실패:", error);
         toast.error("크루 정보를 불러오는데 실패했습니다.");
@@ -127,6 +209,11 @@ export default function EditCrewPage() {
       if (logoPreview) {
         URL.revokeObjectURL(logoPreview);
       }
+
+      // 크루 사진 미리보기 URL 해제
+      crewPhotosPreviews.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, [crewId, router]);
 
@@ -145,9 +232,76 @@ export default function EditCrewPage() {
     }
   };
 
+  // 크루 사진 추가 핸들러
+  const handleCrewPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    // 최대 5장까지만 허용
+    const maxPhotos = 5;
+    const availableSlots =
+      maxPhotos - (existingPhotos.length + crewPhotos.length);
+    if (availableSlots <= 0) {
+      toast.error(`최대 ${maxPhotos}장의 사진만 업로드할 수 있습니다.`);
+      return;
+    }
+
+    const newFiles = Array.from(files).slice(0, availableSlots);
+
+    // 파일 크기 및 형식 검증
+    const invalidFiles = newFiles.filter(
+      (file) =>
+        file.size > 5 * 1024 * 1024 ||
+        !["image/jpeg", "image/png", "image/gif"].includes(file.type)
+    );
+
+    if (invalidFiles.length > 0) {
+      toast.error(
+        "일부 파일이 너무 크거나 지원되지 않는 형식입니다. (최대 5MB, JPG/PNG/GIF 형식만 지원)"
+      );
+      return;
+    }
+
+    // 새 파일 추가 및 미리보기 생성
+    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+
+    setCrewPhotos([...crewPhotos, ...newFiles]);
+    setCrewPhotosPreviews([...crewPhotosPreviews, ...newPreviews]);
+
+    // 파일 입력 초기화 (동일한 파일 재선택 가능하게)
+    e.target.value = "";
+  };
+
+  // 새 크루 사진 삭제
+  const removeCrewPhoto = (index: number) => {
+    // 미리보기 URL 해제
+    URL.revokeObjectURL(crewPhotosPreviews[index]);
+
+    const updatedPhotos = [...crewPhotos];
+    const updatedPreviews = [...crewPhotosPreviews];
+
+    updatedPhotos.splice(index, 1);
+    updatedPreviews.splice(index, 1);
+
+    setCrewPhotos(updatedPhotos);
+    setCrewPhotosPreviews(updatedPreviews);
+  };
+
+  // 기존 크루 사진 삭제
+  const removeExistingPhoto = (index: number) => {
+    const updatedExistingPhotos = [...existingPhotos];
+    updatedExistingPhotos.splice(index, 1);
+    setExistingPhotos(updatedExistingPhotos);
+  };
+
   // 파일 선택 버튼 클릭 핸들러
   const handleSelectFile = () => {
     fileInputRef.current?.click();
+  };
+
+  // 크루 사진 선택 버튼 클릭 핸들러
+  const handleSelectCrewPhotos = () => {
+    crewPhotosInputRef.current?.click();
   };
 
   // 활동 장소 추가
@@ -175,6 +329,18 @@ export default function EditCrewPage() {
       setActivityDays(activityDays.filter((d) => d !== day));
     } else {
       setActivityDays([...activityDays, day]);
+    }
+  };
+
+  // 가입 방식 토글 핸들러
+  const toggleInstagramDm = () => {
+    setUseInstagramDm(!useInstagramDm);
+  };
+
+  const toggleOtherJoinMethod = () => {
+    setUseOtherJoinMethod(!useOtherJoinMethod);
+    if (!useOtherJoinMethod) {
+      setOpenChatLink("");
     }
   };
 
@@ -214,10 +380,23 @@ export default function EditCrewPage() {
       return;
     }
 
+    // 가입 방식 확인
+    if (useOtherJoinMethod && !openChatLink) {
+      toast.error("오픈채팅 링크 또는 기타 가입 정보를 입력해주세요.");
+      return;
+    }
+
+    if (useInstagramDm && !instagram) {
+      toast.error(
+        "인스타그램 DM을 가입 방식으로 사용하려면 인스타그램 계정을 입력해주세요."
+      );
+      return;
+    }
+
     try {
       setIsSaving(true);
 
-      let updatedImageUrl = crew.logo_image;
+      let updatedImageUrl = crew?.logo_image;
       // 새 이미지가 선택된 경우 업로드
       if (logoImage) {
         try {
@@ -236,8 +415,27 @@ export default function EditCrewPage() {
         }
       }
 
-      // 크루 정보 업데이트
-      await crewService.updateCrew(crewId, {
+      // 크루 활동 사진 업로드
+      const uploadedPhotoUrls: string[] = [];
+      if (crewPhotos.length > 0) {
+        for (const photo of crewPhotos) {
+          try {
+            const uploadedUrl = await crewService.uploadCrewPhoto(
+              photo,
+              crewId
+            );
+            if (uploadedUrl) {
+              uploadedPhotoUrls.push(uploadedUrl);
+            }
+          } catch (error) {
+            console.error("크루 활동 사진 업로드 실패:", error);
+            toast.error("일부 크루 활동 사진 업로드에 실패했습니다.");
+          }
+        }
+      }
+
+      // 크루 정보 업데이트 데이터 준비
+      const updateData: CrewUpdateData = {
         name,
         description,
         instagram: instagram || undefined,
@@ -255,7 +453,27 @@ export default function EditCrewPage() {
           max_age: maxAge,
         },
         logo_image_url: updatedImageUrl,
-      });
+      };
+
+      // 가입 방식 정보 추가 (use_instagram_dm, open_chat_link)
+      if (useInstagramDm) {
+        updateData.use_instagram_dm = true;
+      }
+
+      if (useOtherJoinMethod && openChatLink) {
+        updateData.open_chat_link = openChatLink;
+      }
+
+      // 크루 사진 정보 추가
+      if (existingPhotos.length > 0 || uploadedPhotoUrls.length > 0) {
+        updateData.crew_photos = {
+          existing: existingPhotos.map((photo) => photo.id),
+          new: uploadedPhotoUrls,
+        };
+      }
+
+      // 크루 정보 업데이트
+      await crewService.updateCrew(crewId, updateData);
 
       // 크루 표시 상태 업데이트
       await crewService.updateCrewVisibility(crewId, isVisible);
@@ -590,6 +808,173 @@ export default function EditCrewPage() {
               <p className='text-sm text-muted-foreground'>
                 등록된 활동 장소가 없습니다.
               </p>
+            )}
+          </div>
+        </div>
+
+        {/* 가입 방식 */}
+        <div className='p-4 space-y-4 border rounded-lg'>
+          <h3 className='font-medium'>가입 방식</h3>
+          <p className='mb-3 text-sm text-muted-foreground'>
+            신규 회원이 크루에 가입할 수 있는 방법을 선택해주세요.
+          </p>
+
+          <div className='flex flex-wrap gap-2 mb-3'>
+            <button
+              type='button'
+              className={`px-3 py-1.5 text-sm rounded-full ${
+                useInstagramDm
+                  ? "bg-primary text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+              onClick={toggleInstagramDm}
+            >
+              인스타그램 DM
+            </button>
+            <button
+              type='button'
+              className={`px-3 py-1.5 text-sm rounded-full ${
+                useOtherJoinMethod
+                  ? "bg-primary text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+              onClick={toggleOtherJoinMethod}
+            >
+              기타 방식
+            </button>
+          </div>
+
+          {/* 인스타그램 경고 메시지 */}
+          {useInstagramDm && !instagram && (
+            <div className='p-2 mb-3 text-sm text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-md'>
+              인스타그램 DM을 가입 방식으로 사용하려면 인스타그램 계정을
+              입력해주세요.
+            </div>
+          )}
+
+          {/* 기타 가입 방식 - 오픈채팅 링크 입력 */}
+          {useOtherJoinMethod && (
+            <div className='space-y-2'>
+              <Label htmlFor='open-chat-link'>
+                오픈채팅 링크 또는 기타 가입 정보
+              </Label>
+              <Input
+                id='open-chat-link'
+                type='url'
+                placeholder='가입 경로 링크'
+                value={openChatLink}
+                onChange={(e) => setOpenChatLink(e.target.value)}
+                className='w-full'
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 크루 대표 활동 사진 업로드 섹션 */}
+        <div className='p-4 space-y-4 border rounded-lg'>
+          <h3 className='font-medium'>크루 대표 활동 사진</h3>
+          <p className='mb-3 text-sm text-muted-foreground'>
+            크루 대표 활동 사진을 추가하거나 수정할 수 있습니다. 최대 5장까지
+            업로드 가능합니다.
+          </p>
+
+          <div className='space-y-4'>
+            {/* 현재 선택된 사진과 기존 사진 표시 */}
+            {(existingPhotos.length > 0 || crewPhotosPreviews.length > 0) && (
+              <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
+                {/* 기존 사진 표시 */}
+                {existingPhotos.map((photo, index) => (
+                  <div key={`existing-${index}`} className='relative'>
+                    <div className='flex items-center justify-center overflow-hidden bg-gray-100 rounded-md aspect-square'>
+                      <Image
+                        src={photo.url}
+                        alt={`크루 활동 사진 ${index + 1}`}
+                        className='object-cover'
+                        fill
+                        sizes='(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw'
+                      />
+                    </div>
+                    <button
+                      type='button'
+                      onClick={() => removeExistingPhoto(index)}
+                      className='absolute p-1 text-white bg-red-500 rounded-full -top-2 -right-2'
+                      aria-label='사진 삭제'
+                    >
+                      <X className='w-4 h-4' />
+                    </button>
+                  </div>
+                ))}
+
+                {/* 새로 업로드할 사진 표시 */}
+                {crewPhotosPreviews.map((preview, index) => (
+                  <div key={`new-${index}`} className='relative'>
+                    <div className='flex items-center justify-center overflow-hidden bg-gray-100 rounded-md aspect-square'>
+                      <Image
+                        src={preview}
+                        alt={`새 크루 활동 사진 ${index + 1}`}
+                        className='object-cover'
+                        fill
+                        sizes='(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw'
+                        unoptimized={true}
+                      />
+                    </div>
+                    <button
+                      type='button'
+                      onClick={() => removeCrewPhoto(index)}
+                      className='absolute p-1 text-white bg-red-500 rounded-full -top-2 -right-2'
+                      aria-label='사진 삭제'
+                    >
+                      <X className='w-4 h-4' />
+                    </button>
+                  </div>
+                ))}
+
+                {/* 빈 슬롯 표시 */}
+                {Array.from({
+                  length:
+                    5 - (existingPhotos.length + crewPhotosPreviews.length),
+                }).map((_, index) => (
+                  <div
+                    key={`empty-${index}`}
+                    className='flex items-center justify-center bg-gray-100 border-2 border-gray-300 border-dashed rounded-md aspect-square'
+                  >
+                    <span className='text-xs text-muted-foreground'>
+                      빈 슬롯
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 사진 업로드 버튼 */}
+            {existingPhotos.length + crewPhotosPreviews.length < 5 && (
+              <>
+                <input
+                  type='file'
+                  ref={crewPhotosInputRef}
+                  onChange={handleCrewPhotoChange}
+                  accept='image/jpeg,image/png,image/gif'
+                  className='hidden'
+                  multiple
+                />
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={handleSelectCrewPhotos}
+                  className='w-full h-20 border-dashed'
+                >
+                  <div className='flex flex-col items-center gap-1'>
+                    <Upload className='w-5 h-5 text-muted-foreground' />
+                    <span>
+                      활동 사진 추가 (
+                      {existingPhotos.length + crewPhotosPreviews.length}/5)
+                    </span>
+                    <span className='text-xs text-muted-foreground'>
+                      최대 5MB, JPG, PNG, GIF 형식만 지원
+                    </span>
+                  </div>
+                </Button>
+              </>
             )}
           </div>
         </div>

@@ -18,6 +18,13 @@ export interface Crew {
   };
   join_methods?: JoinMethod[];
   photos?: string[];
+  open_chat_link?: string;
+  use_instagram_dm?: boolean;
+  crew_photos?: Array<{
+    id: string;
+    photo_url: string;
+    display_order: number;
+  }>;
 }
 
 export interface JoinMethod {

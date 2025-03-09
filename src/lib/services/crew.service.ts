@@ -730,6 +730,73 @@ class CrewService {
     };
   }
 
+  // 크루 상세 정보 조회 (상세 뷰용)
+  async getCrewDetail(id: string): Promise<Crew | null> {
+    try {
+      // 기본 크루 정보 조회
+      const crewData = await this.getCrew(id);
+      if (!crewData) return null;
+
+      // 가입 방식 정보 조회
+      const { data: joinMethodsData, error: joinMethodsError } = await supabase
+        .from("crew_join_methods")
+        .select("*")
+        .eq("crew_id", id);
+
+      if (joinMethodsError) throw joinMethodsError;
+
+      // 가입 방식 처리
+      const crewJoinMethods =
+        joinMethodsData?.map((method) => ({
+          method_type: method.method_type,
+          link_url: method.link_url,
+          description: method.description,
+        })) || [];
+
+      // 인스타그램 DM 사용 여부
+      const useInstagramDm = !!crewJoinMethods.find(
+        (method) => method.method_type === "instagram_dm"
+      );
+
+      // 오픈채팅 링크
+      const openChatMethod = crewJoinMethods.find(
+        (method) =>
+          method.method_type === "open_chat" || method.method_type === "other"
+      );
+      const openChatLink = openChatMethod?.link_url || undefined;
+
+      // 최종 크루 정보 구성
+      return {
+        id: crewData.id,
+        name: crewData.name,
+        description: crewData.description,
+        instagram: crewData.instagram,
+        logo_image: crewData.logo_image_url,
+        created_at: crewData.created_at,
+        founded_date: crewData.founded_date,
+        activity_day: crewData.activity_days?.map((day) => day).join(", "),
+        age_range: `${crewData.age_range.min_age}~${crewData.age_range.max_age}세`,
+        location: {
+          lat: crewData.location.latitude,
+          lng: crewData.location.longitude,
+          main_address: crewData.location.main_address || "주소 없음",
+          address: crewData.location.detail_address || "",
+        },
+        activity_locations: crewData.activity_locations || [],
+        photos: crewData.photos || [],
+        join_methods: crewJoinMethods,
+        use_instagram_dm: useInstagramDm,
+        open_chat_link: openChatLink,
+      };
+    } catch (error) {
+      logger.error(logger.createError(ErrorCode.SERVER_ERROR), {
+        action: "getCrewDetail",
+        details: { error, crewId: id },
+      });
+      throw logger.createError(ErrorCode.SERVER_ERROR);
+    }
+  }
+
   // 이미지 URL 유효성 검사
   private isValidImageUrl(url: string): boolean {
     try {
@@ -775,6 +842,7 @@ class CrewService {
           location_name
         ),
         crew_photos (
+          id,
           photo_url,
           display_order
         )
@@ -783,6 +851,13 @@ class CrewService {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
+
+    // 가입 방식 정보도 별도로 가져오기
+    const { data: joinMethodsData, error: joinMethodsError } = await supabase
+      .from("crew_join_methods")
+      .select("*");
+
+    if (joinMethodsError) throw joinMethodsError;
 
     interface AdminCrewData {
       id: string;
@@ -810,42 +885,71 @@ class CrewService {
         location_name: string;
       }>;
       crew_photos?: Array<{
+        id: string;
         photo_url: string;
         display_order: number;
       }>;
     }
 
-    return data.map((crew: AdminCrewData) => ({
-      id: crew.id,
-      name: crew.name,
-      description: crew.description,
-      instagram: crew.instagram,
-      logo_image: crew.logo_image_url,
-      created_at: crew.created_at,
-      founded_date: crew.founded_date,
-      is_visible: crew.is_visible,
-      activity_day: crew.crew_activity_days
-        ?.map((d: { day_of_week: string }) => d.day_of_week)
-        .join(", "),
-      age_range: crew.crew_age_ranges?.[0]
-        ? `${crew.crew_age_ranges[0].min_age}~${crew.crew_age_ranges[0].max_age}세`
-        : undefined,
-      location: {
-        lat: crew.crew_locations[0]?.latitude || 0,
-        lng: crew.crew_locations[0]?.longitude || 0,
-        main_address: crew.crew_locations[0]?.main_address || "주소 없음",
-        address: crew.crew_locations[0]?.detail_address || "",
-      },
-      activity_locations:
-        crew.crew_activity_locations?.map(
-          (loc: { location_name: string }) => loc.location_name
-        ) || [],
-      photos: crew.crew_photos
-        ? crew.crew_photos
-            .sort((a, b) => a.display_order - b.display_order)
-            .map((photo) => photo.photo_url)
-        : [],
-    }));
+    return data.map((crew: AdminCrewData) => {
+      // 해당 크루의 가입 방식 정보 찾기
+      const crewJoinMethods =
+        joinMethodsData
+          ?.filter((method) => method.crew_id === crew.id)
+          .map((method) => ({
+            method_type: method.method_type,
+            link_url: method.link_url,
+            description: method.description,
+          })) || [];
+
+      // 인스타그램 DM 사용 여부
+      const useInstagramDm = !!crewJoinMethods.find(
+        (method) => method.method_type === "instagram_dm"
+      );
+
+      // 오픈채팅 링크
+      const openChatMethod = crewJoinMethods.find(
+        (method) =>
+          method.method_type === "open_chat" || method.method_type === "other"
+      );
+      const openChatLink = openChatMethod?.link_url || undefined;
+
+      return {
+        id: crew.id,
+        name: crew.name,
+        description: crew.description,
+        instagram: crew.instagram,
+        logo_image: crew.logo_image_url,
+        created_at: crew.created_at,
+        founded_date: crew.founded_date,
+        is_visible: crew.is_visible,
+        activity_day: crew.crew_activity_days
+          ?.map((d: { day_of_week: string }) => d.day_of_week)
+          .join(", "),
+        age_range: crew.crew_age_ranges?.[0]
+          ? `${crew.crew_age_ranges[0].min_age}~${crew.crew_age_ranges[0].max_age}세`
+          : undefined,
+        location: {
+          lat: crew.crew_locations[0]?.latitude || 0,
+          lng: crew.crew_locations[0]?.longitude || 0,
+          main_address: crew.crew_locations[0]?.main_address || "주소 없음",
+          address: crew.crew_locations[0]?.detail_address || "",
+        },
+        activity_locations:
+          crew.crew_activity_locations?.map(
+            (loc: { location_name: string }) => loc.location_name
+          ) || [],
+        photos: crew.crew_photos
+          ? crew.crew_photos
+              .sort((a, b) => a.display_order - b.display_order)
+              .map((photo) => photo.photo_url)
+          : [],
+        join_methods: crewJoinMethods,
+        use_instagram_dm: useInstagramDm,
+        open_chat_link: openChatLink,
+        crew_photos: crew.crew_photos,
+      };
+    });
   }
 
   // 크루 표시 상태 업데이트
@@ -947,6 +1051,13 @@ class CrewService {
         max_age: number;
       };
       logo_image_url?: string; // 로고 이미지 URL 추가
+      use_instagram_dm?: boolean; // 인스타그램 DM 사용 여부 추가
+      open_chat_link?: string; // 오픈채팅 링크 추가
+      crew_photos?: {
+        // 크루 활동 사진 관련 필드 추가
+        existing: string[]; // 유지할 기존 사진 ID 목록
+        new: string[]; // 새로 업로드된 사진 URL 목록
+      };
     }
   ): Promise<void> {
     try {
@@ -1041,6 +1152,128 @@ class CrewService {
 
         if (insertActivityLocationsError) throw insertActivityLocationsError;
       }
+
+      // 6. 가입 방식 정보 처리
+      // 6-1. 기존 가입 방식 삭제
+      const { error: deleteJoinMethodsError } = await supabase
+        .from("crew_join_methods")
+        .delete()
+        .eq("crew_id", crewId);
+
+      if (deleteJoinMethodsError) throw deleteJoinMethodsError;
+
+      // 6-2. 새 가입 방식 추가
+      const joinMethods = [];
+
+      // 인스타그램 DM 사용 여부
+      if (updateData.use_instagram_dm) {
+        joinMethods.push({
+          crew_id: crewId,
+          method_type: "instagram_dm",
+          link_url: null,
+          description: "인스타그램 DM으로 문의",
+        });
+      }
+
+      // 오픈채팅 링크
+      if (updateData.open_chat_link) {
+        joinMethods.push({
+          crew_id: crewId,
+          method_type: "open_chat",
+          link_url: updateData.open_chat_link,
+          description: "오픈채팅 링크로 참여",
+        });
+      }
+
+      // 새 가입 방식이 있으면 추가
+      if (joinMethods.length > 0) {
+        const { error: insertJoinMethodsError } = await supabase
+          .from("crew_join_methods")
+          .insert(joinMethods);
+
+        if (insertJoinMethodsError) throw insertJoinMethodsError;
+      }
+
+      // 7. 크루 활동 사진 처리 (있는 경우)
+      if (updateData.crew_photos) {
+        try {
+          // 7-1. 기존 크루 사진 중 삭제할 것 찾기 (DB에서 모든 사진 가져오기)
+          const { data: existingPhotos, error: getPhotosError } = await supabase
+            .from("crew_photos")
+            .select("id, photo_url, display_order")
+            .eq("crew_id", crewId);
+
+          if (getPhotosError) throw getPhotosError;
+
+          // 7-2. 유지할 사진 ID 목록에 없는 사진 삭제
+          if (existingPhotos && existingPhotos.length > 0) {
+            const photoIdsToKeep = updateData.crew_photos.existing || [];
+            const photosToDelete = existingPhotos.filter(
+              (photo) => !photoIdsToKeep.includes(photo.id)
+            );
+
+            // 삭제할 사진이 있으면 처리
+            if (photosToDelete.length > 0) {
+              // DB에서 사진 레코드 삭제
+              const photoIdsToDelete = photosToDelete.map((photo) => photo.id);
+              const { error: deletePhotosError } = await supabase
+                .from("crew_photos")
+                .delete()
+                .in("id", photoIdsToDelete);
+
+              if (deletePhotosError) throw deletePhotosError;
+
+              // Storage에서 실제 파일 삭제 시도 (실패해도 계속 진행)
+              for (const photo of photosToDelete) {
+                try {
+                  if (photo.photo_url) {
+                    // URL에서 파일 이름 추출
+                    const url = new URL(photo.photo_url);
+                    const pathParts = url.pathname.split("/");
+                    const fileName =
+                      pathParts[pathParts.length - 1].split("?")[0];
+
+                    await supabase.storage
+                      .from(this.CREW_PHOTOS_BUCKET)
+                      .remove([fileName]);
+                  }
+                } catch (err) {
+                  console.error("사진 파일 삭제 실패:", err);
+                  // 개별 파일 삭제 실패는 무시하고 계속 진행
+                }
+              }
+            }
+          }
+
+          // 7-3. 새 크루 사진 DB에 추가
+          if (
+            updateData.crew_photos.new &&
+            updateData.crew_photos.new.length > 0
+          ) {
+            const maxDisplayOrder =
+              existingPhotos && existingPhotos.length > 0
+                ? Math.max(...existingPhotos.map((p) => p.display_order || 0))
+                : 0;
+
+            const newPhotosData = updateData.crew_photos.new.map(
+              (url, index) => ({
+                crew_id: crewId,
+                photo_url: url,
+                display_order: maxDisplayOrder + index + 1,
+              })
+            );
+
+            const { error: insertPhotosError } = await supabase
+              .from("crew_photos")
+              .insert(newPhotosData);
+
+            if (insertPhotosError) throw insertPhotosError;
+          }
+        } catch (photoError) {
+          console.error("크루 활동 사진 처리 중 오류:", photoError);
+          // 사진 처리 오류는 기록하고 계속 진행
+        }
+      }
     } catch (error) {
       console.error("크루 정보 업데이트 실패:", error);
       throw error;
@@ -1111,10 +1344,8 @@ class CrewService {
     }
   }
 
-  private async uploadCrewPhoto(
-    file: File,
-    crewId: string
-  ): Promise<string | null> {
+  // 크루 활동 사진 업로드 메서드를 private에서 public으로 변경
+  async uploadCrewPhoto(file: File, crewId: string): Promise<string | null> {
     try {
       console.log("=== 크루 대표 활동 사진 업로드 시작 ===");
       console.log("파일 정보:", {

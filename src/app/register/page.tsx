@@ -208,11 +208,8 @@ export default function RegisterPage() {
 
   // 가입 방식 상태
   const [useInstagramDm, setUseInstagramDm] = useState(true);
-  const [useOpenChat, setUseOpenChat] = useState(false);
   const [useOtherJoinMethod, setUseOtherJoinMethod] = useState(false);
   const [openChatLink, setOpenChatLink] = useState("");
-  const [otherJoinLink, setOtherJoinLink] = useState("");
-  // const [otherJoinDescription, setOtherJoinDescription] = useState("");
 
   // 크루 사진 상태
   const [crewPhotos, setCrewPhotos] = useState<File[]>([]);
@@ -254,18 +251,10 @@ export default function RegisterPage() {
       });
     }
 
-    if (useOpenChat && openChatLink.trim()) {
-      joinMethods.push({
-        method_type: "open_chat",
-        link_url: openChatLink.trim(),
-      });
-    }
-
-    if (useOtherJoinMethod && otherJoinLink.trim()) {
+    if (useOtherJoinMethod && openChatLink.trim()) {
       joinMethods.push({
         method_type: "other",
-        link_url: otherJoinLink.trim(),
-        description: "",
+        link_url: openChatLink.trim(),
       });
     }
 
@@ -471,7 +460,7 @@ export default function RegisterPage() {
       }
 
       // 가입 방식 검증
-      if (!useInstagramDm && !useOpenChat && !useOtherJoinMethod) {
+      if (!useInstagramDm && !useOtherJoinMethod) {
         setDialogState({
           isOpen: true,
           title: "가입 방식 선택 필요",
@@ -481,17 +470,7 @@ export default function RegisterPage() {
         return;
       }
 
-      if (useOpenChat && !openChatLink.trim()) {
-        setDialogState({
-          isOpen: true,
-          title: "오픈채팅 링크 입력 필요",
-          description: "오픈채팅 가입 방식을 선택한 경우 링크를 입력해주세요.",
-          isSuccess: false,
-        });
-        return;
-      }
-
-      if (useOtherJoinMethod && !otherJoinLink.trim()) {
+      if (useOtherJoinMethod && !openChatLink.trim()) {
         setDialogState({
           isOpen: true,
           title: "기타 가입 방식 링크 입력 필요",
@@ -925,17 +904,6 @@ export default function RegisterPage() {
               <button
                 type='button'
                 className={`px-3 py-1.5 text-sm rounded-full ${
-                  useOpenChat
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                onClick={() => setUseOpenChat(!useOpenChat)}
-              >
-                오픈채팅
-              </button>
-              <button
-                type='button'
-                className={`px-3 py-1.5 text-sm rounded-full ${
                   useOtherJoinMethod
                     ? "bg-primary text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -949,42 +917,20 @@ export default function RegisterPage() {
             {/* 인스타그램 경고 메시지 */}
             {useInstagramDm && !instagram}
 
-            {/* 오픈채팅 링크 입력 */}
-            {useOpenChat && (
+            {/* 기타 가입 방식 - 오픈채팅 링크 입력 */}
+            {useOtherJoinMethod && (
               <div className='mt-3 mb-4'>
                 <Label htmlFor='open-chat-link' className='block mb-1 text-sm'>
-                  오픈채팅 링크
+                  오픈채팅 링크 또는 기타 가입 정보
                 </Label>
                 <Input
                   id='open-chat-link'
                   type='url'
-                  placeholder='https://open.kakao.com/...'
+                  placeholder='가입 경로 링크'
                   value={openChatLink}
                   onChange={(e) => setOpenChatLink(e.target.value)}
                   className='w-full'
                 />
-              </div>
-            )}
-
-            {/* 기타 가입 방식 입력 */}
-            {useOtherJoinMethod && (
-              <div className='mt-3 mb-4 space-y-3'>
-                <div>
-                  <Label
-                    htmlFor='other-join-link'
-                    className='block mb-1 text-sm'
-                  >
-                    기타 가입 링크
-                  </Label>
-                  <Input
-                    id='other-join-link'
-                    type='url'
-                    placeholder='https://...'
-                    value={otherJoinLink}
-                    onChange={(e) => setOtherJoinLink(e.target.value)}
-                    className='w-full'
-                  />
-                </div>
               </div>
             )}
           </div>

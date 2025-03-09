@@ -6,6 +6,7 @@ import { MapPin, SquareArrowOutUpRight } from "lucide-react";
 import Image from "next/image";
 import { CrewDetailView } from "./CrewDetailView";
 import { useState, useEffect } from "react";
+import { crewService } from "@/lib/services/crew.service";
 
 interface VisibleCrewListProps {
   crews: Crew[];
@@ -34,8 +35,15 @@ export function VisibleCrewList({
     }
   }, [crews, isOpen]);
 
-  const handleCrewSelect = (crew: Crew) => {
-    setSelectedCrew(crew);
+  const handleCrewSelect = async (crew: Crew) => {
+    try {
+      // crewService를 사용하여 상세 정보 가져오기
+      const detailedCrew = await crewService.getCrewDetail(crew.id);
+      setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+    } catch (error) {
+      console.error("크루 상세 정보 조회 실패:", error);
+      setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+    }
     setIsDetailOpen(true);
   };
 

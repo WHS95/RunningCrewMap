@@ -75,8 +75,15 @@ export default function AdminCrewPage() {
     }
   };
 
-  const handleCrewClick = (crew: AdminCrew) => {
-    setSelectedCrew(crew);
+  const handleCrewClick = async (crew: AdminCrew) => {
+    try {
+      // crewService.getCrewDetail을 사용하여 상세 정보 가져오기
+      const detailedCrew = await crewService.getCrewDetail(crew.id);
+      setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+    } catch (error) {
+      console.error("크루 상세 정보 조회 실패:", error);
+      setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+    }
     setIsDetailOpen(true);
   };
 

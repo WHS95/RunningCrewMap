@@ -7,6 +7,7 @@ import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { VisibleCrewList } from "@/components/map/VisibleCrewList";
 import { SearchBox } from "@/components/search/SearchBox";
 import { ListFilter } from "lucide-react";
+import { crewService } from "@/lib/services/crew.service";
 
 interface NaverMapProps {
   width: string;
@@ -76,7 +77,7 @@ export default function NaverMap({
   }, [crews]);
 
   // 크루 선택 시 지도 이동
-  const handleCrewSelect = useCallback((crew: Crew) => {
+  const handleCrewSelect = useCallback(async (crew: Crew) => {
     if (!mapInstanceRef.current || typeof window === "undefined") return;
 
     const position = new window.naver.maps.LatLng(
@@ -87,7 +88,17 @@ export default function NaverMap({
     mapInstanceRef.current.setCenter(position);
     mapInstanceRef.current.setZoom(15);
 
-    setSelectedCrew(crew);
+    try {
+      // crewService를 사용하여 상세 정보 가져오기
+      const detailedCrew = await crewService.getCrewDetail(crew.id);
+
+      console.log("detailedCrew", detailedCrew);
+      setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+    } catch (error) {
+      console.error("크루 상세 정보 조회 실패:", error);
+      setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+    }
+
     setIsDetailOpen(true);
   }, []);
 
@@ -163,8 +174,15 @@ export default function NaverMap({
       });
 
       // 마커 클릭 이벤트
-      window.naver.maps.Event.addListener(marker, "click", () => {
-        setSelectedCrew(crew);
+      window.naver.maps.Event.addListener(marker, "click", async () => {
+        try {
+          // crewService를 사용하여 상세 정보 가져오기
+          const detailedCrew = await crewService.getCrewDetail(crew.id);
+          setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+        } catch (error) {
+          console.error("크루 상세 정보 조회 실패:", error);
+          setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+        }
         setIsDetailOpen(true);
       });
 
