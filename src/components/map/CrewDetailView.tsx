@@ -351,9 +351,11 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                 </div>
               ) : (
                 <div className='flex justify-center w-full'>
-                  <div className='relative w-full overflow-hidden bg-blue-500 rounded-lg md:w-2/3 lg:w-1/2 aspect-square'>
+                  <div className='relative w-full overflow-hidden rounded-lg bg-slate-400 md:w-2/3 lg:w-1/2 aspect-square'>
                     <div className='absolute inset-0 flex items-center justify-center'>
-                      <p className='text-sm text-white'>사진 없음</p>
+                      <p className='text-sm text-white'>
+                        🙏🏻사진 준비 중 입니다
+                      </p>
                     </div>
                   </div>
                 </div>
