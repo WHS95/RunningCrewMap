@@ -129,6 +129,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                     width={56}
                     height={56}
                     className='object-cover rounded-full'
+                    unoptimized
                   />
                 ) : (
                   <div className='flex items-center justify-center rounded-full w-14 h-14 bg-muted'>
@@ -346,6 +347,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       alt={`${crew.name} 대표 사진`}
                       fill
                       className='object-cover'
+                      unoptimized
                     />
                   </div>
                 </div>
