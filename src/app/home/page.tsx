@@ -151,7 +151,7 @@ export default function HomePage() {
           icon='marathon'
           title='마라톤 대회'
           subtitle={`이번달 ${marathonsThisMonth}개의 대회가 있습니다.`}
-          href='/event'
+          href='/events'
         />
       </section>
       {/* 러닝 계산기 메뉴 그리드 */}
