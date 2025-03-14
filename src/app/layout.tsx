@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Toaster } from "@/components/ui/sonner";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -58,6 +59,7 @@ export const metadata: Metadata = {
     width: "device-width",
     initialScale: 1,
     maximumScale: 1,
+    minimumScale: 1,
     userScalable: false,
   },
   robots: {
@@ -94,12 +96,14 @@ export default function RootLayout({
   return (
     <html lang='ko' suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
-        <div className='min-h-screen bg-background'>
-          <Header />
-          <main>{children}</main>
-          <MobileNav />
-        </div>
-        <Toaster />
+        <ClientLayout>
+          <div className='min-h-screen bg-background'>
+            <Header />
+            <main>{children}</main>
+            <MobileNav />
+          </div>
+          <Toaster />
+        </ClientLayout>
       </body>
     </html>
   );
