@@ -2,7 +2,6 @@
 //서버 조정을 잘하자./...
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 // import { crewService } from "@/lib/services";
 import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
@@ -330,19 +329,8 @@ export default function Home() {
         {/* 지도 미리보기 이미지 표시 (네이버 지도 로딩 중일 때) - Next.js Image 컴포넌트로 최적화 */}
         {activeView === "map" && preloadedMapUrl && !isLoading ? (
           <div className='relative h-[80vh]'>
-            <Image
-              src={preloadedMapUrl}
-              alt='지도 로딩 중'
-              priority
-              fill
-              sizes='100vw'
-              className='object-cover'
-              quality={75}
-            />
             <div className='absolute top-0 left-0 right-0 p-4 text-center'>
-              <div className='inline-block px-4 py-2 bg-white rounded-full shadow-md'>
-                <LoadingSpinner message='지도를 불러오는 중' />
-              </div>
+              <LoadingSpinner message='지도를 불러오는 중' />
             </div>
           </div>
         ) : (
