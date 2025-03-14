@@ -136,9 +136,12 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
       }
     );
 
-    // 모든 크루 아이템 관찰
-    Object.values(crewRefs.current).forEach((ref) => {
+    // 모든 크루 아이템 관찰 및 초기 가시성 상태 설정
+    Object.entries(crewRefs.current).forEach(([id, ref]) => {
       if (ref) {
+        // 초기 가시성 상태 설정 (모든 아이템 false로 설정)
+        setVisibleItems((prev) => ({ ...prev, [id]: false }));
+        // 옵저버 등록
         observerRef.current?.observe(ref);
       }
     });
@@ -153,22 +156,32 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
     (id: string, element: HTMLDivElement | null) => {
       if (element) {
         crewRefs.current[id] = element;
-        // 초기 모든 아이템을 보이지 않는 것으로 설정
-        if (!visibleItems[id]) {
-          setVisibleItems((prev) => ({ ...prev, [id]: false }));
+        // 이미 관찰 중인 요소인지 확인
+        if (observerRef.current) {
+          observerRef.current.observe(element);
         }
       }
     },
-    [visibleItems]
+    []
   );
 
   // 크루 항목이 변경되면 옵저버 재설정
   useEffect(() => {
-    const cleanup = setupObserver();
+    // 초기 가시성 상태 객체 초기화
+    const initialVisibility: Record<string, boolean> = {};
+    crews.forEach((crew) => {
+      initialVisibility[crew.id] = false;
+    });
+    setVisibleItems(initialVisibility);
 
-    // 컴포넌트 언마운트 시 옵저버 정리
+    // 약간의 딜레이 후 옵저버 설정 (상태 업데이트가 적용된 후)
+    const timer = setTimeout(() => {
+      setupObserver();
+    }, 0);
+
+    // 컴포넌트 언마운트 시 옵저버 및 타이머 정리
     return () => {
-      cleanup?.();
+      clearTimeout(timer);
       observerRef.current?.disconnect();
     };
   }, [crews, setupObserver]);
@@ -177,8 +190,8 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
   const renderCrewItem = useCallback(
     (crew: Crew, index: number) => {
       // 이미지 최적화 설정
-      const isVisible = visibleItems[crew.id] !== false; // 초기에는 모든 아이템 표시
-      const shouldRenderFull = isVisible;
+      const isVisible = visibleItems[crew.id] === true; // 명시적으로 true일 때만 보이도록 변경
+      const shouldRenderFull = isVisible || index < 5; // 처음 5개 아이템은 항상 렌더링
 
       return (
         <div
@@ -191,13 +204,13 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
           {shouldRenderFull ? (
             <>
               {crew.logo_image ? (
-                <div className='relative flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
+                <div className='relative flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
                   <Image
                     src={crew.logo_image}
                     alt={crew.name}
                     width={40}
                     height={40}
-                    className='object-cover'
+                    className='object-cover w-full h-full'
                     priority={index === 0}
                     loading={index < 10 ? "eager" : "lazy"}
                     quality={40}
