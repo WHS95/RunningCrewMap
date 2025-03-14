@@ -169,6 +169,7 @@ export default function AdminCrewPage() {
                   alt={`${crew.name} 로고`}
                   width={48}
                   height={48}
+                  quality={20}
                   className='object-cover rounded-full'
                 />
               ) : (

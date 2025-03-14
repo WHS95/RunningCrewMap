@@ -79,9 +79,9 @@ class CrewService {
       console.log("파일 크기 검증 완료");
 
       // 파일 형식 검증
-      if (!["image/jpeg", "image/png"].includes(file.type)) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
         console.error("잘못된 파일 형식:", file.type);
-        throw new Error("JPG, PNG 형식의 이미지만 업로드 가능합니다.");
+        throw new Error("JPG, PNG, WebP 형식의 이미지만 업로드 가능합니다.");
       }
       console.log("파일 형식 검증 완료");
 
@@ -219,7 +219,7 @@ class CrewService {
   }
 
   private async validateImage(file: File) {
-    const validTypes = ["image/jpeg", "image/png", "image/gif"];
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
       throw logger.createError(ErrorCode.INVALID_FILE_TYPE);
     }
@@ -1367,7 +1367,7 @@ class CrewService {
       console.log("파일 크기 검증 완료");
 
       // 파일 형식 검증
-      if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
         console.error("잘못된 파일 형식:", file.type);
         throw logger.createError(ErrorCode.INVALID_FILE_TYPE);
       }

@@ -2,6 +2,7 @@
 //서버 조정을 잘하자./...
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 // import { crewService } from "@/lib/services";
 import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
@@ -12,12 +13,21 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorCode, AppError } from "@/lib/types/error";
 import { HomeHeader, ViewMode } from "@/components/layout/HomeHeader";
-import { CrewDetailView } from "@/components/map/CrewDetailView";
+// import { CrewDetailView } from "@/components/map/CrewDetailView";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
   loading: () => <LoadingSpinner message='로딩 중' />,
 });
+
+// CrewDetailView를 동적으로 로드하여 코드 스플리팅 강화
+const CrewDetailView = dynamic(
+  () =>
+    import("@/components/map/CrewDetailView").then((mod) => mod.CrewDetailView),
+  {
+    loading: () => <LoadingSpinner message='상세 정보 로딩 중' />,
+  }
+);
 
 // 서울시청 좌표 (기본값)
 const DEFAULT_CENTER = {
@@ -33,12 +43,18 @@ export default function Home() {
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+  const [detailState, setDetailState] = useState<{
+    crew: Crew | null;
+    isOpen: boolean;
+  }>({
+    crew: null,
+    isOpen: false,
+  });
   const [activeView, setActiveView] = useState<ViewMode>("map");
   const [selectedRegion, setSelectedRegion] = useState("all");
   const [filteredCrews, setFilteredCrews] = useState<Crew[]>([]);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [preloadedMapUrl, setPreloadedMapUrl] = useState<string | null>(null);
 
   // 캐시 무효화 이벤트 리스너 등록
   useEffect(() => {
@@ -54,7 +70,7 @@ export default function Home() {
     };
   }, []);
 
-  // 크루 데이터 가져오기 (캐시 활용)
+  // 크루 데이터 가져오기 (캐시 활용) - 최적화
   const loadCrews = async () => {
     try {
       if (crewsCache) {
@@ -62,9 +78,10 @@ export default function Home() {
         return;
       }
 
+      // 최적화: 데이터 한 번만 로드
       const data = await crewService.getCrews();
-      crewsCache = data;
       setCrews(data);
+      crewsCache = data;
     } catch (err: unknown) {
       console.error("크루 데이터 로딩 실패:", err);
 
@@ -224,27 +241,31 @@ export default function Home() {
     setFilteredCrews(crews);
   }, [crews]);
 
-  // 크루 선택 핸들러 (리스트 뷰와 지도 뷰 모두에서 사용)
-  const handleCrewSelect = (crew: Crew) => {
-    setSelectedCrew(crew);
-    setIsDetailOpen(true);
-  };
+  // 크루 선택 핸들러 (리스트 뷰와 지도 뷰 모두에서 사용) - useCallback으로 최적화
+  const handleCrewSelect = useCallback((crew: Crew) => {
+    setDetailState({
+      crew,
+      isOpen: true,
+    });
+  }, []);
 
   // 상세 정보 닫기 핸들러
-  const handleDetailClose = () => {
-    setIsDetailOpen(false);
-    setSelectedCrew(null);
-  };
+  const handleDetailClose = useCallback(() => {
+    setDetailState({
+      crew: null,
+      isOpen: false,
+    });
+  }, []);
 
   // 지역 변경 핸들러
-  const handleRegionChange = (region: string) => {
+  const handleRegionChange = useCallback((region: string) => {
     setSelectedRegion(region);
-  };
+  }, []);
 
   // 뷰 모드 변경 핸들러
-  const handleViewChange = (view: ViewMode) => {
+  const handleViewChange = useCallback((view: ViewMode) => {
     setActiveView(view);
-  };
+  }, []);
 
   // 로딩 타임아웃 설정 (안전장치)
   useEffect(() => {
@@ -267,12 +288,12 @@ export default function Home() {
   }, [mapLoaded, isLoading]);
 
   // 지도 로딩 완료 핸들러
-  const handleMapLoad = () => {
+  const handleMapLoad = useCallback(() => {
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     setMapLoaded(true);
-  };
+  }, []);
 
   // 크루 목록 컴포넌트 메모이제이션
   const crewListComponent = useMemo(
@@ -288,6 +309,15 @@ export default function Home() {
     }
   }, [activeView]);
 
+  // 네이버 지도 초기 로딩 시 정적 이미지로 교체
+  useEffect(() => {
+    // 서버에서 위치 정보를 가져올 때 미리 지도 이미지 URL 생성
+    const mapCenter = center;
+    const mapImageUrl = `https://naveropenapi.apigw.ntruss.com/map-static/v2/raster?w=640&h=640&center=${mapCenter.lng},${mapCenter.lat}&level=13&format=png&scale=2&markers=type:d|size:mid|pos:${mapCenter.lng} ${mapCenter.lat}`;
+
+    setPreloadedMapUrl(mapImageUrl);
+  }, [center]);
+
   // 지도 뷰에서는 지도와 마커 모두 로드될 때까지 로딩 표시
   // 리스트 뷰에서는 위치 정보만 로드되면 표시
   const showLoading =
@@ -297,9 +327,31 @@ export default function Home() {
   if (showLoading) {
     return (
       <div style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}>
-        <LoadingSpinner
-          message={isLoading ? "위치 정보를 불러오는 중" : "지도를 불러오는 중"}
-        />
+        {/* 지도 미리보기 이미지 표시 (네이버 지도 로딩 중일 때) - Next.js Image 컴포넌트로 최적화 */}
+        {activeView === "map" && preloadedMapUrl && !isLoading ? (
+          <div className='relative h-[80vh]'>
+            <Image
+              src={preloadedMapUrl}
+              alt='지도 로딩 중'
+              priority
+              fill
+              sizes='100vw'
+              className='object-cover'
+              quality={75}
+            />
+            <div className='absolute top-0 left-0 right-0 p-4 text-center'>
+              <div className='inline-block px-4 py-2 bg-white rounded-full shadow-md'>
+                <LoadingSpinner message='지도를 불러오는 중' />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <LoadingSpinner
+            message={
+              isLoading ? "위치 정보를 불러오는 중" : "지도를 불러오는 중"
+            }
+          />
+        )}
       </div>
     );
   }
@@ -339,7 +391,7 @@ export default function Home() {
               initialCenter={center}
               initialZoom={13} // 초기 줌 레벨 조정 (값을 높이면 더 가까이, 낮추면 더 멀리 보임)
               crews={crews}
-              selectedCrew={selectedCrew}
+              selectedCrew={detailState.crew}
               onMapLoad={handleMapLoad}
             />
           </div>
@@ -354,8 +406,8 @@ export default function Home() {
       {/* 크루 상세 정보 (리스트 뷰에서 선택했을 때만 표시) */}
       {activeView === "list" && (
         <CrewDetailView
-          crew={selectedCrew}
-          isOpen={isDetailOpen}
+          crew={detailState.crew}
+          isOpen={detailState.isOpen}
           onClose={handleDetailClose}
         />
       )}

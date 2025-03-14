@@ -869,12 +869,12 @@ export default function RegisterPage() {
             </label>
             <input
               type='file'
-              accept='image/jpeg, image/png'
+              accept='image/jpeg, image/png, image/webp'
               onChange={handleFileChange}
               className='w-full'
               disabled={isLoading}
             />
-            <p className='text-xs text-gray-500'>* JPG, PNG</p>
+            <p className='text-xs text-gray-500'>* JPG, PNG, WebP</p>
           </div>
 
           {/* 가입 방식 설정 섹션 */}
@@ -999,13 +999,13 @@ export default function RegisterPage() {
                       {photoUploadStrategy.getMaxPhotoCount()})
                     </span>
                     <span className='text-xs text-gray-500'>
-                      최대 5MB, JPG, PNG 파일 지원
+                      최대 5MB, JPG, PNG, WebP 파일 지원
                     </span>
                   </span>
                   <input
                     id='crew-photos'
                     type='file'
-                    accept='image/*'
+                    accept='image/jpeg, image/png, image/webp, image/*'
                     className='hidden'
                     onChange={handleCrewPhotoChange}
                   />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Crew } from "@/lib/types/crew";
 import { ArrowUpRight, MapPin, ChevronUp } from "lucide-react";
+import Image from "next/image";
 
 interface CrewListProps {
   crews: Crew[];
@@ -88,6 +89,12 @@ const groupCrewsByProvince = (crews: Crew[]) => {
 export const CrewList = ({ crews, onSelect }: CrewListProps) => {
   // 리스트 컨테이너에 대한 ref
   const listContainerRef = useRef<HTMLDivElement>(null);
+  // 각 크루 아이템의 관찰 상태를 저장
+  const [visibleItems, setVisibleItems] = useState<Record<string, boolean>>({});
+  // 옵저버 인스턴스 참조
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  // 모든 크루 아이템 참조를 저장
+  const crewRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // 상단으로 스크롤하는 함수
   const scrollToTop = () => {
@@ -99,6 +106,135 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
 
   // 지역별로 그룹화된 크루 목록 메모이제이션
   const groupedCrews = useMemo(() => groupCrewsByProvince(crews), [crews]);
+
+  // 인터섹션 옵저버 설정
+  const setupObserver = useCallback(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+
+    // 이전 옵저버 정리
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // 새 옵저버 생성
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute("data-crew-id");
+          if (id) {
+            setVisibleItems((prev) => ({
+              ...prev,
+              [id]: entry.isIntersecting,
+            }));
+          }
+        });
+      },
+      {
+        root: listContainerRef.current,
+        rootMargin: "100px 0px",
+        threshold: 0.1,
+      }
+    );
+
+    // 모든 크루 아이템 관찰
+    Object.values(crewRefs.current).forEach((ref) => {
+      if (ref) {
+        observerRef.current?.observe(ref);
+      }
+    });
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, []);
+
+  // 크루 아이템 참조 설정 및 초기 가시성 설정
+  const setItemRef = useCallback(
+    (id: string, element: HTMLDivElement | null) => {
+      if (element) {
+        crewRefs.current[id] = element;
+        // 초기 모든 아이템을 보이지 않는 것으로 설정
+        if (!visibleItems[id]) {
+          setVisibleItems((prev) => ({ ...prev, [id]: false }));
+        }
+      }
+    },
+    [visibleItems]
+  );
+
+  // 크루 항목이 변경되면 옵저버 재설정
+  useEffect(() => {
+    const cleanup = setupObserver();
+
+    // 컴포넌트 언마운트 시 옵저버 정리
+    return () => {
+      cleanup?.();
+      observerRef.current?.disconnect();
+    };
+  }, [crews, setupObserver]);
+
+  // 크루 렌더링을 최적화하는 함수
+  const renderCrewItem = useCallback(
+    (crew: Crew, index: number) => {
+      // 이미지 최적화 설정
+      const isVisible = visibleItems[crew.id] !== false; // 초기에는 모든 아이템 표시
+      const shouldRenderFull = isVisible;
+
+      return (
+        <div
+          key={crew.id}
+          data-crew-id={crew.id}
+          ref={(el) => setItemRef(crew.id, el)}
+          className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
+          onClick={() => onSelect?.(crew)}
+        >
+          {shouldRenderFull ? (
+            <>
+              {crew.logo_image ? (
+                <div className='relative flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
+                  <Image
+                    src={crew.logo_image}
+                    alt={crew.name}
+                    width={40}
+                    height={40}
+                    className='object-cover'
+                    priority={index === 0}
+                    loading={index < 10 ? "eager" : "lazy"}
+                    quality={40}
+                    sizes='40px'
+                  />
+                </div>
+              ) : (
+                <div className='flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
+                  {crew.name.charAt(0)}
+                </div>
+              )}
+
+              <div className='flex-1 min-w-0'>
+                <div className='flex items-center justify-between'>
+                  <h3 className='font-medium text-gray-900'>{crew.name}</h3>
+                  <ArrowUpRight className='w-4 h-4 text-gray-500' />
+                </div>
+                <p className='text-sm text-gray-600 line-clamp-1'>
+                  {crew.description}
+                </p>
+                {(crew.location.address || crew.location.main_address) && (
+                  <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
+                    <MapPin className='flex-shrink-0 w-3 h-3 mr-1' />
+                    {crew.location.address || crew.location.main_address}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            // 화면에 보이지 않는 아이템은 최소한의 내용만 표시
+            <div className='w-full h-[84px] bg-gray-50 animate-pulse'></div>
+          )}
+        </div>
+      );
+    },
+    [visibleItems, onSelect, setItemRef]
+  );
 
   return (
     <div
@@ -128,46 +264,7 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
               </div>
 
               <div>
-                {crews.map((crew) => (
-                  <div
-                    key={crew.id}
-                    className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
-                    onClick={() => onSelect?.(crew)}
-                  >
-                    {crew.logo_image ? (
-                      <div className='flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
-                        <img
-                          src={crew.logo_image}
-                          alt={crew.name}
-                          className='object-cover w-full h-full'
-                        />
-                      </div>
-                    ) : (
-                      <div className='flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
-                        {crew.name.charAt(0)}
-                      </div>
-                    )}
-
-                    <div className='flex-1 min-w-0'>
-                      <div className='flex items-center justify-between'>
-                        <h3 className='font-medium text-gray-900'>
-                          {crew.name}
-                        </h3>
-                        <ArrowUpRight className='w-4 h-4 text-gray-500' />
-                      </div>
-                      <p className='text-sm text-gray-600 line-clamp-1'>
-                        {crew.description}
-                      </p>
-                      {(crew.location.address ||
-                        crew.location.main_address) && (
-                        <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
-                          <MapPin className='flex-shrink-0 w-3 h-3 mr-1' />
-                          {crew.location.address || crew.location.main_address}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {crews.map((crew, index) => renderCrewItem(crew, index))}
               </div>
             </div>
           ))}

@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { MapPin, SquareArrowOutUpRight } from "lucide-react";
 import Image from "next/image";
 import { CrewDetailView } from "./CrewDetailView";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { crewService } from "@/lib/services/crew.service";
 
 interface VisibleCrewListProps {
@@ -22,18 +22,6 @@ export function VisibleCrewList({
 }: VisibleCrewListProps) {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  // 이미지 프리로딩
-  useEffect(() => {
-    if (isOpen) {
-      crews.forEach((crew) => {
-        if (crew.logo_image) {
-          const img = new global.Image();
-          img.src = crew.logo_image;
-        }
-      });
-    }
-  }, [crews, isOpen]);
 
   const handleCrewSelect = async (crew: Crew) => {
     try {
@@ -82,9 +70,10 @@ export function VisibleCrewList({
                           alt={`${crew.name} 로고`}
                           width={48}
                           height={48}
+                          quality={30}
                           className='flex-shrink-0 object-cover transition-opacity rounded-full group-hover:opacity-90'
-                          loading='eager'
-                          priority={true}
+                          loading='lazy'
+                          priority={false}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = "none";

@@ -557,6 +557,7 @@ export default function RecordPage() {
                         alt='프로필 미리보기'
                         width={96}
                         height={96}
+                        quality={20}
                         className='object-cover w-full h-full'
                       />
                     ) : (

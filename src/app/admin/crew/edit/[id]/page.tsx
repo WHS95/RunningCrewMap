@@ -252,7 +252,7 @@ export default function EditCrewPage() {
     const invalidFiles = newFiles.filter(
       (file) =>
         file.size > 5 * 1024 * 1024 ||
-        !["image/jpeg", "image/png", "image/gif"].includes(file.type)
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type)
     );
 
     if (invalidFiles.length > 0) {
@@ -539,6 +539,7 @@ export default function EditCrewPage() {
                 <Image
                   src={crew.logo_image}
                   alt={`${name} 로고`}
+                  quality={20}
                   fill
                   className='object-cover'
                 />
@@ -554,7 +555,7 @@ export default function EditCrewPage() {
                 type='file'
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                accept='image/jpeg,image/png,image/gif'
+                accept='image/jpeg,image/png,image/webp'
                 className='hidden'
               />
               <Button
@@ -889,6 +890,7 @@ export default function EditCrewPage() {
                       <Image
                         src={photo.url}
                         alt={`크루 활동 사진 ${index + 1}`}
+                        quality={20}
                         className='object-cover'
                         fill
                         sizes='(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw'
@@ -913,9 +915,9 @@ export default function EditCrewPage() {
                         src={preview}
                         alt={`새 크루 활동 사진 ${index + 1}`}
                         className='object-cover'
+                        quality={20}
                         fill
                         sizes='(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw'
-                        unoptimized={true}
                       />
                     </div>
                     <button
@@ -953,7 +955,7 @@ export default function EditCrewPage() {
                   type='file'
                   ref={crewPhotosInputRef}
                   onChange={handleCrewPhotoChange}
-                  accept='image/jpeg,image/png,image/gif'
+                  accept='image/jpeg,image/png,image/webp'
                   className='hidden'
                   multiple
                 />
