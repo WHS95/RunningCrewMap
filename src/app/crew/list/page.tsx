@@ -12,7 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { HomeHeader } from "@/components/layout/HomeHeader";
+import { HomeHeader, ListHeader } from "@/components/layout/HomeHeader";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
 import { toast } from "sonner";
@@ -254,11 +254,12 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
         height: CSS_VARIABLES.CONTENT_HEIGHT,
       }}
     >
-      {/* 헤더 영역 */}
+      {/* 헤더 영역에 맞추어 상단 패딩, 간격 없이 바로 연결 */}
       <div
         style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING, marginTop: "-1px" }}
       >
-        <HomeHeader
+        {/* 리스트 전용 헤더 */}
+        <ListHeader
           selectedRegion={selectedRegion}
           onRegionChange={handleRegionChange}
           crews={crews}

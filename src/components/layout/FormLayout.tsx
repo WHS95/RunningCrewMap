@@ -22,7 +22,7 @@ export function FormLayout({ title, children }: FormLayoutProps) {
       <div className='sticky top-0 flex items-center gap-2 p-2 border-b bg-background'>
         <Link
           href='/menu'
-          className='p-2 rounded-full hover:bg-accent'
+          className='p-2 rounded-full hover:bg-accent active:bg-accent/80 active:scale-[0.95] transition-all duration-150'
           title='뒤로가기'
         >
           <ArrowLeft className='w-5 h-5' />

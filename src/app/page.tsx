@@ -10,8 +10,7 @@ import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorCode, AppError } from "@/lib/types/error";
-import { HomeHeader } from "@/components/layout/HomeHeader";
-import { filterCrewsByRegion } from "@/lib/utils/region-utils";
+import { MapHeader } from "@/components/layout/HomeHeader";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -49,7 +48,6 @@ function HomePage() {
     crew: null,
     isOpen: false,
   });
-  const [selectedRegion, setSelectedRegion] = useState("all");
   const [filteredCrews, setFilteredCrews] = useState<Crew[]>([]);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [preloadedMapUrl, setPreloadedMapUrl] = useState<string | null>(null);
@@ -177,22 +175,6 @@ function HomePage() {
     );
   }, []);
 
-  // 지역에 따른 크루 필터링
-  const filterCrewsByRegionCallback = useCallback(() => {
-    if (selectedRegion === "all") {
-      setFilteredCrews(crews);
-      return;
-    }
-
-    const filtered = filterCrewsByRegion(crews, selectedRegion);
-    setFilteredCrews(filtered);
-  }, [crews, selectedRegion]);
-
-  // 선택된 지역이 변경될 때 크루 필터링
-  useEffect(() => {
-    filterCrewsByRegionCallback();
-  }, [selectedRegion, crews, filterCrewsByRegionCallback]);
-
   // 초기 데이터 로딩
   useEffect(() => {
     loadCrews();
@@ -202,11 +184,6 @@ function HomePage() {
   useEffect(() => {
     setFilteredCrews(crews);
   }, [crews]);
-
-  // 지역 변경 핸들러
-  const handleRegionChange = useCallback((region: string) => {
-    setSelectedRegion(region);
-  }, []);
 
   // 크루 선택 핸들러
   const handleCrewSelect = useCallback((crew: Crew) => {
@@ -286,22 +263,18 @@ function HomePage() {
   }
 
   return (
-    <div
+    <main
       className='relative flex flex-col'
       style={{
         height: CSS_VARIABLES.CONTENT_HEIGHT,
       }}
     >
-      {/* 헤더 영역에 맞추어 상단 패딩, 간격 없이 바로 연결 */}
+      {/* 헤더 영역 */}
       <div
         style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING, marginTop: "-1px" }}
       >
-        {/* 통합 헤더 */}
-        <HomeHeader
-          selectedRegion={selectedRegion}
-          onRegionChange={handleRegionChange}
-          crews={crews}
-        />
+        {/* 지도 전용 헤더 */}
+        <MapHeader />
       </div>
 
       {/* 지도 컨테이너 */}
@@ -327,7 +300,7 @@ function HomePage() {
         isOpen={detailState.isOpen}
         onClose={handleDetailClose}
       />
-    </div>
+    </main>
   );
 }
 
