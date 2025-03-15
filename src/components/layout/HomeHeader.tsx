@@ -3,6 +3,9 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { Crew } from "@/lib/types/crew";
+import Link from "next/link";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { countCrewsByRegion } from "@/lib/utils/region-utils";
 
 export type ViewMode = "map" | "list";
 
@@ -10,75 +13,41 @@ export type ViewMode = "map" | "list";
 const BASE_REGIONS = [{ id: "all", name: "전체", count: 0 }];
 
 interface HomeHeaderProps {
-  activeView: ViewMode;
-  onViewChange: (view: ViewMode) => void;
   selectedRegion?: string;
   onRegionChange?: (region: string) => void;
   crews?: Crew[]; // 크루 목록 데이터를 받아 지역별 카운트를 계산하기 위함
 }
 
 export const HomeHeader = ({
-  activeView,
-  onViewChange,
   selectedRegion = "all",
   onRegionChange,
   crews = [],
 }: HomeHeaderProps) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const tabItems = [
     {
       mode: "map" as ViewMode,
       label: "지도",
+      href: "/",
     },
     {
       mode: "list" as ViewMode,
       label: "리스트",
+      href: "/crew/list",
     },
   ];
 
+  // 현재 경로에 따라 activeView 결정
+  const isListPage = pathname.includes("/crew/list");
+  const currentView = isListPage ? "list" : "map";
+
   // 지역별 크루 수를 계산하고 정렬
   const regions = useMemo(() => {
-    // 기본 지역 카운트
-    const regionCounts: Record<
-      string,
-      { id: string; name: string; count: number }
-    > = {
-      seoul: { id: "seoul", name: "서울", count: 0 },
-      gyeonggi: { id: "gyeonggi", name: "경기", count: 0 },
-      gangwon: { id: "gangwon", name: "강원", count: 0 },
-      gyeongsang: { id: "gyeongsang", name: "경상", count: 0 },
-      jeolla: { id: "jeolla", name: "전라", count: 0 },
-      chungcheong: { id: "chungcheong", name: "충청", count: 0 },
-      jeju: { id: "jeju", name: "제주", count: 0 },
-    };
-
-    // 각 크루의 주소를 분석하여 지역 카운트 증가
-    crews.forEach((crew) => {
-      const address = crew.location.address || crew.location.main_address || "";
-      const addressLower = address.toLowerCase();
-
-      if (addressLower.includes("서울")) regionCounts.seoul.count++;
-      else if (addressLower.includes("경기")) regionCounts.gyeonggi.count++;
-      else if (addressLower.includes("강원")) regionCounts.gangwon.count++;
-      else if (
-        addressLower.includes("경상") ||
-        addressLower.includes("경북") ||
-        addressLower.includes("경남")
-      )
-        regionCounts.gyeongsang.count++;
-      else if (
-        addressLower.includes("전라") ||
-        addressLower.includes("전북") ||
-        addressLower.includes("전남")
-      )
-        regionCounts.jeolla.count++;
-      else if (
-        addressLower.includes("충청") ||
-        addressLower.includes("충북") ||
-        addressLower.includes("충남")
-      )
-        regionCounts.chungcheong.count++;
-      else if (addressLower.includes("제주")) regionCounts.jeju.count++;
-    });
+    // 지역별 크루 수 계산
+    const regionCounts = countCrewsByRegion(crews);
 
     // 크루 수 기준으로 내림차순 정렬된 지역 목록
     const sortedRegions = Object.values(regionCounts)
@@ -92,30 +61,42 @@ export const HomeHeader = ({
     return [allRegion, ...sortedRegions];
   }, [crews]);
 
+  // 지역 변경 시 URL 쿼리스트링도 업데이트하는 함수
+  const handleRegionChange = (region: string) => {
+    if (onRegionChange) {
+      onRegionChange(region);
+    } else if (isListPage) {
+      // 리스트 페이지에서는 URL 쿼리스트링 업데이트
+      const params = new URLSearchParams(searchParams);
+      params.set("region", region);
+      router.push(`${pathname}?${params.toString()}`);
+    }
+  };
+
   return (
     <div className='sticky top-0 z-30 w-full bg-black'>
       {/* 탭 바 */}
       <div className='grid grid-cols-2 border-b border-gray-800'>
         {tabItems.map((item) => (
-          <button
+          <Link
             key={item.mode}
-            onClick={() => onViewChange(item.mode)}
+            href={item.href}
             className={cn(
               "py-3 text-center relative text-sm font-medium",
               "transition-colors duration-200",
               "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1px]",
-              activeView === item.mode
+              currentView === item.mode
                 ? "text-white after:bg-white"
                 : "text-gray-400 after:bg-transparent"
             )}
           >
             {item.label}
-          </button>
+          </Link>
         ))}
       </div>
 
       {/* 리스트 뷰에서만 필터 표시 */}
-      {activeView === "list" && onRegionChange && (
+      {currentView === "list" && (
         <div className='overflow-x-auto border-b border-gray-800'>
           <div className='flex min-w-max'>
             {regions.map((region) => (
@@ -128,7 +109,7 @@ export const HomeHeader = ({
                     ? "text-white font-medium border-b-2 border-white"
                     : "text-gray-500"
                 )}
-                onClick={() => onRegionChange(region.id)}
+                onClick={() => handleRegionChange(region.id)}
               >
                 {region.name}
                 {region.count > 0 && (

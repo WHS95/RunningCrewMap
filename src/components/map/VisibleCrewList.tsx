@@ -19,6 +19,7 @@ export function VisibleCrewList({
   crews,
   isOpen,
   onClose,
+  onSelect,
 }: VisibleCrewListProps) {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -28,9 +29,15 @@ export function VisibleCrewList({
       // crewService를 사용하여 상세 정보 가져오기
       const detailedCrew = await crewService.getCrewDetail(crew.id);
       setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+
+      // 외부 핸들러 호출
+      onSelect(detailedCrew || crew);
     } catch (error) {
       console.error("크루 상세 정보 조회 실패:", error);
       setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+
+      // 에러 발생 시에도 외부 핸들러 호출
+      onSelect(crew);
     }
     setIsDetailOpen(true);
   };

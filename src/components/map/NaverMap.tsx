@@ -17,6 +17,7 @@ interface NaverMapProps {
   crews: Crew[];
   selectedCrew?: Crew | null;
   onMapLoad?: () => void;
+  onCrewSelect?: (crew: Crew) => void;
 }
 
 export default function NaverMap({
@@ -27,6 +28,7 @@ export default function NaverMap({
   crews,
   selectedCrew: externalSelectedCrew,
   onMapLoad,
+  onCrewSelect,
 }: NaverMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<naver.maps.Map | null>(null);
@@ -226,9 +228,19 @@ export default function NaverMap({
               // crewService를 사용하여 상세 정보 가져오기
               const detailedCrew = await crewService.getCrewDetail(crew.id);
               setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+
+              // 외부 핸들러에도 알림
+              if (onCrewSelect) {
+                onCrewSelect(detailedCrew || crew);
+              }
             } catch (error) {
               console.error("크루 상세 정보 조회 실패:", error);
               setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+
+              // 에러 발생 시에도 외부 핸들러 호출
+              if (onCrewSelect) {
+                onCrewSelect(crew);
+              }
             }
             setIsDetailOpen(true);
           });
@@ -250,7 +262,7 @@ export default function NaverMap({
 
       return createdMarkers;
     },
-    [createMarkerContent]
+    [createMarkerContent, onCrewSelect]
   );
 
   // 마커 초기화 - 한 번만 실행되도록 함
@@ -504,7 +516,9 @@ export default function NaverMap({
         onSelect={(crew) => {
           setSelectedCrew(crew);
           setIsDetailOpen(true);
-          setIsListOpen(false);
+          if (onCrewSelect) {
+            onCrewSelect(crew);
+          }
         }}
       />
     </div>

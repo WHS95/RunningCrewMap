@@ -1,18 +1,16 @@
 "use client";
 //서버 조정을 잘하자./...
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 // import { crewService } from "@/lib/services";
 import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { CrewList } from "@/components/crew/CrewList";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorCode, AppError } from "@/lib/types/error";
-import { HomeHeader, ViewMode } from "@/components/layout/HomeHeader";
-// import { CrewDetailView } from "@/components/map/CrewDetailView";
+import { HomeHeader } from "@/components/layout/HomeHeader";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -24,7 +22,7 @@ const CrewDetailView = dynamic(
   () =>
     import("@/components/map/CrewDetailView").then((mod) => mod.CrewDetailView),
   {
-    loading: () => <LoadingSpinner message='상세 정보 로딩 중' />,
+    loading: () => <LoadingSpinner message='로딩 중' />,
   }
 );
 
@@ -49,7 +47,6 @@ export default function Home() {
     crew: null,
     isOpen: false,
   });
-  const [activeView, setActiveView] = useState<ViewMode>("map");
   const [selectedRegion, setSelectedRegion] = useState("all");
   const [filteredCrews, setFilteredCrews] = useState<Crew[]>([]);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -240,7 +237,12 @@ export default function Home() {
     setFilteredCrews(crews);
   }, [crews]);
 
-  // 크루 선택 핸들러 (리스트 뷰와 지도 뷰 모두에서 사용) - useCallback으로 최적화
+  // 지역 변경 핸들러
+  const handleRegionChange = useCallback((region: string) => {
+    setSelectedRegion(region);
+  }, []);
+
+  // 크루 선택 핸들러
   const handleCrewSelect = useCallback((crew: Crew) => {
     setDetailState({
       crew,
@@ -254,16 +256,6 @@ export default function Home() {
       crew: null,
       isOpen: false,
     });
-  }, []);
-
-  // 지역 변경 핸들러
-  const handleRegionChange = useCallback((region: string) => {
-    setSelectedRegion(region);
-  }, []);
-
-  // 뷰 모드 변경 핸들러
-  const handleViewChange = useCallback((view: ViewMode) => {
-    setActiveView(view);
   }, []);
 
   // 로딩 타임아웃 설정 (안전장치)
@@ -294,20 +286,6 @@ export default function Home() {
     setMapLoaded(true);
   }, []);
 
-  // 크루 목록 컴포넌트 메모이제이션
-  const crewListComponent = useMemo(
-    () => <CrewList crews={filteredCrews} onSelect={handleCrewSelect} />,
-    [filteredCrews, handleCrewSelect]
-  );
-
-  // 뷰 변경 시 로딩 상태 초기화
-  useEffect(() => {
-    if (activeView === "list") {
-      // 리스트 뷰로 변경 시 지도 로딩 상태는 고려하지 않음
-      setMapLoaded(true);
-    }
-  }, [activeView]);
-
   // 네이버 지도 초기 로딩 시 정적 이미지로 교체
   useEffect(() => {
     // 서버에서 위치 정보를 가져올 때 미리 지도 이미지 URL 생성
@@ -317,17 +295,14 @@ export default function Home() {
     setPreloadedMapUrl(mapImageUrl);
   }, [center]);
 
-  // 지도 뷰에서는 지도와 마커 모두 로드될 때까지 로딩 표시
-  // 리스트 뷰에서는 위치 정보만 로드되면 표시
-  const showLoading =
-    (activeView === "map" && (!mapLoaded || isLoading)) ||
-    (activeView === "list" && isLoading);
+  // 지도가 로드될 때까지 로딩 표시
+  const showLoading = !mapLoaded || isLoading;
 
   if (showLoading) {
     return (
       <div style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}>
         {/* 지도 미리보기 이미지 표시 (네이버 지도 로딩 중일 때) - Next.js Image 컴포넌트로 최적화 */}
-        {activeView === "map" && preloadedMapUrl && !isLoading ? (
+        {preloadedMapUrl && !isLoading ? (
           <div className='relative h-[80vh]'>
             <div className='absolute top-0 left-0 right-0 p-4 text-center'>
               <LoadingSpinner message='지도를 불러오는 중' />
@@ -357,48 +332,35 @@ export default function Home() {
       >
         {/* 통합 헤더 */}
         <HomeHeader
-          activeView={activeView}
-          onViewChange={handleViewChange}
           selectedRegion={selectedRegion}
           onRegionChange={handleRegionChange}
           crews={crews}
         />
       </div>
 
-      {/* 뷰 컨테이너 */}
-      <div className='flex-1'>
-        {/* 지도 뷰 */}
-        {activeView === "map" && (
-          <div
-            className='flex-1'
-            style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
-          >
-            <NaverMap
-              width='100%'
-              height='100%'
-              initialCenter={center}
-              initialZoom={13} // 초기 줌 레벨 조정 (값을 높이면 더 가까이, 낮추면 더 멀리 보임)
-              crews={crews}
-              selectedCrew={detailState.crew}
-              onMapLoad={handleMapLoad}
-            />
-          </div>
-        )}
-
-        {/* 리스트 뷰 */}
-        {activeView === "list" && (
-          <div className='w-full h-full overflow-auto'>{crewListComponent}</div>
-        )}
+      {/* 지도 컨테이너 */}
+      <div
+        className='flex-1'
+        style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
+      >
+        <NaverMap
+          width='100%'
+          height='100%'
+          initialCenter={center}
+          initialZoom={13} // 초기 줌 레벨 조정 (값을 높이면 더 가까이, 낮추면 더 멀리 보임)
+          crews={filteredCrews}
+          selectedCrew={detailState.crew}
+          onMapLoad={handleMapLoad}
+          onCrewSelect={handleCrewSelect}
+        />
       </div>
 
-      {/* 크루 상세 정보 (리스트 뷰에서 선택했을 때만 표시) */}
-      {activeView === "list" && (
-        <CrewDetailView
-          crew={detailState.crew}
-          isOpen={detailState.isOpen}
-          onClose={handleDetailClose}
-        />
-      )}
+      {/* 크루 상세 정보 */}
+      <CrewDetailView
+        crew={detailState.crew}
+        isOpen={detailState.isOpen}
+        onClose={handleDetailClose}
+      />
     </div>
   );
 }
