@@ -1,6 +1,6 @@
 "use client";
 //서버 조정을 잘하자./...
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import dynamic from "next/dynamic";
 // import { crewService } from "@/lib/services";
 import { crewService } from "@/lib/services/crew.service";
@@ -11,6 +11,7 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorCode, AppError } from "@/lib/types/error";
 import { HomeHeader } from "@/components/layout/HomeHeader";
+import { filterCrewsByRegion } from "@/lib/utils/region-utils";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -35,7 +36,8 @@ const DEFAULT_CENTER = {
 // 크루 데이터를 저장할 전역 캐시
 let crewsCache: Crew[] | null = null;
 
-export default function Home() {
+// 메인 홈페이지 컴포넌트
+function HomePage() {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLoading, setIsLoading] = useState(true);
@@ -176,56 +178,20 @@ export default function Home() {
   }, []);
 
   // 지역에 따른 크루 필터링
-  const filterCrewsByRegion = useCallback(() => {
+  const filterCrewsByRegionCallback = useCallback(() => {
     if (selectedRegion === "all") {
       setFilteredCrews(crews);
       return;
     }
 
-    const filtered = crews.filter((crew) => {
-      const address = crew.location.address || crew.location.main_address || "";
-      const addressLower = address.toLowerCase();
-
-      // 기본 지역 필터링 로직
-      switch (selectedRegion) {
-        case "seoul":
-          return addressLower.includes("서울");
-        case "gyeonggi":
-          return addressLower.includes("경기");
-        case "gangwon":
-          return addressLower.includes("강원");
-        case "gyeongsang":
-          return (
-            addressLower.includes("경상") ||
-            addressLower.includes("경북") ||
-            addressLower.includes("경남")
-          );
-        case "jeolla":
-          return (
-            addressLower.includes("전라") ||
-            addressLower.includes("전북") ||
-            addressLower.includes("전남")
-          );
-        case "chungcheong":
-          return (
-            addressLower.includes("충청") ||
-            addressLower.includes("충북") ||
-            addressLower.includes("충남")
-          );
-        case "jeju":
-          return addressLower.includes("제주");
-        default:
-          return true;
-      }
-    });
-
+    const filtered = filterCrewsByRegion(crews, selectedRegion);
     setFilteredCrews(filtered);
   }, [crews, selectedRegion]);
 
   // 선택된 지역이 변경될 때 크루 필터링
   useEffect(() => {
-    filterCrewsByRegion();
-  }, [selectedRegion, crews, filterCrewsByRegion]);
+    filterCrewsByRegionCallback();
+  }, [selectedRegion, crews, filterCrewsByRegionCallback]);
 
   // 초기 데이터 로딩
   useEffect(() => {
@@ -362,5 +328,14 @@ export default function Home() {
         onClose={handleDetailClose}
       />
     </div>
+  );
+}
+
+// 메인 export 함수 - Suspense 사용
+export default function Home() {
+  return (
+    <Suspense fallback={<LoadingSpinner message='페이지 로딩 중' />}>
+      <HomePage />
+    </Suspense>
   );
 }

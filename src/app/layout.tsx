@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
@@ -55,13 +55,6 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "114x114", type: "image/png" },
     ],
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    minimumScale: 1,
-    userScalable: false,
-  },
   robots: {
     index: true,
     follow: true,
@@ -84,8 +77,17 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: true,
   },
-  themeColor: "#ffffff",
   category: "sports",
+};
+
+// viewport 및 themeColor를 별도의 export로 분리 (Next.js 14.2.23 이상 권장사항)
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  Suspense,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { crewService } from "@/lib/services/crew.service";
 import type { Crew } from "@/lib/types/crew";
@@ -23,7 +30,7 @@ const CrewDetailView = dynamic(
   () =>
     import("@/components/map/CrewDetailView").then((mod) => mod.CrewDetailView),
   {
-    loading: () => <LoadingSpinner message='로딩 중' />,
+    loading: () => <LoadingSpinner message='상세 정보 로딩 중' />,
   }
 );
 
@@ -35,17 +42,23 @@ const INITIAL_ITEMS_COUNT = 20;
 // 추가로 로드할 아이템 수
 const LOAD_MORE_COUNT = 20;
 
-export default function CrewListPage() {
+// 검색 파라미터를 사용하는 컴포넌트
+function CrewListWithParams() {
   const searchParams = useSearchParams();
+  const initialRegion = searchParams.get("region") || "all";
+
+  return <CrewListContent initialRegion={initialRegion} />;
+}
+
+// 메인 컨텐츠 컴포넌트
+function CrewListContent({ initialRegion }: { initialRegion: string }) {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [filteredCrews, setFilteredCrews] = useState<Crew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [visibleItemsCount, setVisibleItemsCount] =
     useState(INITIAL_ITEMS_COUNT);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState(
-    searchParams.get("region") || "all"
-  );
+  const [selectedRegion, setSelectedRegion] = useState(initialRegion);
   const [detailState, setDetailState] = useState<{
     crew: Crew | null;
     isOpen: boolean;
@@ -167,14 +180,6 @@ export default function CrewListPage() {
       behavior: "smooth",
     });
   };
-
-  // URL 쿼리 파라미터로부터 초기 지역 설정
-  useEffect(() => {
-    const region = searchParams.get("region");
-    if (region) {
-      setSelectedRegion(region);
-    }
-  }, [searchParams]);
 
   // 초기 데이터 로딩
   useEffect(() => {
@@ -377,5 +382,14 @@ export default function CrewListPage() {
         onClose={handleDetailClose}
       />
     </div>
+  );
+}
+
+// 메인 컴포넌트 - Suspense로 useSearchParams()를 사용하는 부분을 감싼다
+export default function CrewListPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner message='페이지 로딩 중' />}>
+      <CrewListWithParams />
+    </Suspense>
   );
 }
