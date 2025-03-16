@@ -170,7 +170,8 @@ export default function AdminCrewPage() {
                   width={48}
                   height={48}
                   quality={20}
-                  className='object-cover rounded-full'
+                  className='object-cover w-12 h-12 rounded-full'
+                  style={{ width: "48px", height: "48px" }}
                 />
               ) : (
                 <div className='flex items-center justify-center w-12 h-12 text-xl font-medium rounded-full bg-muted'>
@@ -223,14 +224,16 @@ export default function AdminCrewPage() {
       </div>
 
       {/* 크루 상세 정보 팝업 */}
-      <CrewDetailView
-        crew={selectedCrew}
-        isOpen={isDetailOpen}
-        onClose={() => {
-          setIsDetailOpen(false);
-          setSelectedCrew(null);
-        }}
-      />
+      {isDetailOpen && selectedCrew && (
+        <CrewDetailView
+          crew={selectedCrew}
+          isOpen={isDetailOpen}
+          onClose={() => {
+            setIsDetailOpen(false);
+            setSelectedCrew(null);
+          }}
+        />
+      )}
 
       {/* 삭제 확인 다이얼로그 */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
