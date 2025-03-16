@@ -40,7 +40,8 @@ export default function MenuPage() {
         <div className='mb-4'>
           <button
             onClick={() =>
-              window.open("https://open.kakao.com/me/runhouse", "_blank")
+              // window.open("https://open.kakao.com/me/runhouse", "_blank")
+              window.open("http://pf.kakao.com/_jUgnn/chat", "_blank")
             }
             className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
           >
