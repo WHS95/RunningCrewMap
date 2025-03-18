@@ -101,7 +101,7 @@ export default function RootLayout({
         <ClientLayout>
           <div className='min-h-screen bg-background'>
             <Header />
-            <main>{children}</main>
+            <main className='w-full'>{children}</main>
             <MobileNav />
           </div>
           <Toaster />

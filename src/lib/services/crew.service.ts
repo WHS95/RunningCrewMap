@@ -536,6 +536,23 @@ class CrewService {
     }
   }
 
+  // 크루 개수만 가져오는 메서드 (성능 최적화)
+  async getCrewCount(): Promise<number> {
+    try {
+      // SQL: SELECT COUNT(*) AS total_visible_crews FROM public.crews WHERE is_visible = true;
+      const { count, error } = await supabase
+        .from("crews")
+        .select("*", { count: "exact", head: true })
+        .eq("is_visible", true);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error("크루 개수 조회 중 오류 발생:", error);
+      return 0; // 오류 시 기본값 반환
+    }
+  }
+
   // 크루 목록 조회 (필터링 포함)
   async getCrews(options?: CrewFilterOptions): Promise<Crew[]> {
     let query = supabase

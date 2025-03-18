@@ -1,10 +1,11 @@
 "use client";
 
 import { CSS_VARIABLES } from "@/lib/constants";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { crewService } from "@/lib/services/crew.service";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { useRouter } from "next/navigation";
+import { NoticeBanner } from "@/components/home/NoticeBanner";
 
 // react-icons import
 import { FaRunning, FaMedal } from "react-icons/fa";
@@ -30,11 +31,11 @@ const InfoCard = ({ icon, title, subtitle, href }: InfoCardProps) => {
 
   return (
     <div
-      className='flex items-center justify-between w-full p-4 mb-2 text-white transition-colors bg-black cursor-pointer rounded-xl hover:bg-gray-900'
+      className='flex items-center justify-between w-full p-4 mb-2 text-white transition-all duration-200 bg-black cursor-pointer rounded-xl hover:bg-gray-900 hover:translate-y-[-2px] hover:scale-[1.01] active:translate-y-[2px] hover:shadow-md'
       onClick={handleClick}
     >
       <div className='flex items-center gap-3'>
-        <div className='flex items-center justify-center w-8 h-8 bg-gray-700 rounded-full'>
+        <div className='flex items-center justify-center w-8 h-8 transition-colors duration-200 bg-gray-700 rounded-full hover:bg-gray-600'>
           {icon === "running" && <FaRunning size={16} />}
           {icon === "marathon" && <FaMedal size={16} />}
         </div>
@@ -43,7 +44,7 @@ const InfoCard = ({ icon, title, subtitle, href }: InfoCardProps) => {
           <p className='text-xs text-gray-400'>{subtitle}</p>
         </div>
       </div>
-      <div>
+      <div className='transition-transform duration-150 group-hover:translate-x-1'>
         <AiOutlineArrowRight size={16} />
       </div>
     </div>
@@ -72,10 +73,10 @@ const CalcMenuCard = ({ icon, title, color, href }: CalcMenuCardProps) => {
 
   return (
     <div
-      className={`${color} p-4 rounded-xl flex flex-col h-32 cursor-pointer hover:opacity-90 transition-opacity`}
+      className={`${color} p-4 rounded-xl flex flex-col h-28 cursor-pointer hover:opacity-100 hover:brightness-105 hover:translate-y-[-3px] hover:scale-[1.02] transition-all duration-200 hover:shadow-lg active:translate-y-[3px] transform`}
       onClick={handleClick}
     >
-      <div className='flex justify-end mb-auto'>
+      <div className='flex justify-end mb-auto transition-transform duration-150'>
         {icon === "pace" && <BsStopwatch size={20} />}
         {icon === "heart-rate" && <FaHeartbeat size={20} />}
         {icon === "split-time" && <MdTimer size={20} />}
@@ -104,21 +105,36 @@ export default function HomePage() {
   const [registeredCrews, setRegisteredCrews] = useState<number>(0); // 실제 DB 값 반영
   const marathonsThisMonth = 3; // 더미 데이터: 이번 달 마라톤 대회 수
 
-  // 실제 크루 수 가져오기
-  useEffect(() => {
-    const fetchRegisteredCrews = async () => {
-      try {
-        const crews = await crewService.getCrews();
-        setRegisteredCrews(crews.length);
-      } catch (error) {
-        console.error("크루 데이터를 가져오는 중 오류 발생:", error);
-        // 오류 발생 시 기본값 사용
-        setRegisteredCrews(0);
-      }
-    };
+  // 배너 데이터를 useMemo로 캐싱
+  const bannerItems = useMemo(
+    () => [
+      {
+        id: 1,
+        link: "/notice/event/1",
+        // imageUrl: "/event4.png",
+        imageUrl: "/event5.webp",
+        // title: "크루 깃발 무료 제작 이벤트",
+        // description: "바모스 데포르테와 런하우스 협업 프로모션",
+      },
+    ],
+    []
+  );
 
-    fetchRegisteredCrews();
+  // 실제 크루 수 가져오기
+  const fetchRegisteredCrews = useCallback(async () => {
+    try {
+      const count = await crewService.getCrewCount();
+      setRegisteredCrews(count);
+    } catch (error) {
+      console.error("크루 데이터를 가져오는 중 오류 발생:", error);
+      // 오류 발생 시 기본값 사용
+      setRegisteredCrews(0);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRegisteredCrews();
+  }, [fetchRegisteredCrews]);
 
   return (
     <div
@@ -127,8 +143,12 @@ export default function HomePage() {
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
-      {/* 인사말 섹션 */}
-      <section className='p-3'>
+      {/* 공지 배너 섹션 */}
+      <section className='pb-3'>
+        <NoticeBanner items={bannerItems} />
+      </section>
+
+      {/* <section className='p-3'>
         <p className='text-lg text-gray-400'>Hello,</p>
         <h1 className='text-3xl font-bold text-gray-800'>
           Supporting
@@ -137,8 +157,7 @@ export default function HomePage() {
           <br />
           Running Life
         </h1>
-      </section>
-
+      </section> */}
       {/* 정보 카드 섹션 */}
       <section className='px-3 mb-2'>
         <InfoCard
