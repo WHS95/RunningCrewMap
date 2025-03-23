@@ -158,11 +158,22 @@ class CrewService {
   // 크루 로고 업로드를 위한 공개 메서드 추가
   async uploadCrewLogo(file: File, crewId: string): Promise<string | null> {
     try {
+      console.log("로고 업로드 요청됨:", { 
+        fileName: file.name, 
+        fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        fileType: file.type,
+        passedCrewId: crewId
+      });
+      
+      // 참고: JWT 인증으로 전환 후에는 서버에서 ID를 확인하므로
+      // 클라이언트에서 전달된 ID는 무시하고 서버에서 사용자의 실제 ID를 사용할 예정입니다.
+      
       // 이미지 유효성 검사
       await this.validateImage(file);
 
       // 이미지 압축 (옵션)
       const compressedFile = await compressImageFile(file);
+      console.log("이미지 압축 완료");
 
       // 이미지 업로드
       return await this.uploadImage(compressedFile || file, crewId);
@@ -1364,15 +1375,17 @@ class CrewService {
   // 크루 활동 사진 업로드 메서드를 private에서 public으로 변경
   async uploadCrewPhoto(file: File, crewId: string): Promise<string | null> {
     try {
-      console.log("=== 크루 대표 활동 사진 업로드 시작 ===");
-      console.log("파일 정보:", {
-        name: file.name,
-        type: file.type,
-        size: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      console.log("활동 사진 업로드 요청됨:", { 
+        fileName: file.name, 
+        fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        fileType: file.type,
+        passedCrewId: crewId,
+        bucket: this.CREW_PHOTOS_BUCKET
       });
-      console.log("크루 ID:", crewId);
-      console.log("저장 버킷:", this.CREW_PHOTOS_BUCKET);
-
+      
+      // 참고: JWT 인증으로 전환 후에는 서버에서 ID를 확인하므로
+      // 클라이언트에서 전달된 ID는 무시하고 서버에서 사용자의 실제 ID를 사용할 예정입니다.
+      
       // 파일 크기 검증
       if (file.size > 5 * 1024 * 1024) {
         console.error(
@@ -1396,11 +1409,15 @@ class CrewService {
       const fileName = `${crewId}_${timestamp}.${fileExt}`;
       console.log("생성된 파일명:", fileName);
 
+      // 이미지 압축 (옵션)
+      const compressedFile = await compressImageFile(file);
+      console.log("이미지 압축 완료");
+      
       // 이미지 업로드
       console.log("크루 대표 활동 사진 업로드 시작...");
       const { error: uploadError } = await supabase.storage
         .from(this.CREW_PHOTOS_BUCKET)
-        .upload(fileName, file, {
+        .upload(fileName, compressedFile || file, {
           cacheControl: "31536000",
           contentType: file.type,
           upsert: true,

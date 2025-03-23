@@ -19,6 +19,12 @@ export default function AdminDashboardPage() {
           link='/admin/crew'
         />
 
+        <AdminMenuItem
+          title='크루 정보 수정 요청'
+          description='크루가 요청한 정보 수정 사항을 검토하고 승인합니다.'
+          link='/admin/edit-requests'
+        />
+
         {/* 필요한 경우 더 많은 관리자 메뉴 항목을 추가할 수 있습니다 */}
       </div>
     </div>
