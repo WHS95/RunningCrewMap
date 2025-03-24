@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { generateToken } from "@/lib/jwt";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,34 +11,11 @@ export async function POST(request: NextRequest) {
       username === process.env.ADMIN_USERNAME &&
       password === process.env.ADMIN_PASSWORD
     ) {
-      // JWT 토큰 생성
-      const token = generateToken({
-        userId: "admin",
-        crewId: "", // 빈 문자열 유지 (관리자 계정에 연결된 크루가 없는 경우)
-        isAdmin: true
-      });
-      
       // 성공 시 쿠키 설정
       const cookieStore = cookies();
 
-      // JWT 토큰 쿠키 설정
-      cookieStore.set("auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 2, // 2시간
-        path: "/",
-      });
-      
-      // 기존 쿠키도 유지 (하위 호환성)
+      // HTTP only 쿠키 설정 (JavaScript에서 접근 불가능)
       cookieStore.set("auth", "true", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 2, // 2시간
-        path: "/",
-      });
-      
-      // is_admin 쿠키 설정
-      cookieStore.set("is_admin", "true", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 60 * 2, // 2시간

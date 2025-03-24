@@ -5,13 +5,7 @@ export async function POST() {
   try {
     // 인증 쿠키 제거
     const cookieStore = cookies();
-    
-    // JWT 토큰 쿠키 제거
-    cookieStore.delete("auth_token");
-    
-    // 기존 인증 쿠키 제거
     cookieStore.delete("auth");
-    cookieStore.delete("is_admin");
 
     return NextResponse.json({ success: true });
   } catch (error) {
