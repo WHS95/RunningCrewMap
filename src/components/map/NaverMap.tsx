@@ -333,7 +333,7 @@ export default function NaverMap({
           initialCenter.lng
         ),
         zoom: initialZoom,
-        minZoom: 9,
+        minZoom: 7,
         maxZoom: 21,
         zoomControl: false,
         renderOptions: {
