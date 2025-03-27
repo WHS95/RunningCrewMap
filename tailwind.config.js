@@ -56,6 +56,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      transform: {
+        "rotate-y-5": "rotateY(5deg)",
+        "rotate-y-180": "rotateY(180deg)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: 0 },
@@ -65,10 +69,15 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        "progress-completion": {
+          "0%": { width: "0%" },
+          "100%": { width: "100%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "progress-completion": "progress-completion 2s ease-out forwards",
       },
     },
   },

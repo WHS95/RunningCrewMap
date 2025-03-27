@@ -6,9 +6,10 @@ import { crewService } from "@/lib/services/crew.service";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { useRouter } from "next/navigation";
 import { NoticeBanner } from "@/components/home/NoticeBanner";
+import type { Crew } from "@/lib/types/crew";
 
 // react-icons import
-import { FaRunning, FaMedal } from "react-icons/fa";
+import { FaRunning, FaMedal, FaBook } from "react-icons/fa";
 import { MdTimer } from "react-icons/md";
 import { BsStopwatch, BsBarChartFill } from "react-icons/bs";
 import { AiOutlineArrowRight } from "react-icons/ai";
@@ -38,6 +39,7 @@ const InfoCard = ({ icon, title, subtitle, href }: InfoCardProps) => {
         <div className='flex items-center justify-center w-8 h-8 transition-colors duration-200 bg-gray-700 rounded-full hover:bg-gray-600'>
           {icon === "running" && <FaRunning size={16} />}
           {icon === "marathon" && <FaMedal size={16} />}
+          {icon === "mbti" && <FaBook size={16} />}
         </div>
         <div>
           <h3 className='text-sm font-medium'>{title}</h3>
@@ -100,7 +102,7 @@ const CalcMenuCard = ({ icon, title, color, href }: CalcMenuCardProps) => {
 };
 
 export default function HomePage() {
-  const [selectedCrew, setSelectedCrew] = useState<null>(null);
+  const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [registeredCrews, setRegisteredCrews] = useState<number>(0); // 실제 DB 값 반영
   const marathonsThisMonth = 3; // 더미 데이터: 이번 달 마라톤 대회 수
@@ -171,6 +173,12 @@ export default function HomePage() {
           title='마라톤 대회'
           subtitle={`이번달 ${marathonsThisMonth}개의 대회가 있습니다.`}
           href='/events'
+        />
+        <InfoCard
+          icon='mbti'
+          title='러닝 MBTI 테스트'
+          subtitle='나의 러닝 스타일을 알아보세요'
+          href='/mbti'
         />
       </section>
       {/* 러닝 계산기 메뉴 그리드 */}
