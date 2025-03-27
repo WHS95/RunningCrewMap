@@ -65,7 +65,7 @@ export const analyzeRunningMBTI = (
   return result;
 };
 
-const getRecommendations = (mbtiType: string, preferences: RunningPreference): string[] => {
+export const getRecommendations = (mbtiType: string, preferences: RunningPreference): string[] => {
   const baseRecommendations = [
     '정기적인 러닝 일정 설정하기',
     '러닝 기록 트래킹하기',
@@ -95,7 +95,7 @@ const getRecommendations = (mbtiType: string, preferences: RunningPreference): s
   return baseRecommendations;
 };
 
-const getCompatibility = (mbtiType: string): { bestPartners: string[], challengingPartners: string[] } => {
+export const getCompatibility = (mbtiType: string): { bestPartners: string[], challengingPartners: string[] } => {
   // 16가지 MBTI 러너 유형
   const runnerTypes = {
     'ISTJ': '체계적 솔로 러너',

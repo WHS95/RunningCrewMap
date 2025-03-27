@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { questions } from "@/util/mbti/questions";
-import { calculateMBTI, analyzeRunningMBTI } from "@/util/mbti/analyzer";
+import {
+  calculateMBTI,
+  analyzeRunningMBTI,
+  getCompatibility,
+  getRecommendations,
+} from "@/util/mbti/analyzer";
 import { copyResultLink, downloadResult } from "@/util/mbti/share";
 import {
   RunningPreference,
@@ -345,19 +350,21 @@ export default function MBTIPage() {
       setGender(genderParam || "male"); // 기본값은 male
       setShowGenderSelection(false);
 
+      // 기본 러닝 선호도 설정
+      const defaultPreference: RunningPreference = {
+        pace: "medium",
+        distance: "medium",
+        time: "morning",
+        social: "small",
+        frequency: "weekly",
+      };
+
       const fakeResult: RunningMBTIResult = {
         mbtiType: mbtiParam,
         runningStyle: decodedStyle,
-        description: `당신은 ${decodedStyle}입니다. ${mbtiParam} 성향과 러닝을 결합한 독특한 러닝 스타일을 가지고 있습니다.`,
-        recommendations: [
-          "정기적인 러닝 일정 설정하기",
-          "러닝 기록 트래킹하기",
-          "적절한 휴식과 회복 시간 가지기",
-        ],
-        compatibility: {
-          bestPartners: ["열정적인 그룹 러너", "친화적인 러닝 크루장"],
-          challengingPartners: ["체계적인 솔로 러너", "자유로운 트레일 러너"],
-        },
+        description: `당신은 ${decodedStyle}이며, MBTI 유형은 ${mbtiParam}입니다.`,
+        recommendations: getRecommendations(mbtiParam, defaultPreference),
+        compatibility: getCompatibility(mbtiParam),
       };
       setResult(fakeResult);
       setShowResult(true);
