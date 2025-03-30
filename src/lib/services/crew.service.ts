@@ -9,6 +9,7 @@ import { Crew } from "@/lib/types/crew";
 import { logger } from "@/lib/utils/logger";
 import { ErrorCode } from "@/lib/types/error";
 import { compressImageFile } from "@/lib/utils/imageCompression";
+import { convertToWebP } from "@/lib/utils/imageConversion";
 
 // Supabase 응답 타입 정의
 interface DbCrew {
@@ -161,11 +162,27 @@ class CrewService {
       // 이미지 유효성 검사
       await this.validateImage(file);
 
-      // 이미지 압축 (옵션)
-      const compressedFile = await compressImageFile(file);
+      // 이미지 파일을 WebP로 변환 (jpg, png일 경우만)
+      let processedFile = file;
+      if (file.type === 'image/jpeg' || file.type === 'image/png') {
+        try {
+          processedFile = await convertToWebP(file);
+        } catch (error) {
+          console.error("WebP 변환 실패, 원본 파일 사용:", error);
+          // 변환 실패 시 원본 파일 사용
+        }
+      }
+
+      // 이미지 압축 (옵션) - 변환 후에도 파일이 크면 압축
+      if (processedFile.size > 2 * 1024 * 1024) {
+        const compressedFile = await compressImageFile(processedFile);
+        if (compressedFile) {
+          processedFile = compressedFile;
+        }
+      }
 
       // 이미지 업로드
-      return await this.uploadImage(compressedFile || file, crewId);
+      return await this.uploadImage(processedFile, crewId);
     } catch (error) {
       console.error("로고 업로드 실패:", error);
       throw error;
@@ -270,10 +287,8 @@ class CrewService {
       if (input.logo_image) {
         try {
           console.log("로고 이미지 처리 시작");
-          await this.validateImage(input.logo_image);
-          const compressedImage = await compressImageFile(input.logo_image);
-          const uploadedUrl = await this.uploadImage(
-            compressedImage,
+          const uploadedUrl = await this.uploadCrewLogo(
+            input.logo_image,
             crypto.randomUUID()
           );
           if (!uploadedUrl) {
@@ -1390,9 +1405,44 @@ class CrewService {
       }
       console.log("파일 형식 검증 완료");
 
+      // 이미지 파일을 WebP로 변환 (jpg, png일 경우만)
+      let processedFile = file;
+      if (file.type === 'image/jpeg' || file.type === 'image/png') {
+        try {
+          console.log("WebP 변환 시작...");
+          processedFile = await convertToWebP(file);
+          console.log("WebP 변환 완료:", {
+            originalSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+            convertedSize: `${(processedFile.size / 1024 / 1024).toFixed(2)}MB`,
+            originalType: file.type,
+            convertedType: processedFile.type
+          });
+        } catch (error) {
+          console.error("WebP 변환 실패, 원본 파일 사용:", error);
+          // 변환 실패 시 원본 파일 사용
+        }
+      }
+
+      // 이미지 압축 (옵션) - 변환 후에도 파일이 크면 압축
+      if (processedFile.size > 2 * 1024 * 1024) {
+        try {
+          console.log("이미지 압축 시작...");
+          const compressedFile = await compressImageFile(processedFile);
+          if (compressedFile) {
+            processedFile = compressedFile;
+            console.log("이미지 압축 완료:", {
+              beforeSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+              afterSize: `${(processedFile.size / 1024 / 1024).toFixed(2)}MB`,
+            });
+          }
+        } catch (error) {
+          console.error("이미지 압축 실패:", error);
+        }
+      }
+
       // 파일명 생성
       const timestamp = new Date().getTime();
-      const fileExt = file.name.split(".").pop();
+      const fileExt = processedFile.name.split(".").pop();
       const fileName = `${crewId}_${timestamp}.${fileExt}`;
       console.log("생성된 파일명:", fileName);
 
@@ -1400,9 +1450,9 @@ class CrewService {
       console.log("크루 대표 활동 사진 업로드 시작...");
       const { error: uploadError } = await supabase.storage
         .from(this.CREW_PHOTOS_BUCKET)
-        .upload(fileName, file, {
+        .upload(fileName, processedFile, {
           cacheControl: "31536000",
-          contentType: file.type,
+          contentType: processedFile.type,
           upsert: true,
         });
 

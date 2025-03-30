@@ -15,6 +15,8 @@ export enum ErrorCode {
   UPLOAD_FAILED = "UPLOAD_FAILED",
   FILE_COMPRESSED = "FILE_COMPRESSED",
   COMPRESSION_FAILED = "COMPRESSION_FAILED",
+  FILE_CONVERTED = "FILE_CONVERTED",
+  CONVERSION_FAILED = "CONVERSION_FAILED",
 
   // DB 에러
   DUPLICATE_CREW_NAME = "DUPLICATE_CREW_NAME",
@@ -57,6 +59,9 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   FILE_COMPRESSED: "이미지가 자동으로 압축되었습니다.",
   COMPRESSION_FAILED:
     "이미지 압축에 실패했습니다. 더 작은 이미지를 사용해주세요.",
+  FILE_CONVERTED: "이미지가 자동으로 WebP 형식으로 변환되었습니다.",
+  CONVERSION_FAILED:
+    "이미지 변환에 실패했습니다. 원본 형식으로 업로드를 시도합니다.",
 
   DUPLICATE_CREW_NAME: "이미 사용 중인 크루명입니다. 다른 이름을 선택해주세요.",
   FOREIGN_KEY_VIOLATION: "데이터 처리 중 오류가 발생했습니다.",

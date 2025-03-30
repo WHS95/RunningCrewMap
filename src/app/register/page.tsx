@@ -874,7 +874,10 @@ export default function RegisterPage() {
               className='w-full'
               disabled={isLoading}
             />
-            <p className='text-xs text-gray-500'>* JPG, PNG, WebP</p>
+            <p className='text-xs text-gray-500'>
+              * JPG, PNG, WebP 형식 (최대 5MB, 자동으로 WebP 형식으로
+              변환됩니다)
+            </p>
           </div>
 
           {/* 가입 방식 설정 섹션 */}
@@ -943,6 +946,7 @@ export default function RegisterPage() {
             <p className='mb-3 text-sm text-gray-500'>
               크루 대표 활동 사진을 업로드해주세요. 최대{" "}
               {photoUploadStrategy.getMaxPhotoCount()}개까지 업로드 가능합니다.
+              JPG, PNG 파일은 자동으로 WebP로 변환되어 저장됩니다.
             </p>
             <div className='space-y-4'>
               {/* 현재 선택된 사진 표시 */}
@@ -999,7 +1003,7 @@ export default function RegisterPage() {
                       {photoUploadStrategy.getMaxPhotoCount()})
                     </span>
                     <span className='text-xs text-gray-500'>
-                      최대 5MB, JPG, PNG, WebP 파일 지원
+                      최대 5MB, JPG, PNG, WebP 파일 지원 (자동 WebP 변환)
                     </span>
                   </span>
                   <input
