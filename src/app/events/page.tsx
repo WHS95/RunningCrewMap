@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { runningEvents } from "@/lib/data/events";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,14 @@ const MONTHS = [
 type Month = (typeof MONTHS)[number];
 
 export default function EventsPage() {
-  const [selectedMonth, setSelectedMonth] = useState<Month>("전체");
+  // 현재 월을 계산
+  const getCurrentMonth = useMemo(() => {
+    const now = new Date();
+    const monthIndex = now.getMonth() + 1; // JavaScript는 0부터 월을 시작하므로 +1
+    return MONTHS[monthIndex] as Month; // 현재 월에 해당하는 "N월" 형식 반환
+  }, []);
+
+  const [selectedMonth, setSelectedMonth] = useState<Month>(getCurrentMonth);
 
   // 월별로 그룹화된 이벤트 목록
   const groupedEvents = useMemo(() => {
@@ -44,6 +51,23 @@ export default function EventsPage() {
     return sorted.filter(
       (event) => new Date(event.startDate).getMonth() === monthIndex - 1
     );
+  }, [selectedMonth]);
+
+  // 현재 월이 변경되면 자동 스크롤
+  useEffect(() => {
+    // 현재 선택된 월 버튼으로 스크롤
+    const buttons = document.querySelectorAll("button");
+    const selectedButton = Array.from(buttons).find(
+      (button) => button.textContent === selectedMonth
+    );
+
+    if (selectedButton) {
+      selectedButton.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
   }, [selectedMonth]);
 
   return (

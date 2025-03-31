@@ -7,6 +7,8 @@ import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { useRouter } from "next/navigation";
 import { NoticeBanner } from "@/components/home/NoticeBanner";
 import type { Crew } from "@/lib/types/crew";
+import { runningEvents } from "@/lib/data/events";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // react-icons import
 import { FaRunning, FaMedal, FaBook } from "react-icons/fa";
@@ -105,7 +107,17 @@ export default function HomePage() {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [registeredCrews, setRegisteredCrews] = useState<number>(0); // 실제 DB 값 반영
-  const marathonsThisMonth = 3; // 더미 데이터: 이번 달 마라톤 대회 수
+  const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
+
+  // 현재 월의 마라톤 대회 수 계산
+  const marathonsThisMonth = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-11 (1월-12월)
+
+    return runningEvents.filter(
+      (event) => new Date(event.startDate).getMonth() === currentMonth
+    ).length;
+  }, []);
 
   // 배너 데이터를 useMemo로 캐싱
   const bannerItems = useMemo(
@@ -127,16 +139,32 @@ export default function HomePage() {
     try {
       const count = await crewService.getCrewCount();
       setRegisteredCrews(count);
+      setIsLoading(false); // 데이터 로드 완료 후 로딩 상태 해제
     } catch (error) {
       console.error("크루 데이터를 가져오는 중 오류 발생:", error);
       // 오류 발생 시 기본값 사용
       setRegisteredCrews(0);
+      setIsLoading(false); // 오류 발생해도 로딩 상태 해제
     }
   }, []);
 
   useEffect(() => {
     fetchRegisteredCrews();
   }, [fetchRegisteredCrews]);
+
+  // 로딩 중일 때 로딩 스피너 표시
+  if (isLoading) {
+    return (
+      <div
+        className='flex items-center justify-center min-h-screen'
+        style={{
+          paddingTop: CSS_VARIABLES.HEADER_PADDING,
+        }}
+      >
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div
