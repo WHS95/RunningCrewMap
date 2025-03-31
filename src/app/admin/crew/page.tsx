@@ -17,26 +17,38 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Pencil, Trash2, AlertTriangle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AdminCrew extends Crew {
   is_visible: boolean;
 }
 
+type FilterTab = "all" | "visible" | "hidden";
+
 export default function AdminCrewPage() {
   const router = useRouter();
   const [crews, setCrews] = useState<AdminCrew[]>([]);
+  const [filteredCrews, setFilteredCrews] = useState<AdminCrew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [crewToDelete, setCrewToDelete] = useState<AdminCrew | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchCrews();
   }, []);
+
+  useEffect(() => {
+    // 탭과 검색어에 따라 크루 필터링
+    filterCrews(activeTab, searchQuery);
+  }, [crews, activeTab, searchQuery]);
 
   const fetchCrews = async () => {
     try {
@@ -44,12 +56,39 @@ export default function AdminCrewPage() {
       // crewService의 getCrews 메서드를 사용하여 모든 크루 데이터 가져오기
       const crewsData = await crewService.getAdminCrews();
       setCrews(crewsData);
+      setFilteredCrews(crewsData);
     } catch (error) {
       console.error("크루 목록 조회 실패:", error);
       toast.error("크루 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const filterCrews = (tab: FilterTab, query: string) => {
+    // 탭에 따른 필터링
+    let filtered = [...crews];
+
+    if (tab === "visible") {
+      filtered = filtered.filter((crew) => crew.is_visible);
+    } else if (tab === "hidden") {
+      filtered = filtered.filter((crew) => !crew.is_visible);
+    }
+
+    // 검색어에 따른 필터링 (크루명, 인스타, 주소)
+    if (query.trim()) {
+      const lowercaseQuery = query.toLowerCase();
+      filtered = filtered.filter(
+        (crew) =>
+          crew.name.toLowerCase().includes(lowercaseQuery) ||
+          (crew.instagram &&
+            crew.instagram.toLowerCase().includes(lowercaseQuery)) ||
+          (crew.location.main_address &&
+            crew.location.main_address.toLowerCase().includes(lowercaseQuery))
+      );
+    }
+
+    setFilteredCrews(filtered);
   };
 
   const toggleCrewVisibility = async (crewId: string, newValue: boolean) => {
@@ -135,31 +174,61 @@ export default function AdminCrewPage() {
   return (
     <FormLayout title='크루 관리'>
       <div className='space-y-4'>
-        {/* 크루 통계 */}
-        <div className='p-4 border rounded-lg bg-accent/10'>
-          <div className='flex items-center gap-3 text-sm'>
-            <div>
-              <span className='text-muted-foreground'>전체:</span>{" "}
-              <span className='font-medium'>{crews.length}</span>
-            </div>
-            <div className='w-px h-4 bg-border' />
-            <div>
-              <span className='text-muted-foreground'>숨김:</span>{" "}
-              <span className='font-medium'>
-                {crews.filter((crew) => !crew.is_visible).length}
-              </span>
-            </div>
+        {/* 필터링 및 검색 UI */}
+        <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as FilterTab)}
+            className='w-full sm:w-auto'
+          >
+            <TabsList className='grid w-full grid-cols-3 sm:w-auto'>
+              <TabsTrigger value='all'>
+                전체{" "}
+                <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
+                  {crews.length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value='visible'>
+                표시{" "}
+                <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
+                  {crews.filter((crew) => crew.is_visible).length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value='hidden'>
+                숨김{" "}
+                <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
+                  {crews.filter((crew) => !crew.is_visible).length}
+                </span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className='relative w-full sm:w-72'>
+            <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
+            <Input
+              placeholder='크루명, 인스타, 주소 검색'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className='pl-9'
+            />
           </div>
         </div>
 
+        {/* 검색 결과가 없을 때 */}
+        {filteredCrews.length === 0 && (
+          <div className='p-8 text-center border rounded-lg'>
+            <p className='text-muted-foreground'>검색 결과가 없습니다.</p>
+          </div>
+        )}
+
         {/* 크루 목록 */}
-        {crews.map((crew) => (
+        {filteredCrews.map((crew) => (
           <div
             key={crew.id}
-            className='flex items-center justify-between p-4 border rounded-lg'
+            className='flex flex-col p-4 border rounded-lg sm:flex-row sm:items-center'
           >
             <div
-              className='flex items-center flex-1 gap-4 cursor-pointer'
+              className='flex items-start flex-1 gap-3 cursor-pointer'
               onClick={() => handleCrewClick(crew)}
             >
               {/* 크루 로고 */}
@@ -170,27 +239,34 @@ export default function AdminCrewPage() {
                   width={48}
                   height={48}
                   quality={20}
-                  className='object-cover w-12 h-12 rounded-full'
-                  style={{ width: "48px", height: "48px" }}
+                  className='object-cover w-10 h-10 rounded-full sm:w-12 sm:h-12'
+                  style={{ width: "40px", height: "40px" }}
                 />
               ) : (
-                <div className='flex items-center justify-center w-12 h-12 text-xl font-medium rounded-full bg-muted'>
+                <div className='flex items-center justify-center w-10 h-10 text-lg font-medium rounded-full bg-muted sm:w-12 sm:h-12 sm:text-xl'>
                   {crew.name.charAt(0)}
                 </div>
               )}
 
               {/* 크루 정보 */}
-              <div>
-                <h2 className='font-medium'>{crew.name}</h2>
-                <p className='text-sm text-muted-foreground'>
+              <div className='flex-1 min-w-0 overflow-hidden'>
+                <h2 className='pr-1 text-base font-medium break-all sm:break-normal line-clamp-2'>
+                  {crew.name}
+                </h2>
+                <p className='text-sm truncate text-muted-foreground'>
                   {crew.location.main_address}
                 </p>
+                {crew.instagram && (
+                  <p className='text-xs text-blue-500 truncate'>
+                    @{crew.instagram}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* 관리 버튼 그룹 */}
             <div
-              className='flex items-center gap-2'
+              className='flex items-center justify-end flex-shrink-0 gap-2 mt-3 sm:mt-0 sm:ml-2'
               onClick={(e) => e.stopPropagation()}
             >
               <Button
@@ -198,18 +274,19 @@ export default function AdminCrewPage() {
                 size='icon'
                 onClick={() => handleEditCrew(crew)}
                 title='크루 정보 수정'
+                className='w-8 h-8 sm:h-9 sm:w-9'
               >
-                <Pencil className='w-4 h-4' />
+                <Pencil className='w-3.5 h-3.5 sm:w-4 sm:h-4' />
               </Button>
 
               <Button
                 variant='ghost'
                 size='icon'
                 onClick={(e) => handleDeleteClick(crew, e)}
-                className='text-destructive hover:text-destructive/90 hover:bg-destructive/10'
+                className='w-8 h-8 sm:h-9 sm:w-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10'
                 title='크루 삭제'
               >
-                <Trash2 className='w-4 h-4' />
+                <Trash2 className='w-3.5 h-3.5 sm:w-4 sm:h-4' />
               </Button>
 
               <Switch
