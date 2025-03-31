@@ -32,6 +32,11 @@ const DEFAULT_CENTER = {
   lng: 127.0598,
 };
 
+// 위치 정보 로컬 스토리지 키
+const LOCATION_STORAGE_KEY = "user_location";
+// 위치 정보 만료 시간 (7일, 밀리초 단위)
+const LOCATION_EXPIRY_TIME = 7 * 24 * 60 * 60 * 1000;
+
 // 크루 데이터를 저장할 전역 캐시
 let crewsCache: Crew[] | null = null;
 
@@ -148,31 +153,87 @@ function HomePage() {
 
   // 사용자 위치 정보 가져오기
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.geolocation) {
+    if (typeof window === "undefined") {
       setIsLoading(false);
       return;
     }
 
-    const geoOptions = {
-      timeout: 1500,
-      maximumAge: 0,
-      enableHighAccuracy: false,
+    // 로컬 스토리지에서 저장된 위치 정보 확인
+    const getSavedLocation = () => {
+      try {
+        const savedLocationData = localStorage.getItem(LOCATION_STORAGE_KEY);
+
+        if (savedLocationData) {
+          const savedLocation = JSON.parse(savedLocationData);
+
+          // 만료 시간 확인
+          if (savedLocation.expiry && savedLocation.expiry > Date.now()) {
+            return {
+              lat: savedLocation.lat,
+              lng: savedLocation.lng,
+            };
+          }
+        }
+      } catch (error) {
+        console.error("저장된 위치 정보를 불러오는데 실패했습니다:", error);
+      }
+
+      return null;
     };
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCenter({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-        setIsLoading(false);
-      },
-      () => {
-        setCenter(DEFAULT_CENTER);
-        setIsLoading(false);
-      },
-      geoOptions
-    );
+    // 위치 정보 저장 함수
+    const saveLocation = (location: { lat: number; lng: number }) => {
+      try {
+        const locationData = {
+          ...location,
+          expiry: Date.now() + LOCATION_EXPIRY_TIME,
+        };
+        localStorage.setItem(
+          LOCATION_STORAGE_KEY,
+          JSON.stringify(locationData)
+        );
+      } catch (error) {
+        console.error("위치 정보 저장에 실패했습니다:", error);
+      }
+    };
+
+    // 저장된 위치 정보 확인
+    const savedLocation = getSavedLocation();
+
+    if (savedLocation) {
+      // 저장된 위치 정보가 있으면 사용
+      setCenter(savedLocation);
+      setIsLoading(false);
+    } else if (navigator.geolocation) {
+      // 저장된 위치 정보가 없으면 새로 요청
+      const geoOptions = {
+        timeout: 1500,
+        maximumAge: 0,
+        enableHighAccuracy: false,
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setCenter(newLocation);
+          // 위치 정보 로컬 스토리지에 저장
+          saveLocation(newLocation);
+          setIsLoading(false);
+        },
+        () => {
+          setCenter(DEFAULT_CENTER);
+          setIsLoading(false);
+        },
+        geoOptions
+      );
+    } else {
+      // 위치 정보 사용 불가능한 경우
+      setCenter(DEFAULT_CENTER);
+      setIsLoading(false);
+    }
   }, []);
 
   // 초기 데이터 로딩
@@ -248,7 +309,7 @@ function HomePage() {
         {preloadedMapUrl && !isLoading ? (
           <div className='relative h-[80vh]'>
             <div className='absolute top-0 left-0 right-0 p-4 text-center'>
-              <LoadingSpinner message='지도를 불러오는 중' />
+              <LoadingSpinner />
             </div>
           </div>
         ) : (
