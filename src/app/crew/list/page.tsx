@@ -9,21 +9,15 @@ import {
   Suspense,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { crewService } from "@/lib/services/crew.service";
-import type { Crew } from "@/lib/types/crew";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { HomeHeader, ListHeader } from "@/components/layout/HomeHeader";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
-import { toast } from "sonner";
-import { ErrorCode, AppError } from "@/lib/types/error";
 import dynamic from "next/dynamic";
 import { MapPin, ChevronUp, ChevronDown } from "lucide-react";
 import Image from "next/image";
-import {
-  filterCrewsByRegion,
-  groupCrewsByRegion,
-} from "@/lib/utils/region-utils";
+import { useCrewStore } from "@/lib/store/crewStore";
+import { groupCrewsByRegion } from "@/lib/utils/region-utils";
 
 // CrewDetailView를 동적으로 로드하여 코드 스플리팅 강화
 const CrewDetailView = dynamic(
@@ -33,9 +27,6 @@ const CrewDetailView = dynamic(
     loading: () => <LoadingSpinner message='상세 정보 로딩 중' />,
   }
 );
-
-// 크루 데이터를 저장할 전역 캐시
-let crewsCache: Crew[] | null = null;
 
 // 초기 로드할 아이템 수
 const INITIAL_ITEMS_COUNT = 20;
@@ -52,20 +43,24 @@ function CrewListWithParams() {
 
 // 메인 컨텐츠 컴포넌트
 function CrewListContent({ initialRegion }: { initialRegion: string }) {
-  const [crews, setCrews] = useState<Crew[]>([]);
-  const [filteredCrews, setFilteredCrews] = useState<Crew[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Zustand 스토어에서 크루 데이터 및 상태 가져오기
+  const {
+    crews,
+    filteredCrews,
+    isLoading: isCrewsLoading,
+    loadCrews,
+    invalidateCache,
+    selectedCrew,
+    isDetailOpen,
+    setSelectedCrew,
+    closeDetail,
+    filterCrewsByRegion,
+  } = useCrewStore();
+
   const [visibleItemsCount, setVisibleItemsCount] =
     useState(INITIAL_ITEMS_COUNT);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
-  const [detailState, setDetailState] = useState<{
-    crew: Crew | null;
-    isOpen: boolean;
-  }>({
-    crew: null,
-    isOpen: false,
-  });
 
   // 무한 스크롤을 위한 참조값
   const listContainerRef = useRef<HTMLDivElement>(null);
@@ -74,8 +69,7 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
   // 캐시 무효화 이벤트 리스너 등록
   useEffect(() => {
     const handleInvalidateCache = () => {
-      crewsCache = null;
-      loadCrews();
+      invalidateCache();
     };
 
     eventEmitter.on(EVENTS.INVALIDATE_CREWS_CACHE, handleInvalidateCache);
@@ -83,82 +77,21 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
     return () => {
       eventEmitter.off(EVENTS.INVALIDATE_CREWS_CACHE, handleInvalidateCache);
     };
-  }, []);
+  }, [invalidateCache]);
 
-  // 크루 데이터 가져오기 (캐시 활용)
-  const loadCrews = async () => {
-    try {
-      setIsLoading(true);
-
-      if (crewsCache) {
-        setCrews(crewsCache);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await crewService.getCrews();
-      setCrews(data);
-      crewsCache = data;
-    } catch (err: unknown) {
-      console.error("크루 데이터 로딩 실패:", err);
-
-      // 에러 타입에 따른 사용자 피드백
-      const error = err as Error;
-      const appError = err as AppError;
-
-      if ("code" in error) {
-        switch (appError.code) {
-          case ErrorCode.NETWORK_ERROR:
-            toast.error("네트워크 연결을 확인해주세요.");
-            break;
-          case ErrorCode.SERVER_ERROR:
-            toast.error(
-              "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
-            );
-            break;
-          default:
-            toast.error(
-              "크루 정보를 불러오는데 실패했습니다. 다시 시도해주세요."
-            );
-        }
-      } else {
-        toast.error(
-          "알 수 없는 오류가 발생했습니다. 페이지를 새로고침 해주세요."
-        );
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 지역에 따른 크루 필터링
-  const filterCrewsByRegionCallback = useCallback(() => {
-    const filtered = filterCrewsByRegion(crews, selectedRegion);
-    setFilteredCrews(filtered);
-    // 필터링 변경 시 보이는 아이템 수 초기화
-    setVisibleItemsCount(INITIAL_ITEMS_COUNT);
-  }, [crews, selectedRegion]);
+  // 초기 데이터 로딩
+  useEffect(() => {
+    loadCrews();
+  }, [loadCrews]);
 
   // 지역 변경 핸들러
-  const handleRegionChange = useCallback((region: string) => {
-    setSelectedRegion(region);
-  }, []);
-
-  // 상세 정보 열기 핸들러
-  const handleCrewSelect = useCallback((crew: Crew) => {
-    setDetailState({
-      crew,
-      isOpen: true,
-    });
-  }, []);
-
-  // 상세 정보 닫기 핸들러
-  const handleDetailClose = useCallback(() => {
-    setDetailState({
-      crew: null,
-      isOpen: false,
-    });
-  }, []);
+  const handleRegionChange = useCallback(
+    (region: string) => {
+      setSelectedRegion(region);
+      filterCrewsByRegion(region);
+    },
+    [filterCrewsByRegion]
+  );
 
   // 더 불러오기 핸들러
   const handleLoadMore = useCallback(() => {
@@ -181,15 +114,10 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
     });
   };
 
-  // 초기 데이터 로딩
+  // 초기 지역 필터링 적용
   useEffect(() => {
-    loadCrews();
-  }, []);
-
-  // 크루 필터링 적용
-  useEffect(() => {
-    filterCrewsByRegionCallback();
-  }, [selectedRegion, crews, filterCrewsByRegionCallback]);
+    filterCrewsByRegion(selectedRegion);
+  }, [selectedRegion, filterCrewsByRegion]);
 
   // 보이는 항목 수 계산
   const hasMoreItems = filteredCrews.length > visibleItemsCount;
@@ -234,7 +162,7 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
     };
   }, [hasMoreItems, loadingMore, handleLoadMore]);
 
-  if (isLoading) {
+  if (isCrewsLoading) {
     return (
       <div style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}>
         <HomeHeader
@@ -298,7 +226,7 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
                     <div
                       key={crew.id}
                       className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
-                      onClick={() => handleCrewSelect(crew)}
+                      onClick={() => setSelectedCrew(crew)}
                     >
                       {crew.logo_image ? (
                         <div className='relative flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
@@ -378,9 +306,9 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
 
       {/* 크루 상세 정보 */}
       <CrewDetailView
-        crew={detailState.crew}
-        isOpen={detailState.isOpen}
-        onClose={handleDetailClose}
+        crew={selectedCrew}
+        isOpen={isDetailOpen}
+        onClose={closeDetail}
       />
     </div>
   );

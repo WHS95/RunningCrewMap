@@ -609,6 +609,13 @@ class CrewService {
     const { data, error } = await query;
     if (error) throw error;
 
+    // 가입 방식 정보도 별도로 가져오기
+    const { data: joinMethodsData, error: joinMethodsError } = await supabase
+      .from("crew_join_methods")
+      .select("*");
+
+    if (joinMethodsError) throw joinMethodsError;
+
     // crews.json 형식으로 데이터 변환
     let crews = (
       data as (DbCrew & {
@@ -638,6 +645,28 @@ class CrewService {
             .sort((a, b) => a.display_order - b.display_order)
             .map((photo) => photo.photo_url)
         : [];
+        
+      // 해당 크루의 가입 방식 정보 찾기
+      const crewJoinMethods =
+        joinMethodsData
+          ?.filter((method) => method.crew_id === crew.id)
+          .map((method) => ({
+            method_type: method.method_type,
+            link_url: method.link_url,
+            description: method.description,
+          })) || [];
+
+      // 인스타그램 DM 사용 여부
+      const useInstagramDm = !!crewJoinMethods.find(
+        (method) => method.method_type === "instagram_dm"
+      );
+
+      // 오픈채팅 링크
+      const openChatMethod = crewJoinMethods.find(
+        (method) =>
+          method.method_type === "open_chat" || method.method_type === "other"
+      );
+      const openChatLink = openChatMethod?.link_url || undefined;
 
       return {
         id: crew.id,
@@ -659,6 +688,9 @@ class CrewService {
         age_range: ageRange,
         activity_locations: activityLocations,
         photos: photos,
+        join_methods: crewJoinMethods,
+        use_instagram_dm: useInstagramDm,
+        open_chat_link: openChatLink,
       };
     });
 
