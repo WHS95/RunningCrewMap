@@ -278,10 +278,9 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       crew.instagram && (
                         <a
                           href='#'
-                          className='text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition'
+                          className='flex items-center gap-1.5 text-xs px-4 py-2 rounded-full bg-[#E4405F] text-white hover:bg-[#d1365a] active:bg-[#bc2f50] transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0'
                           onClick={(e) => {
                             e.preventDefault();
-                            // 인스타그램 DM 링크 처리
                             if (crew?.instagram) {
                               window.open(
                                 `https://www.instagram.com/${crew.instagram.replace(
@@ -293,10 +292,10 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                             }
                           }}
                         >
+                          <Instagram className='w-3.5 h-3.5' />
                           인스타그램 DM
                         </a>
                       )}
-                    {/* 기타 방식 버튼 - 오픈채팅과 기타 방식 통합 */}
                     {(crew.join_methods?.find(
                       (method) => method.method_type === "other"
                     ) ||
@@ -305,10 +304,9 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       )) && (
                       <a
                         href='#'
-                        className='text-xs px-3 py-1.5 rounded-full bg-accent/70 text-muted-foreground hover:bg-accent/90 transition'
+                        className='flex items-center gap-1.5 text-xs px-4 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0'
                         onClick={(e) => {
                           e.preventDefault();
-                          // 기타 방식 또는 오픈채팅 링크 처리
                           const otherMethod =
                             crew.join_methods?.find(
                               (method) => method.method_type === "other"
@@ -321,6 +319,21 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                           }
                         }}
                       >
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          width='14'
+                          height='14'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          strokeWidth='2'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          className='w-3.5 h-3.5'
+                        >
+                          <path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71' />
+                          <path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' />
+                        </svg>
                         기타 방식
                       </a>
                     )}
