@@ -197,7 +197,11 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
       {/* 리스트 컨테이너 */}
       <div
         ref={listContainerRef}
-        className='flex-1 h-full overflow-auto text-black bg-white'
+        className='flex-1 h-full overflow-auto text-black bg-white scrollbar-hide'
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
       >
         {filteredCrews.length === 0 ? (
           <div className='flex flex-col items-center justify-center h-40 text-center'>

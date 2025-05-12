@@ -115,7 +115,7 @@ export const ListHeader = ({
       <BaseHeader currentView='list' />
 
       {/* 지역 필터 - 항상 표시 */}
-      <div className='overflow-x-auto border-b border-gray-800'>
+      <div className='overflow-x-auto border-b border-gray-800 scrollbar-hide'>
         <div className='flex min-w-max'>
           {regions.map((region) => (
             <button
