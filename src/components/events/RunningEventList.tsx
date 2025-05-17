@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { runningEvents } from "@/lib/data/events";
 import { CITIES, type City } from "@/lib/types/event";
-import { formatDate } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -12,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar } from "lucide-react";
+import { marathonService } from "@/lib/services/marathon.service";
 
 interface RunningEventListProps {
   isOpen: boolean;
@@ -22,12 +21,36 @@ export function RunningEventList({ isOpen, onClose }: RunningEventListProps) {
   const [selectedCity, setSelectedCity] = useState<City | "전체">("전체");
 
   // 날짜순으로 정렬하고 필터링된 이벤트 목록
-  const filteredEvents = runningEvents
-    .sort(
-      (a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-    )
-    .filter((event) => selectedCity === "전체" || event.city === selectedCity);
+  const filteredEvents = marathonService
+    .getMarathonEvents()
+    .sort((a, b) => {
+      // date 포맷이 "5/17 (토)" 형식이므로 현재 연도를 추가하여 날짜 형식으로 변환
+      const currentYear = new Date().getFullYear();
+
+      const aDateString = a.date.split(" ")[0]; // "5/17"
+      const [aMonth, aDay] = aDateString.split("/");
+      const aFormattedDate = `${currentYear}-${aMonth.padStart(
+        2,
+        "0"
+      )}-${aDay.padStart(2, "0")}`;
+
+      const bDateString = b.date.split(" ")[0]; // "5/17"
+      const [bMonth, bDay] = bDateString.split("/");
+      const bFormattedDate = `${currentYear}-${bMonth.padStart(
+        2,
+        "0"
+      )}-${bDay.padStart(2, "0")}`;
+
+      return (
+        new Date(aFormattedDate).getTime() - new Date(bFormattedDate).getTime()
+      );
+    })
+    .filter((event) => {
+      if (selectedCity === "전체") return true;
+      // 지역 정보에서 도시 추출 (쉼표 앞 부분)
+      const city = event.location.split(",")[0].trim();
+      return city === selectedCity;
+    });
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -63,20 +86,18 @@ export function RunningEventList({ isOpen, onClose }: RunningEventListProps) {
         <div className='overflow-y-auto h-[calc(80vh-8rem)]'>
           {filteredEvents.map((event) => (
             <div
-              key={`${event.title}-${event.startDate}`}
+              key={`${event.eventName}-${event.date}`}
               className='p-4 border-b last:border-b-0'
             >
-              <h3 className='font-medium'>{event.title}</h3>
+              <h3 className='font-medium'>{event.eventName}</h3>
               <div className='mt-2 space-y-1'>
                 <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                   <Calendar className='w-4 h-4' />
-                  <span>{formatDate(event.startDate)}</span>
+                  <span>{event.date}</span>
                 </div>
                 <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                   <MapPin className='w-4 h-4' />
-                  <span>
-                    {event.city} {event.location}
-                  </span>
+                  <span>{event.location}</span>
                 </div>
               </div>
             </div>
