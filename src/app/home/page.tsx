@@ -7,7 +7,7 @@ import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { useRouter } from "next/navigation";
 import { NoticeBanner } from "@/components/home/NoticeBanner";
 import type { Crew } from "@/lib/types/crew";
-import { runningEvents } from "@/lib/data/events";
+import { marathonService } from "@/lib/services/marathon.service";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // react-icons import
@@ -112,11 +112,12 @@ export default function HomePage() {
   // 현재 월의 마라톤 대회 수 계산
   const marathonsThisMonth = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.getMonth(); // 0-11 (1월-12월)
+    const currentMonth = now.getMonth() + 1; // 1-12월로 변환
 
-    return runningEvents.filter(
-      (event) => new Date(event.startDate).getMonth() === currentMonth
-    ).length;
+    // 새로운 마라톤 서비스를 사용하여 현재 월의 이벤트를 가져옴
+    const marathonEvents =
+      marathonService.getMarathonEventsByMonth(currentMonth);
+    return marathonEvents.length;
   }, []);
 
   // 배너 데이터를 useMemo로 캐싱

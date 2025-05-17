@@ -1,11 +1,26 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { runningEvents } from "@/lib/data/events";
-import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  Calendar,
+  ExternalLink,
+  Award,
+  Gift,
+  CreditCard,
+  Info,
+} from "lucide-react";
 import { CSS_VARIABLES, LAYOUT } from "@/lib/constants";
+import { marathonService } from "@/lib/services/marathon.service";
+import type { MarathonEvent } from "@/lib/types/marathon";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // 월 이름 상수
 const MONTHS = [
@@ -35,23 +50,22 @@ export default function EventsPage() {
   }, []);
 
   const [selectedMonth, setSelectedMonth] = useState<Month>(getCurrentMonth);
+  const [selectedEvent, setSelectedEvent] = useState<MarathonEvent | null>(
+    null
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // 월별로 그룹화된 이벤트 목록
   const groupedEvents = useMemo(() => {
-    const sorted = [...runningEvents].sort(
-      (a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-    );
-
-    if (selectedMonth === "전체") {
-      return sorted;
-    }
-
     const monthIndex = MONTHS.indexOf(selectedMonth);
-    return sorted.filter(
-      (event) => new Date(event.startDate).getMonth() === monthIndex - 1
-    );
+    return marathonService.getMarathonEventsByMonth(monthIndex);
   }, [selectedMonth]);
+
+  // 이벤트 상세 정보 다이얼로그를 열기
+  const handleEventClick = (event: MarathonEvent) => {
+    setSelectedEvent(event);
+    setIsDialogOpen(true);
+  };
 
   // 현재 월이 변경되면 자동 스크롤
   useEffect(() => {
@@ -72,17 +86,17 @@ export default function EventsPage() {
 
   return (
     <div
-      className='flex flex-col min-h-screen '
+      className='flex flex-col min-h-screen'
       style={{
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
       {/* 필터 */}
       <div
-        className='sticky border-b bg-background/80 backdrop-blur-md'
+        className='sticky backdrop-blur-md'
         style={{ top: LAYOUT.HEADER_HEIGHT }}
       >
-        <div className='flex gap-2 p-4 pb-2 overflow-x-auto scrollbar-none'>
+        <div className='flex gap-2 p-4 pb-2 overflow-x-auto scrollbar-hide'>
           {MONTHS.map((month) => (
             <Button
               key={month}
@@ -98,37 +112,48 @@ export default function EventsPage() {
 
       {/* 이벤트 목록 */}
       <div className='flex-1'>
-        <div className='divide-y'>
+        <div className=''>
           {groupedEvents.length > 0 ? (
             groupedEvents.map((event) => (
               <div
-                key={`${event.title}-${event.startDate}`}
-                className='p-4 transition-colors hover:bg-accent/50'
+                key={`${event.eventName}-${event.date}`}
+                className='p-4 transition-colors cursor-pointer hover:bg-accent/50'
+                onClick={() => handleEventClick(event)}
               >
                 <div className='flex items-center justify-between gap-4'>
-                  <h3 className='font-medium'>{event.title}</h3>
-                  {event.link && (
-                    <a
-                      href={event.link}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='flex items-center gap-1 px-2 py-1 text-xs transition-colors rounded-md text-primary hover:bg-primary/10'
-                    >
-                      <ExternalLink className='w-3 h-3' />
-                    </a>
-                  )}
+                  <h3 className='font-medium'>{event.eventName}</h3>
+                  <div className='flex items-center gap-1 px-2 py-1 text-sm font-medium rounded-md cursor-pointer text-primary hover:bg-primary/10'>
+                    <span>상세보기</span>
+                    <Info className='w-4 h-4' />
+                  </div>
                 </div>
                 <div className='mt-2 space-y-1'>
                   <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                     <Calendar className='w-4 h-4' />
-                    <span>{formatDate(event.startDate)}</span>
+                    <span>{event.date}</span>
                   </div>
                   <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                     <MapPin className='w-4 h-4' />
-                    <span>
-                      {event.city} {event.location}
-                    </span>
+                    <span>{event.location}</span>
                   </div>
+                  <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                    <Award className='w-4 h-4' />
+                    <span>{event.courses}</span>
+                  </div>
+                  {event.eventHomepage && (
+                    <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                      <ExternalLink className='w-4 h-4' />
+                      <a
+                        href={event.eventHomepage}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='text-primary hover:underline'
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        대회 홈페이지
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
@@ -139,6 +164,88 @@ export default function EventsPage() {
           )}
         </div>
       </div>
+
+      {/* 이벤트 상세 정보 다이얼로그 */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className='sm:max-w-[425px]'>
+          {selectedEvent && (
+            <>
+              <DialogHeader>
+                <DialogTitle className='text-xl'>
+                  {selectedEvent.eventName}
+                </DialogTitle>
+                <DialogDescription className='text-base'>
+                  {selectedEvent.date}
+                </DialogDescription>
+              </DialogHeader>
+              <div className='py-4 space-y-3'>
+                <div className='flex items-start gap-3'>
+                  <MapPin className='w-5 h-5 mt-0.5 text-primary' />
+                  <div>
+                    <p className='font-medium'>장소</p>
+                    <p className='text-muted-foreground'>
+                      {selectedEvent.location}
+                    </p>
+                  </div>
+                </div>
+
+                <div className='flex items-start gap-3'>
+                  <Award className='w-5 h-5 mt-0.5 text-primary' />
+                  <div>
+                    <p className='font-medium'>코스</p>
+                    <p className='text-muted-foreground'>
+                      {selectedEvent.courses}
+                    </p>
+                  </div>
+                </div>
+
+                <div className='flex items-start gap-3'>
+                  <Info className='w-5 h-5 mt-0.5 text-primary' />
+                  <div>
+                    <p className='font-medium'>주최</p>
+                    <p className='text-muted-foreground'>
+                      {selectedEvent.organizer}
+                    </p>
+                  </div>
+                </div>
+
+                <div className='flex items-start gap-3'>
+                  <Gift className='w-5 h-5 mt-0.5 text-primary' />
+                  <div>
+                    <p className='font-medium'>증정품</p>
+                    <p className='text-muted-foreground'>
+                      {selectedEvent.giveaways || "정보 없음"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className='flex items-start gap-3'>
+                  <CreditCard className='w-5 h-5 mt-0.5 text-primary' />
+                  <div>
+                    <p className='font-medium'>참가비</p>
+                    <p className='text-muted-foreground'>
+                      {selectedEvent.registrationFee || "정보 없음"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedEvent.eventHomepage && (
+                <div className='flex justify-end'>
+                  <a
+                    href={selectedEvent.eventHomepage}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90'
+                  >
+                    대회 홈페이지 <ExternalLink className='w-4 h-4' />
+                  </a>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
