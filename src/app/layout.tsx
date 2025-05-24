@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     template: "%s | 러닝크루맵",
   },
   description: "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요.",
+  manifest: "/manifest.json",
   applicationName: "런하우스",
   keywords: ["러닝", "러닝크루", "달리기", "러닝맵", "러닝 커뮤니티"],
   authors: [{ name: "RunningCrewMap" }],
@@ -87,7 +88,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   minimumScale: 1,
   userScalable: false,
-  themeColor: "#ffffff",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
