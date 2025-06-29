@@ -19,6 +19,16 @@ import {
 // UI Components - 실제 사용하는 컴포넌트만 임포트
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // 날짜 선택 컴포넌트 Props 타입 정의
 interface DatePickerProps {
@@ -105,7 +115,7 @@ const DatePicker = ({
           onChange={(e) =>
             setSelectedDate({ ...selectedDate, year: parseInt(e.target.value) })
           }
-          className='w-full px-3 py-2 bg-white border rounded-lg appearance-none'
+          className='px-3 py-2 w-full bg-white rounded-lg border appearance-none'
           disabled={disabled}
         >
           {years.map((year) => (
@@ -126,7 +136,7 @@ const DatePicker = ({
               month: parseInt(e.target.value),
             })
           }
-          className='w-full px-3 py-2 bg-white border rounded-lg appearance-none'
+          className='px-3 py-2 w-full bg-white rounded-lg border appearance-none'
           disabled={disabled}
         >
           {months.map((month) => (
@@ -148,7 +158,7 @@ const DatePicker = ({
           onChange={(e) =>
             setSelectedDate({ ...selectedDate, day: parseInt(e.target.value) })
           }
-          className='w-full px-3 py-2 bg-white border rounded-lg appearance-none'
+          className='px-3 py-2 w-full bg-white rounded-lg border appearance-none'
           disabled={disabled}
         >
           {days.map((day) => (
@@ -175,6 +185,10 @@ import { PhotoUploadStrategyFactory } from "@/lib/strategies/photo-upload.strate
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  // 사전 조건 확인 모달 상태
+  const [showPreCheckModal, setShowPreCheckModal] = useState(true);
+
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
     title: string;
@@ -644,20 +658,66 @@ export default function RegisterPage() {
     }
   };
 
-  return (
-    <main className='max-w-5xl py-6 space-y-8'>
-      <div className='flex items-center justify-between'>
-        <button
-          onClick={() => router.push("/")}
-          className='flex items-center text-sm font-medium text-gray-600 hover:text-gray-900'
+  // 사전 조건 확인 모달이 열려있으면 폼을 표시하지 않음
+  if (showPreCheckModal) {
+    return (
+      <main className='py-6 space-y-8 max-w-5xl'>
+        <AlertDialog
+          open={showPreCheckModal}
+          onOpenChange={setShowPreCheckModal}
         >
-          <X className='w-4 h-4 mr-1' />
-          취소
-        </button>
-        <h1 className='text-2xl font-bold text-center'>러닝크루 등록</h1>
-        <div className='w-16'></div> {/* 양쪽 정렬을 위한 빈 공간 */}
-      </div>
+          <AlertDialogContent className='w-[320px] max-w-[90vw] rounded-3xl'>
+            <AlertDialogHeader>
+              <AlertDialogTitle className='text-lg font-semibold text-center'>
+                크루 등록 조건
+              </AlertDialogTitle>
+              <AlertDialogDescription className='text-sm text-center text-gray-500'>
+                아래 조건을 확인해주세요
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
+            <div className='py-4 space-y-3'>
+              <div className='space-y-2'>
+                <div className='text-sm text-gray-700'>
+                  - 크루 인원이 5명 이상
+                </div>
+                <div className='text-sm text-gray-700'>
+                  - 크루 전용 인스타그램 계정 운영
+                </div>
+                <div className='text-sm text-gray-700'>
+                  - 크루 인스타에 단체 활동 사진 업로드
+                </div>
+              </div>
+
+              <div className='mt-4 text-xs text-gray-500'>
+                * 해당 조건이 안되면 크루등록이 어려울수있습니다
+              </div>
+            </div>
+
+            <AlertDialogFooter className='flex-col space-y-2 sm:flex-col sm:space-x-0'>
+              <AlertDialogAction
+                onClick={() => setShowPreCheckModal(false)}
+                className='w-full bg-gray-900 rounded-full hover:bg-gray-800'
+              >
+                확인
+              </AlertDialogAction>
+              <AlertDialogCancel
+                onClick={() => router.back()}
+                className='w-full text-white rounded-full border-0 bg-slate-500 hover:text-gray-700 hover:bg-transparent'
+              >
+                취소
+              </AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </main>
+    );
+  }
+
+  // 기존 폼 렌더링 (모달이 닫힌 후)
+  return (
+    <main className='py-6 space-y-8 max-w-5xl'>
+      <div className='flex justify-center items-center'></div>
       <div className='p-4'>
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* 크루명 */}
@@ -670,7 +730,7 @@ export default function RegisterPage() {
               type='text'
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className='w-full px-3 py-2 border rounded-lg'
+              className='px-3 py-2 w-full rounded-lg border'
               required
               placeholder='크루 이름을 입력해주세요'
               disabled={isLoading}
@@ -682,14 +742,14 @@ export default function RegisterPage() {
             <label className='text-sm font-bold'>Instagram</label>
             <span className='ml-1 text-red-500'>*</span>
             <div className='relative'>
-              <span className='absolute left-3 top-2 text-muted-foreground'>
+              <span className='absolute top-2 left-3 text-muted-foreground'>
                 @
               </span>
               <input
                 type='text'
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
-                className='w-full px-3 py-2 border rounded-lg pl-7'
+                className='px-3 py-2 pl-7 w-full rounded-lg border'
                 required
                 placeholder='인스타그램 아이디'
                 disabled={isLoading}
@@ -717,6 +777,9 @@ export default function RegisterPage() {
               활동 장소
               <span className='ml-1 text-red-500'>*</span>
             </label>
+            <p className='mb-3 text-xs text-muted-foreground'>
+              최대 3개 입력 가능
+            </p>
 
             <div className='relative'>
               <input
@@ -724,14 +787,14 @@ export default function RegisterPage() {
                 value={newLocation}
                 onChange={(e) => setNewLocation(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className='w-full px-3 py-2 pr-20 border rounded-lg'
+                className='px-3 py-2 pr-20 w-full rounded-lg border'
                 placeholder='반포 한강공원'
                 disabled={isLoading}
               />
               <button
                 type='button'
                 onClick={addActivityLocation}
-                className='absolute px-3 py-1 text-sm transition-colors bg-gray-100 border rounded-lg right-1 top-1 hover:bg-gray-200'
+                className='absolute top-1 right-1 px-3 py-1 text-sm bg-gray-100 rounded-lg border transition-colors hover:bg-gray-200'
                 disabled={isLoading || !newLocation.trim()}
               >
                 추가
@@ -770,18 +833,22 @@ export default function RegisterPage() {
               지도 표시 위치
               <span className='ml-1 text-red-500'>*</span>
             </label>
+            <p className='mb-3 text-xs text-muted-foreground'>
+              네이버 지도에서 검색이 되는 장소 적어주세요.
+            </p>
+            <p className='mb-3 text-xs text-muted-foreground'>
+              해당 정보를 기반으로 지도에 크루 표시 위치가 됩니다
+            </p>
+
             <input
               type='text'
               value={mainAddress}
               onChange={(e) => setMainAddress(e.target.value)}
-              className='w-full px-3 py-2 border rounded-lg'
+              className='px-3 py-2 w-full rounded-lg border'
               required
-              placeholder='서울 강남터미널역'
+              placeholder='서울특별시 용산구 동자동 43-205'
               disabled={isLoading}
             />
-            <p className='text-xs text-gray-500'>
-              *해당 위치가 지도에 크루 표시 위치가 됩니다
-            </p>
           </div>
 
           {/* 활동 요일 */}
@@ -819,7 +886,7 @@ export default function RegisterPage() {
               <select
                 value={minAge}
                 onChange={handleMinAgeChange}
-                className='w-24 px-3 py-2 text-center bg-white border rounded-lg appearance-none'
+                className='px-3 py-2 w-24 text-center bg-white rounded-lg border appearance-none'
                 disabled={isLoading}
               >
                 {Array.from({ length: 101 }, (_, i) => (
@@ -832,7 +899,7 @@ export default function RegisterPage() {
               <select
                 value={maxAge}
                 onChange={handleMaxAgeChange}
-                className='w-24 px-3 py-2 text-center bg-white border rounded-lg appearance-none'
+                className='px-3 py-2 w-24 text-center bg-white rounded-lg border appearance-none'
                 disabled={isLoading}
               >
                 {Array.from({ length: 101 }, (_, i) => (
@@ -856,7 +923,7 @@ export default function RegisterPage() {
               onChange={(e) => setDescription(e.target.value)}
               className='w-full px-3 py-2 border rounded-lg min-h-[120px]'
               required
-              placeholder='크루를 소개해주세요'
+              placeholder='크루를 소개해주세요. 상세히 적으실수록 좋아요!'
               disabled={isLoading}
             />
           </div>
@@ -875,8 +942,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             <p className='text-xs text-gray-500'>
-              * JPG, PNG, WebP 형식 (최대 5MB, 자동으로 WebP 형식으로
-              변환됩니다)
+              * JPG, PNG, WebP 형식 (최대 5MB)
             </p>
           </div>
 
@@ -946,7 +1012,6 @@ export default function RegisterPage() {
             <p className='mb-3 text-sm text-gray-500'>
               크루 대표 활동 사진을 업로드해주세요. 최대{" "}
               {photoUploadStrategy.getMaxPhotoCount()}개까지 업로드 가능합니다.
-              JPG, PNG 파일은 자동으로 WebP로 변환되어 저장됩니다.
             </p>
             <div className='space-y-4'>
               {/* 현재 선택된 사진 표시 */}
@@ -954,7 +1019,7 @@ export default function RegisterPage() {
                 <div className='grid grid-cols-3 gap-4'>
                   {crewPhotos.map((photo, index) => (
                     <div key={index} className='relative'>
-                      <div className='flex items-center justify-center overflow-hidden bg-gray-100 rounded-md aspect-square'>
+                      <div className='flex overflow-hidden justify-center items-center bg-gray-100 rounded-md aspect-square'>
                         <MImage
                           src={URL.createObjectURL(photo)}
                           alt={`크루 사진 ${index + 1}`}
@@ -967,7 +1032,7 @@ export default function RegisterPage() {
                       <button
                         type='button'
                         onClick={() => removeCrewPhoto(index)}
-                        className='absolute p-1 text-white bg-red-500 rounded-full -top-2 -right-2'
+                        className='absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full'
                         aria-label='사진 삭제'
                       >
                         <X className='w-4 h-4' />
@@ -982,7 +1047,7 @@ export default function RegisterPage() {
                   }).map((_, index) => (
                     <div
                       key={`empty-${index}`}
-                      className='flex items-center justify-center bg-gray-100 border-2 border-gray-300 border-dashed rounded-md aspect-square'
+                      className='flex justify-center items-center bg-gray-100 rounded-md border-2 border-gray-300 border-dashed aspect-square'
                     >
                       <span className='text-xs text-gray-400'>빈 슬롯</span>
                     </div>
@@ -994,7 +1059,7 @@ export default function RegisterPage() {
               {crewPhotos.length < photoUploadStrategy.getMaxPhotoCount() && (
                 <Label
                   htmlFor='crew-photos'
-                  className='flex items-center justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-gray-400 focus:outline-none'
+                  className='flex justify-center items-center px-4 w-full h-32 bg-white rounded-md border-2 border-gray-300 border-dashed transition appearance-none cursor-pointer hover:border-gray-400 focus:outline-none'
                 >
                   <span className='flex flex-col items-center space-y-2'>
                     <Upload className='w-6 h-6 text-gray-600' />

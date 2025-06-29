@@ -501,7 +501,7 @@ export default function EditCrewPage() {
   if (isLoading) {
     return (
       <FormLayout title='크루 정보 수정'>
-        <div className='flex items-center justify-center flex-1'>
+        <div className='flex flex-1 justify-center items-center'>
           <Loader2 className='w-8 h-8 animate-spin text-muted-foreground' />
         </div>
       </FormLayout>
@@ -514,7 +514,7 @@ export default function EditCrewPage() {
         <Button
           variant='ghost'
           onClick={() => router.push("/admin/crew")}
-          className='flex items-center gap-1 text-muted-foreground'
+          className='flex gap-1 items-center text-muted-foreground'
         >
           <ArrowLeft className='w-4 h-4' />
           목록으로 돌아가기
@@ -523,11 +523,11 @@ export default function EditCrewPage() {
 
       <form onSubmit={handleSubmit} className='space-y-6'>
         {/* 크루 로고 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>크루 로고</h3>
-          <div className='flex items-center gap-4'>
+          <div className='flex gap-4 items-center'>
             {/* 로고 이미지 표시 */}
-            <div className='relative w-20 h-20 overflow-hidden rounded-full'>
+            <div className='overflow-hidden relative w-20 h-20 rounded-full'>
               {logoPreview ? (
                 <Image
                   src={logoPreview}
@@ -544,7 +544,7 @@ export default function EditCrewPage() {
                   className='object-cover'
                 />
               ) : (
-                <div className='flex items-center justify-center w-full h-full text-2xl font-medium rounded-full bg-muted'>
+                <div className='flex justify-center items-center w-full h-full text-2xl font-medium rounded-full bg-muted'>
                   {name.charAt(0)}
                 </div>
               )}
@@ -579,7 +579,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 표시 여부 */}
-        <div className='flex items-center justify-between p-4 border rounded-lg'>
+        <div className='flex justify-between items-center p-4 rounded-lg border'>
           <div>
             <h3 className='font-medium'>지도에 표시</h3>
             <p className='text-sm text-muted-foreground'>
@@ -590,7 +590,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 기본 정보 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>기본 정보</h3>
 
           <div className='space-y-2'>
@@ -617,7 +617,7 @@ export default function EditCrewPage() {
           <div className='space-y-2'>
             <Label htmlFor='instagram'>인스타그램</Label>
             <div className='relative'>
-              <span className='absolute transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground'>
+              <span className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground'>
                 @
               </span>
               <Input
@@ -643,7 +643,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 연령대 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>연령대</h3>
           <p className='mb-3 text-sm text-muted-foreground'>
             크루 회원들의 연령대 범위를 설정해주세요.
@@ -678,7 +678,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 활동 요일 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>활동 요일</h3>
           <p className='mb-3 text-sm text-muted-foreground'>
             크루가 활동하는 요일을 선택해주세요. (복수 선택 가능)
@@ -701,7 +701,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 위치 정보 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>지도 표시 위치 정보</h3>
 
           <div className='space-y-2'>
@@ -767,7 +767,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 활동 장소 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>활동 장소</h3>
 
           <div className='flex gap-2'>
@@ -792,13 +792,13 @@ export default function EditCrewPage() {
                 {activityLocations.map((location, index) => (
                   <div
                     key={index}
-                    className='flex items-center gap-1 px-3 py-1 text-sm rounded-full bg-accent'
+                    className='flex gap-1 items-center px-3 py-1 text-sm rounded-full bg-accent'
                   >
                     <span>{location}</span>
                     <button
                       type='button'
                       onClick={() => handleRemoveActivityLocation(location)}
-                      className='flex items-center justify-center w-4 h-4 rounded-full hover:bg-muted-foreground/20'
+                      className='flex justify-center items-center w-4 h-4 rounded-full hover:bg-muted-foreground/20'
                     >
                       ×
                     </button>
@@ -814,7 +814,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 가입 방식 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>가입 방식</h3>
           <p className='mb-3 text-sm text-muted-foreground'>
             신규 회원이 크루에 가입할 수 있는 방법을 선택해주세요.
@@ -847,7 +847,7 @@ export default function EditCrewPage() {
 
           {/* 인스타그램 경고 메시지 */}
           {useInstagramDm && !instagram && (
-            <div className='p-2 mb-3 text-sm text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-md'>
+            <div className='p-2 mb-3 text-sm text-yellow-800 bg-yellow-100 rounded-md border border-yellow-200'>
               인스타그램 DM을 가입 방식으로 사용하려면 인스타그램 계정을
               입력해주세요.
             </div>
@@ -872,7 +872,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 크루 대표 활동 사진 업로드 섹션 */}
-        <div className='p-4 space-y-4 border rounded-lg'>
+        <div className='p-4 space-y-4 rounded-lg border'>
           <h3 className='font-medium'>크루 대표 활동 사진</h3>
           <p className='mb-3 text-sm text-muted-foreground'>
             크루 대표 활동 사진을 추가하거나 수정할 수 있습니다. 최대 5장까지
@@ -886,7 +886,7 @@ export default function EditCrewPage() {
                 {/* 기존 사진 표시 */}
                 {existingPhotos.map((photo, index) => (
                   <div key={`existing-${index}`} className='relative'>
-                    <div className='flex items-center justify-center overflow-hidden bg-gray-100 rounded-md aspect-square'>
+                    <div className='flex overflow-hidden justify-center items-center bg-gray-100 rounded-md aspect-square'>
                       <Image
                         src={photo.url}
                         alt={`크루 활동 사진 ${index + 1}`}
@@ -899,7 +899,7 @@ export default function EditCrewPage() {
                     <button
                       type='button'
                       onClick={() => removeExistingPhoto(index)}
-                      className='absolute p-1 text-white bg-red-500 rounded-full -top-2 -right-2'
+                      className='absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full'
                       aria-label='사진 삭제'
                     >
                       <X className='w-4 h-4' />
@@ -910,7 +910,7 @@ export default function EditCrewPage() {
                 {/* 새로 업로드할 사진 표시 */}
                 {crewPhotosPreviews.map((preview, index) => (
                   <div key={`new-${index}`} className='relative'>
-                    <div className='flex items-center justify-center overflow-hidden bg-gray-100 rounded-md aspect-square'>
+                    <div className='flex overflow-hidden justify-center items-center bg-gray-100 rounded-md aspect-square'>
                       <Image
                         src={preview}
                         alt={`새 크루 활동 사진 ${index + 1}`}
@@ -923,7 +923,7 @@ export default function EditCrewPage() {
                     <button
                       type='button'
                       onClick={() => removeCrewPhoto(index)}
-                      className='absolute p-1 text-white bg-red-500 rounded-full -top-2 -right-2'
+                      className='absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full'
                       aria-label='사진 삭제'
                     >
                       <X className='w-4 h-4' />
@@ -938,7 +938,7 @@ export default function EditCrewPage() {
                 }).map((_, index) => (
                   <div
                     key={`empty-${index}`}
-                    className='flex items-center justify-center bg-gray-100 border-2 border-gray-300 border-dashed rounded-md aspect-square'
+                    className='flex justify-center items-center bg-gray-100 rounded-md border-2 border-gray-300 border-dashed aspect-square'
                   >
                     <span className='text-xs text-muted-foreground'>
                       빈 슬롯
@@ -965,7 +965,7 @@ export default function EditCrewPage() {
                   onClick={handleSelectCrewPhotos}
                   className='w-full h-20 border-dashed'
                 >
-                  <div className='flex flex-col items-center gap-1'>
+                  <div className='flex flex-col gap-1 items-center'>
                     <Upload className='w-5 h-5 text-muted-foreground' />
                     <span>
                       활동 사진 추가 (
@@ -982,7 +982,7 @@ export default function EditCrewPage() {
         </div>
 
         {/* 제출 버튼 */}
-        <div className='flex justify-end gap-2'>
+        <div className='flex gap-2 justify-end'>
           <Button
             type='button'
             variant='outline'
@@ -994,7 +994,7 @@ export default function EditCrewPage() {
           <Button type='submit' disabled={isSaving}>
             {isSaving ? (
               <>
-                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                <Loader2 className='mr-2 w-4 h-4 animate-spin' />
                 저장 중...
               </>
             ) : (
