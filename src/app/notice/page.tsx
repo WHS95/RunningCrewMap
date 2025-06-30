@@ -38,8 +38,8 @@ export default function NoticePage() {
                 크루 깃발 무료 제작 이벤트
               </h3>
               <p className='text-sm text-gray-600 mt-1'>
-                바모스 데포르테와 런하우스가 협업하여 여러분의 러닝 크루를 위한
-                특별한 깃발을 무료로 제작해드립니다.
+                보아델와 런하우스가 협업하여 여러분의 러닝 크루를 위한 특별한
+                깃발을 무료로 제작해드립니다.
               </p>
               <div className='flex justify-between items-center mt-3'>
                 <span className='text-xs text-blue-600 font-semibold'>
