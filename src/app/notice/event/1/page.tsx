@@ -7,11 +7,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "크루 깃발 무료 제작 이벤트 | 러닝크루맵",
   description:
-    "바모스 데포르테와 런하우스가 협업하여 여러분의 러닝 크루를 위한 특별한 깃발을 무료로 제작해드립니다.",
+    "보아델와 런하우스가 협업하여 여러분의 러닝 크루를 위한 특별한 깃발을 무료로 제작해드립니다.",
   openGraph: {
     title: "크루 깃발 무료 제작",
     description:
-      "바모스 데포르테와 런하우스가 협업하여 여러분의 러닝 크루를 위한 특별한 깃발을 무료로 제작해드립니다.",
+      "보아델와 런하우스가 협업하여 여러분의 러닝 크루를 위한 특별한 깃발을 무료로 제작해드립니다.",
     images: [
       {
         url: "/event5.webp",
@@ -46,7 +46,7 @@ export default function EventPage() {
         {/* 메인 타이틀 */}
         <div className='py-6 space-y-3 border-b border-gray-100'>
           <p className='text-sm text-center text-gray-600'>
-            바모스 데포르테와 런하우스가 협업하여
+            보아델와 런하우스가 협업하여
             <br />
             <span className='font-medium text-blue-500'>
               여러분의 러닝 크루를 위한 특별한 깃발
@@ -68,7 +68,7 @@ export default function EventPage() {
           </h3>
           <ul className='ml-6 space-y-1 text-sm text-gray-700'>
             <li>• 크루 깃발 사이즈 1000x600</li>
-            <li>• 깃발 하단에 런하우스, 바모스 데포르테 로고 포함</li>
+            <li>• 깃발 하단에 런하우스, 보아델 로고 포함</li>
           </ul>
 
           {/* 이미지 - 더 작게 */}

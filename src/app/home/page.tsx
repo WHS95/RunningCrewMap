@@ -129,7 +129,7 @@ export default function HomePage() {
         // imageUrl: "/event4.png",
         imageUrl: "/event5.webp",
         // title: "크루 깃발 무료 제작 이벤트",
-        // description: "바모스 데포르테와 런하우스 협업 프로모션",
+        // description: "보아델와 런하우스 협업 프로모션",
       },
     ],
     []
