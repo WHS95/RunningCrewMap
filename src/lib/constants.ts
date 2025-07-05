@@ -5,7 +5,7 @@ export const EXTERNAL_LINKS = {
 // 레이아웃 관련 상수
 export const LAYOUT = {
   HEADER_HEIGHT: "3.5rem", // 56px
-  MOBILE_NAV_HEIGHT: "3.5rem", // 64px
+  MOBILE_NAV_HEIGHT: "4.5rem", // 72px
 } as const;
 
 // CSS 변수로 사용할 수 있는 계산된 값들
