@@ -90,6 +90,7 @@ export default function NaverMap({
   const [isListOpen, setIsListOpen] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const markersCreatedRef = useRef(false);
   // 이미지 캐시 상태 저장용 ref 추가
   const imageCache = useRef<Record<string, HTMLImageElement>>({});
@@ -313,7 +314,12 @@ export default function NaverMap({
     );
 
     mapInstanceRef.current.setCenter(position);
-    mapInstanceRef.current.setZoom(15);
+    mapInstanceRef.current.setZoom(17);
+
+    // 지도 이동 후 마커 새로고침 트리거
+    setTimeout(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, 200);
 
     try {
       // crewService를 사용하여 상세 정보 가져오기
@@ -682,7 +688,7 @@ export default function NaverMap({
 
       // 드래그 시작 시 마커 숨김
       window.naver.maps.Event.addListener(mapInstance, "dragstart", () => {
-        toggleMarkers(false); // 마커 숨김
+        // toggleMarkers(false); // 마커 숨김
       });
 
       // 드래그 종료 후 클러스터링 다시 적용
@@ -823,6 +829,13 @@ export default function NaverMap({
     }
   }, [isMapReady, initializeMarkers, onMapLoad]);
 
+  // refreshTrigger 상태 변화 시 마커 새로고침
+  useEffect(() => {
+    if (refreshTrigger > 0 && typeof refreshMarkers === "function") {
+      refreshMarkers();
+    }
+  }, [refreshTrigger, refreshMarkers]);
+
   // 외부에서 선택된 크루가 변경될 경우 상태 업데이트
   useEffect(() => {
     if (externalSelectedCrew) {
@@ -836,10 +849,17 @@ export default function NaverMap({
           externalSelectedCrew.location.lng
         );
         mapInstanceRef.current.setCenter(position);
-        mapInstanceRef.current.setZoom(15);
+        mapInstanceRef.current.setZoom(17);
+
+        // 지도 이동 후 마커 새로고침
+        setTimeout(() => {
+          if (typeof refreshMarkers === "function") {
+            refreshMarkers();
+          }
+        }, 200);
       }
     }
-  }, [externalSelectedCrew]);
+  }, [externalSelectedCrew, refreshMarkers]);
 
   return (
     <div style={{ width, height }} className='relative'>
