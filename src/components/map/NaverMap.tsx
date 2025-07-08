@@ -9,6 +9,31 @@ import { SearchBox } from "@/components/search/SearchBox";
 import { ListFilter } from "lucide-react";
 import { crewService } from "@/lib/services/crew.service";
 
+// ======================================
+// 마커 클러스터링 설정 (수정 가능한 기준들)
+// ======================================
+const CLUSTERING_CONFIG = {
+  // 클러스터링을 시작할 최대 줌 레벨 (이 값보다 낮으면 클러스터링 적용)
+  MAX_ZOOM_FOR_CLUSTERING: 20,
+
+  // 클러스터링 거리 (픽셀 단위) - 이 거리 내의 마커들을 하나로 묶음
+  CLUSTER_DISTANCE: 80,
+
+  // 클러스터를 형성하기 위한 최소 마커 개수
+  MIN_CLUSTER_SIZE: 3,
+
+  // 클러스터 마커 크기
+  CLUSTER_SIZE: 40,
+
+  // 클러스터 스타일 설정
+  CLUSTER_STYLES: {
+    backgroundColor: "#000000", // 클러스터 배경색
+    textColor: "#ffff00", // 클러스터 텍스트 색상
+    borderColor: "#ffffff", // 클러스터 테두리 색상
+    borderWidth: 3, // 클러스터 테두리 두께
+  },
+};
+
 // Window 인터페이스 확장 - 네이버 지도 API 인증 실패 함수용
 declare global {
   interface Window {
@@ -26,6 +51,23 @@ interface NaverMapProps {
   onMapLoad?: () => void;
   onCrewSelect?: (crew: Crew) => void;
 }
+
+// 클러스터 타입 정의
+interface ClusterMarker {
+  id: string;
+  position: { lat: number; lng: number };
+  crews: Crew[];
+  isCluster: true;
+}
+
+interface IndividualMarker {
+  id: string;
+  position: { lat: number; lng: number };
+  crew: Crew;
+  isCluster: false;
+}
+
+type MarkerData = ClusterMarker | IndividualMarker;
 
 export default function NaverMap({
   width,
@@ -51,6 +93,126 @@ export default function NaverMap({
   const markersCreatedRef = useRef(false);
   // 이미지 캐시 상태 저장용 ref 추가
   const imageCache = useRef<Record<string, HTMLImageElement>>({});
+
+  // ======================================
+  // 클러스터링 로직
+  // ======================================
+
+  // 두 지점 간의 픽셀 거리 계산
+  const getPixelDistance = useCallback(
+    (
+      pos1: { lat: number; lng: number },
+      pos2: { lat: number; lng: number }
+    ): number => {
+      if (!mapInstanceRef.current || typeof window === "undefined") return 0;
+
+      const projection = mapInstanceRef.current.getProjection();
+      const point1 = projection.fromCoordToOffset(
+        new window.naver.maps.LatLng(pos1.lat, pos1.lng)
+      );
+      const point2 = projection.fromCoordToOffset(
+        new window.naver.maps.LatLng(pos2.lat, pos2.lng)
+      );
+
+      const dx = point1.x - point2.x;
+      const dy = point1.y - point2.y;
+
+      return Math.sqrt(dx * dx + dy * dy);
+    },
+    []
+  );
+
+  // 크루들을 클러스터링하는 함수
+  const clusterCrews = useCallback(
+    (crewList: Crew[]): MarkerData[] => {
+      if (!mapInstanceRef.current || typeof window === "undefined") return [];
+
+      const currentZoom = mapInstanceRef.current.getZoom();
+
+      // 줌 레벨이 높으면 클러스터링하지 않고 개별 마커로 표시
+      if (currentZoom > CLUSTERING_CONFIG.MAX_ZOOM_FOR_CLUSTERING) {
+        return crewList.map((crew) => ({
+          id: crew.id,
+          position: crew.location,
+          crew,
+          isCluster: false as const,
+        }));
+      }
+
+      const clusters: MarkerData[] = [];
+      const processed = new Set<string>();
+
+      crewList.forEach((crew) => {
+        if (processed.has(crew.id)) return;
+
+        // 현재 크루 주변의 다른 크루들 찾기
+        const nearbyCrews = crewList.filter((otherCrew) => {
+          if (processed.has(otherCrew.id) || crew.id === otherCrew.id)
+            return false;
+
+          const distance = getPixelDistance(crew.location, otherCrew.location);
+          return distance <= CLUSTERING_CONFIG.CLUSTER_DISTANCE;
+        });
+
+        // 클러스터 형성 조건 확인
+        if (nearbyCrews.length >= CLUSTERING_CONFIG.MIN_CLUSTER_SIZE - 1) {
+          // 클러스터 생성
+          const clusterCrews = [crew, ...nearbyCrews];
+
+          // 클러스터 중심점 계산 (평균 위치)
+          const centerLat =
+            clusterCrews.reduce((sum, c) => sum + c.location.lat, 0) /
+            clusterCrews.length;
+          const centerLng =
+            clusterCrews.reduce((sum, c) => sum + c.location.lng, 0) /
+            clusterCrews.length;
+
+          clusters.push({
+            id: `cluster-${crew.id}`,
+            position: { lat: centerLat, lng: centerLng },
+            crews: clusterCrews,
+            isCluster: true as const,
+          });
+
+          // 처리된 크루들 표시
+          clusterCrews.forEach((c) => processed.add(c.id));
+        } else {
+          // 개별 마커로 표시
+          clusters.push({
+            id: crew.id,
+            position: crew.location,
+            crew,
+            isCluster: false as const,
+          });
+          processed.add(crew.id);
+        }
+      });
+
+      return clusters;
+    },
+    [getPixelDistance]
+  );
+
+  // 클러스터 마커 콘텐츠 생성
+  const createClusterContent = useCallback((clusterData: ClusterMarker) => {
+    const size = CLUSTERING_CONFIG.CLUSTER_SIZE;
+    const styles = CLUSTERING_CONFIG.CLUSTER_STYLES;
+
+    return `<div style="
+      width: ${size}px; 
+      height: ${size}px; 
+      border-radius: 50%; 
+      background-color: ${styles.backgroundColor}; 
+      border: ${styles.borderWidth}px solid ${styles.borderColor}; 
+      color: ${styles.textColor}; 
+      font-weight: bold; 
+      text-align: center; 
+      line-height: ${size}px; 
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      font-size: ${Math.min(16, size / 3)}px;
+      cursor: pointer;
+    ">${clusterData.crews.length}</div>`;
+  }, []);
 
   // 이미지 프리로딩 개선
   useEffect(() => {
@@ -167,7 +329,7 @@ export default function NaverMap({
     setIsDetailOpen(true);
   }, []);
 
-  // 마커 생성 함수 - 로고 이미지 포함하되 최적화
+  // 마커 생성 함수 - 로고 이미지 포함하되 최적화 (기존 디자인 유지)
   const createMarkerContent = useCallback((crew: Crew) => {
     const size = 40; // 크기 최적화
 
@@ -200,9 +362,9 @@ export default function NaverMap({
     </div>`;
   }, []);
 
-  // 최적화된 마커 생성 함수 - 배치 처리 방식
-  const createMarkersInBatches = useCallback(
-    (markerCrews: Crew[], batchSize = 20, delayMs = 100) => {
+  // 클러스터링을 적용한 마커 생성 함수
+  const createMarkersWithClustering = useCallback(
+    (markerData: MarkerData[], batchSize = 20, delayMs = 100) => {
       // 안전성 검사 강화
       if (
         !mapInstanceRef.current ||
@@ -223,7 +385,7 @@ export default function NaverMap({
       const createNextBatch = () => {
         // 배치 생성 중에도 API 상태 재확인
         if (
-          currentIndex >= markerCrews.length ||
+          currentIndex >= markerData.length ||
           !mapInstanceRef.current ||
           !window.naver ||
           !window.naver.maps ||
@@ -232,11 +394,11 @@ export default function NaverMap({
           return;
         }
 
-        const endIndex = Math.min(currentIndex + batchSize, markerCrews.length);
-        const currentBatch = markerCrews.slice(currentIndex, endIndex);
+        const endIndex = Math.min(currentIndex + batchSize, markerData.length);
+        const currentBatch = markerData.slice(currentIndex, endIndex);
 
         try {
-          const batchMarkers = currentBatch.map((crew) => {
+          const batchMarkers = currentBatch.map((data) => {
             // 각 마커 생성 시에도 안전성 검사
             if (!window.naver?.maps?.Marker) {
               throw new Error(
@@ -246,38 +408,59 @@ export default function NaverMap({
 
             const marker = new window.naver.maps.Marker({
               position: new window.naver.maps.LatLng(
-                crew.location.lat,
-                crew.location.lng
+                data.position.lat,
+                data.position.lng
               ),
               map: mapInstanceRef.current!,
               icon: {
-                content: createMarkerContent(crew),
-                size: new window.naver.maps.Size(36, 36),
-                anchor: new window.naver.maps.Point(18, 18),
+                content: data.isCluster
+                  ? createClusterContent(data)
+                  : createMarkerContent(data.crew),
+                size: new window.naver.maps.Size(
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 36,
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 36
+                ),
+                anchor: new window.naver.maps.Point(
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 18,
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 18
+                ),
               },
             });
 
             // 마커 클릭 이벤트
             window.naver.maps.Event.addListener(marker, "click", async () => {
-              try {
-                // crewService를 사용하여 상세 정보 가져오기
-                const detailedCrew = await crewService.getCrewDetail(crew.id);
-                setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+              if (data.isCluster) {
+                // 클러스터 클릭 시 줌인
+                const currentZoom = mapInstanceRef.current!.getZoom();
+                const newZoom = Math.min(currentZoom + 2, 21);
+                mapInstanceRef.current!.setZoom(newZoom);
+                mapInstanceRef.current!.setCenter(
+                  new window.naver.maps.LatLng(
+                    data.position.lat,
+                    data.position.lng
+                  )
+                );
+              } else {
+                // 개별 마커 클릭 시 크루 상세 정보 표시
+                try {
+                  const detailedCrew = await crewService.getCrewDetail(
+                    data.crew.id
+                  );
+                  setSelectedCrew(detailedCrew || data.crew);
 
-                // 외부 핸들러에도 알림
-                if (onCrewSelect) {
-                  onCrewSelect(detailedCrew || crew);
-                }
-              } catch (error) {
-                console.error("크루 상세 정보 조회 실패:", error);
-                setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+                  if (onCrewSelect) {
+                    onCrewSelect(detailedCrew || data.crew);
+                  }
+                } catch (error) {
+                  console.error("크루 상세 정보 조회 실패:", error);
+                  setSelectedCrew(data.crew);
 
-                // 에러 발생 시에도 외부 핸들러 호출
-                if (onCrewSelect) {
-                  onCrewSelect(crew);
+                  if (onCrewSelect) {
+                    onCrewSelect(data.crew);
+                  }
                 }
+                setIsDetailOpen(true);
               }
-              setIsDetailOpen(true);
             });
 
             return marker;
@@ -287,12 +470,11 @@ export default function NaverMap({
           currentIndex = endIndex;
 
           // 다음 배치 생성
-          if (currentIndex < markerCrews.length) {
+          if (currentIndex < markerData.length) {
             setTimeout(createNextBatch, delayMs);
           }
         } catch (error) {
           console.error("마커 배치 생성 중 오류 발생:", error);
-          // 오류 발생 시 다음 배치로 넘어가지 않고 종료
           return;
         }
       };
@@ -302,10 +484,48 @@ export default function NaverMap({
 
       return createdMarkers;
     },
-    [createMarkerContent, onCrewSelect, setSelectedCrew, setIsDetailOpen]
+    [
+      createClusterContent,
+      createMarkerContent,
+      onCrewSelect,
+      setSelectedCrew,
+      setIsDetailOpen,
+    ]
   );
 
-  // 마커 초기화 - 한 번만 실행되도록 함
+  // 마커 새로 고침 함수 - 클러스터링 적용
+  const refreshMarkers = useCallback(() => {
+    if (!mapInstanceRef.current || typeof window === "undefined") return;
+
+    // 기존 마커 제거
+    markersRef.current.forEach((marker) => {
+      marker.setMap(null);
+    });
+    markersRef.current = [];
+
+    // 화면에 보이는 크루만 필터링
+    const bounds = mapInstanceRef.current.getBounds();
+    const visibleCrewsForClustering = bounds
+      ? crews.filter((crew) => {
+          const position = new window.naver.maps.LatLng(
+            crew.location.lat,
+            crew.location.lng
+          );
+          return (bounds as naver.maps.LatLngBounds).hasLatLng(position);
+        })
+      : crews;
+
+    // 클러스터링 적용
+    const markerData = clusterCrews(visibleCrewsForClustering);
+
+    // 새 마커 생성
+    markersRef.current = createMarkersWithClustering(markerData, 20, 50);
+
+    // 보이는 크루 목록 업데이트
+    updateVisibleCrews();
+  }, [crews, clusterCrews, createMarkersWithClustering, updateVisibleCrews]);
+
+  // 마커 초기화 - 클러스터링 적용
   const initializeMarkers = useCallback(() => {
     if (
       !mapInstanceRef.current ||
@@ -314,39 +534,16 @@ export default function NaverMap({
     )
       return;
 
-    // 화면에 보이는 마커만 우선 생성하고 나머지는 지연 생성
-    const bounds = mapInstanceRef.current.getBounds();
-
-    // 마커 생성 우선순위 결정 (화면에 보이는 것 먼저)
-    const sortedCrews = [...crews].sort((a, b) => {
-      const posA = new window.naver.maps.LatLng(a.location.lat, a.location.lng);
-      const posB = new window.naver.maps.LatLng(b.location.lat, b.location.lng);
-      const isAVisible = bounds
-        ? (bounds as naver.maps.LatLngBounds).hasLatLng(posA)
-        : false;
-      const isBVisible = bounds
-        ? (bounds as naver.maps.LatLngBounds).hasLatLng(posB)
-        : false;
-
-      if (isAVisible && !isBVisible) return -1;
-      if (!isAVisible && isBVisible) return 1;
-      return 0;
-    });
-
-    // 최적화된 배치 마커 생성 사용
-    markersRef.current = createMarkersInBatches(sortedCrews, 20, 100);
+    // 클러스터링 적용된 마커 생성
+    refreshMarkers();
     markersCreatedRef.current = true;
-
-    // 초기 보이는 크루 설정
-    updateVisibleCrews();
 
     // 마커 초기화가 완료되면 반드시 onMapLoad 호출
     if (onMapLoad) {
-      console.log("Markers initialized, calling onMapLoad");
-      // 짧은 지연 후 호출하여 마커가 실제로 렌더링될 시간 확보
+      console.log("Markers initialized with clustering, calling onMapLoad");
       setTimeout(onMapLoad, 100);
     }
-  }, [crews, updateVisibleCrews, createMarkersInBatches, onMapLoad]);
+  }, [refreshMarkers, onMapLoad]);
 
   // 마커 표시/숨김 토글 - 줌 이벤트 발생 시
   const toggleMarkers = useCallback((visible: boolean) => {
@@ -472,21 +669,19 @@ export default function NaverMap({
         }
       }, 5000);
 
-      // 줌 시작 시 마커 숨김
+      // 줌 시작 시 마커 숨김 (드래그로 인한 줌만)
       window.naver.maps.Event.addListener(mapInstance, "zoom_start", () => {
         setIsZooming(true);
         toggleMarkers(false); // 마커 숨김
       });
 
-      // 줌 종료 후 마커 표시
+      // 모든 줌 변경 시 클러스터링 다시 적용 (클릭 줌인, 드래그 줌, 버튼 줌 등 모든 경우)
       window.naver.maps.Event.addListener(mapInstance, "zoom_changed", () => {
-        if (isZooming) {
-          // 줌 변경 후 약간의 지연 시간을 두고 마커 다시 표시
-          setTimeout(() => {
-            toggleMarkers(true); // 마커 다시 표시
-            setIsZooming(false);
-          }, 100);
-        }
+        // 줌 변경 후 클러스터링 다시 적용
+        setTimeout(() => {
+          refreshMarkers(); // 클러스터링 다시 적용
+          setIsZooming(false); // 줌 상태 초기화
+        }, 150);
       });
 
       // 드래그 시작 시 마커 숨김
@@ -494,11 +689,10 @@ export default function NaverMap({
         toggleMarkers(false); // 마커 숨김
       });
 
-      // 드래그 종료 후 마커 표시
+      // 드래그 종료 후 클러스터링 다시 적용
       window.naver.maps.Event.addListener(mapInstance, "dragend", () => {
-        toggleMarkers(true); // 마커 다시 표시
-        // 지도 이동 종료 시 보이는 크루 업데이트
-        updateVisibleCrews();
+        // 지도 이동 종료 시 클러스터링 다시 적용
+        refreshMarkers();
       });
 
       setIsMapReady(true);
@@ -609,7 +803,7 @@ export default function NaverMap({
     initialCenter.lat,
     initialCenter.lng,
     initialZoom,
-    updateVisibleCrews,
+    refreshMarkers,
     toggleMarkers,
     isZooming,
     onMapLoad,
