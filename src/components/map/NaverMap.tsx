@@ -206,9 +206,10 @@ export default function NaverMap({
       background-color: ${styles.backgroundColor}; 
       border: ${styles.borderWidth}px solid ${styles.borderColor}; 
       color: ${styles.textColor}; 
-      font-weight: bold; 
-      text-align: center; 
-      line-height: ${size}px; 
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       font-size: ${Math.min(16, size / 3)}px;
       cursor: pointer;
