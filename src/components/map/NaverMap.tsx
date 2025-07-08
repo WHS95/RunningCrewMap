@@ -561,14 +561,10 @@ export default function NaverMap({
 
     // 환경변수 검증
     const clientId = process.env.NEXT_PUBLIC_RUN_NAVER_CLIENT_ID;
-    console.log("clientId33333333", clientId);
     if (!clientId) {
       console.error(
         "❌ NEXT_PUBLIC_RUN_NAVER_CLIENT_ID 환경변수가 설정되지 않았습니다."
       );
-      console.error("📝 .env.local 파일에 다음과 같이 추가해주세요:");
-      console.error("NEXT_PUBLIC_RUN_NAVER_CLIENT_ID=your_naver_client_id");
-
       if (onMapLoad) {
         onMapLoad();
       }
@@ -586,17 +582,17 @@ export default function NaverMap({
 
         // 구체적인 오류 정보 제공
         const errorMessage = `
-네이버 지도 서비스 인증 실패
+            네이버 지도 서비스 인증 실패
 
-다음 사항을 확인해주세요:
-1. 네이버 클라우드 플랫폼에서 Maps API 서비스가 활성화되어 있는지 확인
-2. 클라이언트 ID가 올바른지 확인 (현재: ${clientId})
-3. 도메인 설정에 ${window.location.origin}이 포함되어 있는지 확인
-4. 개발용 도메인: localhost:3000, 127.0.0.1:3000 등록 확인
+            다음 사항을 확인해주세요:
+            1. 네이버 클라우드 플랫폼에서 Maps API 서비스가 활성화되어 있는지 확인
+            2. 클라이언트 ID가 올바른지 확인 (현재: ${clientId})
+            3. 도메인 설정에 ${window.location.origin}이 포함되어 있는지 확인
+            4. 개발용 도메인: localhost:3000, 127.0.0.1:3000 등록 확인
 
-해결 방법:
-- HTTPS 사용 권장 (npm run dev:https)
-- 네이버 클라우드 플랫폼 콘솔에서 설정 확인
+            해결 방법:
+            - HTTPS 사용 권장 (npm run dev:https)
+            - 네이버 클라우드 플랫폼 콘솔에서 설정 확인
         `.trim();
 
         console.error(errorMessage);
