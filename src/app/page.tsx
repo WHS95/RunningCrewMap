@@ -186,6 +186,7 @@ function HomePage() {
   // 네이버 지도 초기 로딩 시 정적 이미지로 교체
   useEffect(() => {
     // 서버에서 위치 정보를 가져올 때 미리 지도 이미지 URL 생성
+    // 참고: Static Map API는 별도의 API이므로 기존 엔드포인트 유지
     const mapCenter = center;
     const mapImageUrl = `https://naveropenapi.apigw.ntruss.com/map-static/v2/raster?w=640&h=640&center=${mapCenter.lng},${mapCenter.lat}&level=13&format=png&scale=2&markers=type:d|size:mid|pos:${mapCenter.lng} ${mapCenter.lat}`;
 
@@ -201,7 +202,7 @@ function HomePage() {
         {/* 지도 미리보기 이미지 표시 (네이버 지도 로딩 중일 때) - Next.js Image 컴포넌트로 최적화 */}
         {preloadedMapUrl && !isLocationLoading ? (
           <div className='relative h-[80vh]'>
-            <div className='absolute top-0 left-0 right-0 p-4 text-center'>
+            <div className='absolute top-0 right-0 left-0 p-4 text-center'>
               <LoadingSpinner />
             </div>
           </div>
@@ -220,7 +221,7 @@ function HomePage() {
 
   return (
     <main
-      className='relative flex flex-col'
+      className='flex relative flex-col'
       style={{
         height: CSS_VARIABLES.CONTENT_HEIGHT,
       }}

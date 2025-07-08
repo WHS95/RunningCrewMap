@@ -9,6 +9,13 @@ import { SearchBox } from "@/components/search/SearchBox";
 import { ListFilter } from "lucide-react";
 import { crewService } from "@/lib/services/crew.service";
 
+// Window 인터페이스 확장 - 네이버 지도 API 인증 실패 함수용
+declare global {
+  interface Window {
+    navermap_authFailure?: () => void;
+  }
+}
+
 interface NaverMapProps {
   width: string;
   height: string;
@@ -196,64 +203,97 @@ export default function NaverMap({
   // 최적화된 마커 생성 함수 - 배치 처리 방식
   const createMarkersInBatches = useCallback(
     (markerCrews: Crew[], batchSize = 20, delayMs = 100) => {
-      if (!mapInstanceRef.current || typeof window === "undefined") return [];
+      // 안전성 검사 강화
+      if (
+        !mapInstanceRef.current ||
+        typeof window === "undefined" ||
+        !window.naver ||
+        !window.naver.maps ||
+        !window.naver.maps.Marker
+      ) {
+        console.warn(
+          "네이버 지도 API가 완전히 로드되지 않았습니다. 마커 생성을 건너뜁니다."
+        );
+        return [];
+      }
 
       let createdMarkers: naver.maps.Marker[] = [];
       let currentIndex = 0;
 
       const createNextBatch = () => {
-        if (currentIndex >= markerCrews.length || !mapInstanceRef.current)
+        // 배치 생성 중에도 API 상태 재확인
+        if (
+          currentIndex >= markerCrews.length ||
+          !mapInstanceRef.current ||
+          !window.naver ||
+          !window.naver.maps ||
+          !window.naver.maps.Marker
+        ) {
           return;
+        }
 
         const endIndex = Math.min(currentIndex + batchSize, markerCrews.length);
         const currentBatch = markerCrews.slice(currentIndex, endIndex);
 
-        const batchMarkers = currentBatch.map((crew) => {
-          const marker = new window.naver.maps.Marker({
-            position: new window.naver.maps.LatLng(
-              crew.location.lat,
-              crew.location.lng
-            ),
-            map: mapInstanceRef.current!,
-            icon: {
-              content: createMarkerContent(crew),
-              size: new window.naver.maps.Size(36, 36),
-              anchor: new window.naver.maps.Point(18, 18),
-            },
-          });
-
-          // 마커 클릭 이벤트
-          window.naver.maps.Event.addListener(marker, "click", async () => {
-            try {
-              // crewService를 사용하여 상세 정보 가져오기
-              const detailedCrew = await crewService.getCrewDetail(crew.id);
-              setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
-
-              // 외부 핸들러에도 알림
-              if (onCrewSelect) {
-                onCrewSelect(detailedCrew || crew);
-              }
-            } catch (error) {
-              console.error("크루 상세 정보 조회 실패:", error);
-              setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
-
-              // 에러 발생 시에도 외부 핸들러 호출
-              if (onCrewSelect) {
-                onCrewSelect(crew);
-              }
+        try {
+          const batchMarkers = currentBatch.map((crew) => {
+            // 각 마커 생성 시에도 안전성 검사
+            if (!window.naver?.maps?.Marker) {
+              throw new Error(
+                "네이버 지도 Marker 클래스에 접근할 수 없습니다."
+              );
             }
-            setIsDetailOpen(true);
+
+            const marker = new window.naver.maps.Marker({
+              position: new window.naver.maps.LatLng(
+                crew.location.lat,
+                crew.location.lng
+              ),
+              map: mapInstanceRef.current!,
+              icon: {
+                content: createMarkerContent(crew),
+                size: new window.naver.maps.Size(36, 36),
+                anchor: new window.naver.maps.Point(18, 18),
+              },
+            });
+
+            // 마커 클릭 이벤트
+            window.naver.maps.Event.addListener(marker, "click", async () => {
+              try {
+                // crewService를 사용하여 상세 정보 가져오기
+                const detailedCrew = await crewService.getCrewDetail(crew.id);
+                setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
+
+                // 외부 핸들러에도 알림
+                if (onCrewSelect) {
+                  onCrewSelect(detailedCrew || crew);
+                }
+              } catch (error) {
+                console.error("크루 상세 정보 조회 실패:", error);
+                setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+
+                // 에러 발생 시에도 외부 핸들러 호출
+                if (onCrewSelect) {
+                  onCrewSelect(crew);
+                }
+              }
+              setIsDetailOpen(true);
+            });
+
+            return marker;
           });
 
-          return marker;
-        });
+          createdMarkers = [...createdMarkers, ...batchMarkers];
+          currentIndex = endIndex;
 
-        createdMarkers = [...createdMarkers, ...batchMarkers];
-        currentIndex = endIndex;
-
-        // 다음 배치 생성
-        if (currentIndex < markerCrews.length) {
-          setTimeout(createNextBatch, delayMs);
+          // 다음 배치 생성
+          if (currentIndex < markerCrews.length) {
+            setTimeout(createNextBatch, delayMs);
+          }
+        } catch (error) {
+          console.error("마커 배치 생성 중 오류 발생:", error);
+          // 오류 발생 시 다음 배치로 넘어가지 않고 종료
+          return;
         }
       };
 
@@ -262,7 +302,7 @@ export default function NaverMap({
 
       return createdMarkers;
     },
-    [createMarkerContent, onCrewSelect]
+    [createMarkerContent, onCrewSelect, setSelectedCrew, setIsDetailOpen]
   );
 
   // 마커 초기화 - 한 번만 실행되도록 함
@@ -322,11 +362,67 @@ export default function NaverMap({
   useEffect(() => {
     if (!mapRef.current || typeof window === "undefined") return;
 
+    // 환경변수 검증
+    const clientId = process.env.NEXT_PUBLIC_RUN_NAVER_CLIENT_ID;
+    console.log("clientId33333333", clientId);
+    if (!clientId) {
+      console.error(
+        "❌ NEXT_PUBLIC_RUN_NAVER_CLIENT_ID 환경변수가 설정되지 않았습니다."
+      );
+      console.error("📝 .env.local 파일에 다음과 같이 추가해주세요:");
+      console.error("NEXT_PUBLIC_RUN_NAVER_CLIENT_ID=your_naver_client_id");
+
+      if (onMapLoad) {
+        onMapLoad();
+      }
+      return;
+    }
+
+    console.log("🗺️ 네이버 지도 초기화 시작 - Client ID:", clientId);
+
     let script: HTMLScriptElement | null = null;
 
-    const initializeMap = () => {
-      if (!window.naver) return;
+    // 네이버 지도 API 인증 실패 처리 함수 등록
+    if (typeof window !== "undefined") {
+      window.navermap_authFailure = function () {
+        console.error("네이버 지도 API 인증 실패");
 
+        // 구체적인 오류 정보 제공
+        const errorMessage = `
+네이버 지도 서비스 인증 실패
+
+다음 사항을 확인해주세요:
+1. 네이버 클라우드 플랫폼에서 Maps API 서비스가 활성화되어 있는지 확인
+2. 클라이언트 ID가 올바른지 확인 (현재: ${clientId})
+3. 도메인 설정에 ${window.location.origin}이 포함되어 있는지 확인
+4. 개발용 도메인: localhost:3000, 127.0.0.1:3000 등록 확인
+
+해결 방법:
+- HTTPS 사용 권장 (npm run dev:https)
+- 네이버 클라우드 플랫폼 콘솔에서 설정 확인
+        `.trim();
+
+        console.error(errorMessage);
+
+        // 인증 실패 시에도 로딩 완료 처리하여 무한 로딩 방지
+        if (onMapLoad) {
+          onMapLoad();
+        }
+
+        // 개발 환경에서만 상세 알림 표시
+        if (process.env.NODE_ENV === "development") {
+          alert("지도 서비스 인증에 실패했습니다. 콘솔을 확인해주세요.");
+        }
+      };
+    }
+
+    const initializeMap = () => {
+      if (!window.naver || !window.naver.maps) {
+        console.error("네이버 지도 API가 로드되지 않았습니다.");
+        return;
+      }
+
+      // 개선된 지도 옵션 설정
       const mapOptions = {
         center: new window.naver.maps.LatLng(
           initialCenter.lat,
@@ -336,16 +432,37 @@ export default function NaverMap({
         minZoom: 7,
         maxZoom: 21,
         zoomControl: false,
-        renderOptions: {
-          loading: false,
+        mapTypeControl: false,
+        scaleControl: false,
+        logoControl: false,
+        mapDataControl: false,
+        zoomControlOptions: {
+          position: window.naver.maps.Position.TOP_RIGHT,
         },
+        // 지도 스타일 최적화
+        mapTypeId: window.naver.maps.MapTypeId.NORMAL,
       };
 
       const mapDiv = mapRef.current;
-      if (!mapDiv) return;
+      if (!mapDiv) {
+        console.error("지도 컨테이너 요소를 찾을 수 없습니다.");
+        return;
+      }
 
-      const mapInstance = new window.naver.maps.Map(mapDiv, mapOptions);
-      mapInstanceRef.current = mapInstance;
+      let mapInstance;
+      try {
+        mapInstance = new window.naver.maps.Map(mapDiv, mapOptions);
+        mapInstanceRef.current = mapInstance;
+
+        console.log("네이버 지도가 성공적으로 초기화되었습니다.");
+      } catch (error) {
+        console.error("지도 초기화 중 오류 발생:", error);
+        // 지도 초기화 실패 시에도 onMapLoad 호출
+        if (onMapLoad) {
+          onMapLoad();
+        }
+        return;
+      }
 
       // 안전장치: 지도가 로드된 후 5초 내에 마커 초기화가 완료되지 않으면 강제로 로드 완료 처리
       const mapLoadTimer = setTimeout(() => {
@@ -391,22 +508,76 @@ export default function NaverMap({
       };
     };
 
-    if (window.naver && window.naver.maps) {
-      initializeMap();
-    } else {
+    // 스크립트 로딩 재시도 로직
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const loadMapScript = () => {
+      if (window.naver && window.naver.maps) {
+        initializeMap();
+        return;
+      }
+
       script = document.createElement("script");
-      script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_CLIENT_ID}`;
-      script.async = true; // 비동기 로딩
-      script.defer = true; // 지연 로딩
-      script.onload = initializeMap;
+      // HTTPS 강제 사용 및 네이버 클라우드 플랫폼 통합 방식
+      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`;
+      script.async = true;
+      script.defer = true;
+
+      script.onload = () => {
+        console.log("네이버 지도 스크립트 로딩 성공");
+        initializeMap();
+      };
+
+      script.onerror = () => {
+        console.error(
+          `네이버 지도 스크립트 로딩 실패 (시도 ${
+            retryCount + 1
+          }/${maxRetries})`
+        );
+
+        // 재시도 로직
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`${retryCount * 2}초 후 재시도...`);
+
+          // 실패한 스크립트 제거
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          // 지연 후 재시도
+          setTimeout(loadMapScript, retryCount * 2000);
+        } else {
+          console.error("네이버 지도 스크립트 로딩 최종 실패");
+          console.error("다음 사항을 확인해주세요:");
+          console.error("1. 인터넷 연결 상태");
+          console.error("2. 네이버 클라우드 플랫폼 서비스 상태");
+          console.error("3. 클라이언트 ID 및 도메인 설정");
+
+          // 최종 실패 시에도 onMapLoad 호출하여 무한 로딩 방지
+          if (onMapLoad) {
+            onMapLoad();
+          }
+        }
+      };
+
       document.head.appendChild(script);
-    }
+    };
+
+    // 스크립트 로딩 시작
+    loadMapScript();
 
     // 언마운트 시 모든 리소스 해제 - 개선된 메모리 관리
     return () => {
       // 스크립트 제거
       if (script && script.parentNode) {
         script.parentNode.removeChild(script);
+      }
+
+      // 전역 인증 실패 함수 정리
+      if (typeof window !== "undefined" && window.navermap_authFailure) {
+        delete window.navermap_authFailure;
       }
 
       // 마커 제거

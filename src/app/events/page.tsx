@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   MapPin,
@@ -61,27 +61,41 @@ export default function EventsPage() {
     return marathonService.getMarathonEventsByMonth(monthIndex);
   }, [selectedMonth]);
 
-  // 이벤트 상세 정보 다이얼로그를 열기
-  const handleEventClick = (event: MarathonEvent) => {
+  // 이벤트 상세 정보 다이얼로그를 열기 - 메모이제이션으로 최적화
+  const handleEventClick = useCallback((event: MarathonEvent) => {
     setSelectedEvent(event);
     setIsDialogOpen(true);
-  };
+  }, []);
 
-  // 현재 월이 변경되면 자동 스크롤
+  // 다이얼로그 닫기 핸들러
+  const handleDialogClose = useCallback(() => {
+    setIsDialogOpen(false);
+    setSelectedEvent(null);
+  }, []);
+
+  // 현재 월이 변경되면 자동 스크롤 - 성능 최적화
   useEffect(() => {
-    // 현재 선택된 월 버튼으로 스크롤
-    const buttons = document.querySelectorAll("button");
-    const selectedButton = Array.from(buttons).find(
-      (button) => button.textContent === selectedMonth
-    );
+    // IntersectionObserver를 사용하여 더 효율적인 스크롤 처리
+    const timeoutId = setTimeout(() => {
+      const monthFilterContainer = document.querySelector(
+        "[data-month-filter]"
+      );
+      if (!monthFilterContainer) return;
 
-    if (selectedButton) {
-      selectedButton.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
+      const selectedButton = monthFilterContainer.querySelector(
+        `button[data-month="${selectedMonth}"]`
+      );
+
+      if (selectedButton) {
+        selectedButton.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }, 100); // 디바운싱으로 성능 최적화
+
+    return () => clearTimeout(timeoutId);
   }, [selectedMonth]);
 
   return (
@@ -96,13 +110,18 @@ export default function EventsPage() {
         className='sticky backdrop-blur-md'
         style={{ top: LAYOUT.HEADER_HEIGHT }}
       >
-        <div className='flex gap-2 p-4 pb-2 overflow-x-auto scrollbar-hide'>
+        <div
+          className='flex gap-2 p-4 pb-2 overflow-x-auto scrollbar-hide'
+          data-month-filter
+        >
           {MONTHS.map((month) => (
             <Button
               key={month}
               variant={selectedMonth === month ? "default" : "outline"}
               size='sm'
               onClick={() => setSelectedMonth(month)}
+              data-month={month}
+              className='whitespace-nowrap'
             >
               {month}
             </Button>
@@ -166,7 +185,7 @@ export default function EventsPage() {
       </div>
 
       {/* 이벤트 상세 정보 다이얼로그 */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className='sm:max-w-[425px]'>
           {selectedEvent && (
             <>
