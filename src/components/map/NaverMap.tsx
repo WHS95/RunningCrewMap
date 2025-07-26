@@ -6,7 +6,7 @@ import type { Crew } from "@/lib/types/crew";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { VisibleCrewList } from "@/components/map/VisibleCrewList";
 import { SearchBox } from "@/components/search/SearchBox";
-import { ListFilter } from "lucide-react";
+import { ListFilter, Target, Loader2 } from "lucide-react";
 import { crewService } from "@/lib/services/crew.service";
 
 // ======================================
@@ -94,6 +94,76 @@ export default function NaverMap({
   const markersCreatedRef = useRef(false);
   // 이미지 캐시 상태 저장용 ref 추가
   const imageCache = useRef<Record<string, HTMLImageElement>>({});
+  // 현재 위치 관련 상태
+  const [isLocating, setIsLocating] = useState(false);
+
+  // ======================================
+  // 현재 위치 이동 함수
+  // ======================================
+
+  // 현재 위치로 지도 이동
+  const moveToCurrentLocation = useCallback(async () => {
+    if (!mapInstanceRef.current || typeof window === "undefined") return;
+
+    setIsLocating(true);
+
+    try {
+      // Geolocation API 지원 확인
+      if (!navigator.geolocation) {
+        alert("이 브라우저에서는 위치 서비스를 지원하지 않습니다.");
+        return;
+      }
+
+      // 현재 위치 가져오기
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true, // 높은 정확도 요청
+            timeout: 10000, // 10초 타임아웃
+            maximumAge: 300000, // 5분간 캐시된 위치 사용 가능
+          });
+        }
+      );
+
+      const { latitude, longitude } = position.coords;
+
+      // 지도 중심을 현재 위치로 이동
+      const currentPosition = new window.naver.maps.LatLng(latitude, longitude);
+      mapInstanceRef.current.setCenter(currentPosition);
+      mapInstanceRef.current.setZoom(16); // 적절한 줌 레벨 설정
+
+      // 지도 이동 후 마커 새로고침
+      setTimeout(() => {
+        setRefreshTrigger((prev) => prev + 1);
+      }, 200);
+    } catch (error) {
+      // 에러 처리
+      if (error instanceof GeolocationPositionError) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            alert(
+              "위치 접근이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요."
+            );
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert(
+              "현재 위치를 찾을 수 없습니다. 위치 서비스가 활성화되어 있는지 확인해주세요."
+            );
+            break;
+          case error.TIMEOUT:
+            alert("위치 요청이 시간 초과되었습니다. 다시 시도해주세요.");
+            break;
+          default:
+            alert("위치를 가져오는 중 오류가 발생했습니다.");
+        }
+      } else {
+        console.error("위치 가져오기 실패:", error);
+        alert("위치를 가져오는 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setIsLocating(false);
+    }
+  }, []);
 
   // ======================================
   // 클러스터링 로직
@@ -870,6 +940,20 @@ export default function NaverMap({
       </div>
 
       <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+
+      {/* 현재 위치로 이동 버튼 */}
+      <button
+        onClick={moveToCurrentLocation}
+        disabled={isLocating}
+        className='absolute bottom-36 right-4 bg-white rounded-full w-12 h-12 shadow-lg z-[100] hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed'
+        title='현재 위치로 이동'
+      >
+        {isLocating ? (
+          <Loader2 className='w-5 h-5 animate-spin' />
+        ) : (
+          <Target className='w-5 h-5' />
+        )}
+      </button>
 
       {/* 현재 화면에 보이는 크루 목록 버튼 */}
       <button
