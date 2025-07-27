@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -31,7 +31,6 @@ type FilterTab = "all" | "visible" | "hidden";
 export default function AdminCrewPage() {
   const router = useRouter();
   const [crews, setCrews] = useState<AdminCrew[]>([]);
-  const [filteredCrews, setFilteredCrews] = useState<AdminCrew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -40,81 +39,97 @@ export default function AdminCrewPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   useEffect(() => {
     fetchCrews();
   }, []);
 
+  // 검색어 debouncing
   useEffect(() => {
-    // 탭과 검색어에 따라 크루 필터링
-    filterCrews(activeTab, searchQuery);
-  }, [crews, activeTab, searchQuery]);
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
 
-  const fetchCrews = async () => {
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // useMemo를 사용한 필터링 결과 메모이제이션
+  const filteredCrews = useMemo(() => {
+    // 탭에 따른 필터링
+    let filtered = [...crews];
+
+    if (activeTab === "visible") {
+      filtered = filtered.filter((crew) => crew.is_visible);
+    } else if (activeTab === "hidden") {
+      filtered = filtered.filter((crew) => !crew.is_visible);
+    }
+
+    // 검색어에 따른 필터링 (크루명, 인스타, 주소)
+    const trimmedQuery = debouncedSearchQuery.trim();
+    if (trimmedQuery) {
+      const lowercaseQuery = trimmedQuery.toLowerCase();
+      filtered = filtered.filter((crew) => {
+        // 문자열 비교를 한 번씩만 수행하도록 최적화
+        const crewName = crew.name.toLowerCase();
+        const crewInstagram = crew.instagram?.toLowerCase() || "";
+        const crewAddress = crew.location.main_address?.toLowerCase() || "";
+
+        return (
+          crewName.includes(lowercaseQuery) ||
+          crewInstagram.includes(lowercaseQuery) ||
+          crewAddress.includes(lowercaseQuery)
+        );
+      });
+    }
+
+    return filtered;
+  }, [crews, activeTab, debouncedSearchQuery]);
+
+  const fetchCrews = useCallback(async () => {
     try {
       setIsLoading(true);
       // crewService의 getCrews 메서드를 사용하여 모든 크루 데이터 가져오기
       const crewsData = await crewService.getAdminCrews();
       setCrews(crewsData);
-      setFilteredCrews(crewsData);
     } catch (error) {
       console.error("크루 목록 조회 실패:", error);
       toast.error("크루 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const filterCrews = (tab: FilterTab, query: string) => {
-    // 탭에 따른 필터링
-    let filtered = [...crews];
+  const toggleCrewVisibility = useCallback(
+    async (crewId: string, newValue: boolean) => {
+      try {
+        // crewService의 메서드를 사용하여 크루 표시 상태 변경
+        await crewService.updateCrewVisibility(crewId, newValue);
 
-    if (tab === "visible") {
-      filtered = filtered.filter((crew) => crew.is_visible);
-    } else if (tab === "hidden") {
-      filtered = filtered.filter((crew) => !crew.is_visible);
-    }
+        // 로컬 상태 업데이트 및 크루 이름 가져오기
+        let crewName = "";
+        setCrews((prev) =>
+          prev.map((crew) => {
+            if (crew.id === crewId) {
+              crewName = crew.name;
+              return { ...crew, is_visible: newValue };
+            }
+            return crew;
+          })
+        );
 
-    // 검색어에 따른 필터링 (크루명, 인스타, 주소)
-    if (query.trim()) {
-      const lowercaseQuery = query.toLowerCase();
-      filtered = filtered.filter(
-        (crew) =>
-          crew.name.toLowerCase().includes(lowercaseQuery) ||
-          (crew.instagram &&
-            crew.instagram.toLowerCase().includes(lowercaseQuery)) ||
-          (crew.location.main_address &&
-            crew.location.main_address.toLowerCase().includes(lowercaseQuery))
-      );
-    }
+        toast.success(
+          `${crewName} 크루가 ${newValue ? "표시" : "숨김"} 처리되었습니다.`
+        );
+      } catch (error) {
+        console.error("크루 표시 상태 변경 실패:", error);
+        toast.error("크루 표시 상태 변경에 실패했습니다.");
+      }
+    },
+    []
+  );
 
-    setFilteredCrews(filtered);
-  };
-
-  const toggleCrewVisibility = async (crewId: string, newValue: boolean) => {
-    try {
-      // crewService의 메서드를 사용하여 크루 표시 상태 변경
-      await crewService.updateCrewVisibility(crewId, newValue);
-
-      // 로컬 상태 업데이트
-      setCrews((prev) =>
-        prev.map((crew) =>
-          crew.id === crewId ? { ...crew, is_visible: newValue } : crew
-        )
-      );
-
-      toast.success(
-        `${crews.find((c) => c.id === crewId)?.name} 크루가 ${
-          newValue ? "표시" : "숨김"
-        } 처리되었습니다.`
-      );
-    } catch (error) {
-      console.error("크루 표시 상태 변경 실패:", error);
-      toast.error("크루 표시 상태 변경에 실패했습니다.");
-    }
-  };
-
-  const handleCrewClick = async (crew: AdminCrew) => {
+  const handleCrewClick = useCallback(async (crew: AdminCrew) => {
     try {
       // crewService.getCrewDetail을 사용하여 상세 정보 가져오기
       const detailedCrew = await crewService.getCrewDetail(crew.id);
@@ -124,20 +139,26 @@ export default function AdminCrewPage() {
       setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
     }
     setIsDetailOpen(true);
-  };
+  }, []);
 
-  const handleEditCrew = (crew: AdminCrew) => {
-    // 수정 페이지로 이동
-    router.push(`/admin/crew/edit/${crew.id}`);
-  };
+  const handleEditCrew = useCallback(
+    (crew: AdminCrew) => {
+      // 수정 페이지로 이동
+      router.push(`/admin/crew/edit/${crew.id}`);
+    },
+    [router]
+  );
 
-  const handleDeleteClick = (crew: AdminCrew, e: React.MouseEvent) => {
-    e.stopPropagation(); // 이벤트 버블링 방지
-    setCrewToDelete(crew);
-    setIsDeleteDialogOpen(true);
-  };
+  const handleDeleteClick = useCallback(
+    (crew: AdminCrew, e: React.MouseEvent) => {
+      e.stopPropagation(); // 이벤트 버블링 방지
+      setCrewToDelete(crew);
+      setIsDeleteDialogOpen(true);
+    },
+    []
+  );
 
-  const handleDeleteCrew = async () => {
+  const handleDeleteCrew = useCallback(async () => {
     if (!crewToDelete) return;
 
     try {
@@ -159,12 +180,12 @@ export default function AdminCrewPage() {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [crewToDelete]);
 
   if (isLoading) {
     return (
       <FormLayout title='크루 관리'>
-        <div className='flex items-center justify-center flex-1'>
+        <div className='flex flex-1 justify-center items-center'>
           <div className='text-lg'>로딩 중...</div>
         </div>
       </FormLayout>
@@ -181,7 +202,7 @@ export default function AdminCrewPage() {
             onValueChange={(v) => setActiveTab(v as FilterTab)}
             className='w-full sm:w-auto'
           >
-            <TabsList className='grid w-full grid-cols-3 sm:w-auto'>
+            <TabsList className='grid grid-cols-3 w-full sm:w-auto'>
               <TabsTrigger value='all'>
                 전체{" "}
                 <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
@@ -216,7 +237,7 @@ export default function AdminCrewPage() {
 
         {/* 검색 결과가 없을 때 */}
         {filteredCrews.length === 0 && (
-          <div className='p-8 text-center border rounded-lg'>
+          <div className='p-8 text-center rounded-lg border'>
             <p className='text-muted-foreground'>검색 결과가 없습니다.</p>
           </div>
         )}
@@ -225,10 +246,10 @@ export default function AdminCrewPage() {
         {filteredCrews.map((crew) => (
           <div
             key={crew.id}
-            className='flex flex-col p-4 border rounded-lg sm:flex-row sm:items-center'
+            className='flex flex-col p-4 rounded-lg border sm:flex-row sm:items-center'
           >
             <div
-              className='flex items-start flex-1 gap-3 cursor-pointer'
+              className='flex flex-1 gap-3 items-start cursor-pointer'
               onClick={() => handleCrewClick(crew)}
             >
               {/* 크루 로고 */}
@@ -243,13 +264,13 @@ export default function AdminCrewPage() {
                   style={{ width: "40px", height: "40px" }}
                 />
               ) : (
-                <div className='flex items-center justify-center w-10 h-10 text-lg font-medium rounded-full bg-muted sm:w-12 sm:h-12 sm:text-xl'>
+                <div className='flex justify-center items-center w-10 h-10 text-lg font-medium rounded-full bg-muted sm:w-12 sm:h-12 sm:text-xl'>
                   {crew.name.charAt(0)}
                 </div>
               )}
 
               {/* 크루 정보 */}
-              <div className='flex-1 min-w-0 overflow-hidden'>
+              <div className='overflow-hidden flex-1 min-w-0'>
                 <h2 className='pr-1 text-base font-medium break-all sm:break-normal line-clamp-2'>
                   {crew.name}
                 </h2>
@@ -266,7 +287,7 @@ export default function AdminCrewPage() {
 
             {/* 관리 버튼 그룹 */}
             <div
-              className='flex items-center justify-end flex-shrink-0 gap-2 mt-3 sm:mt-0 sm:ml-2'
+              className='flex flex-shrink-0 gap-2 justify-end items-center mt-3 sm:mt-0 sm:ml-2'
               onClick={(e) => e.stopPropagation()}
             >
               <Button
@@ -316,7 +337,7 @@ export default function AdminCrewPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className='flex items-center gap-2'>
+            <DialogTitle className='flex gap-2 items-center'>
               <AlertTriangle className='w-5 h-5 text-destructive' />
               크루 삭제 확인
             </DialogTitle>
