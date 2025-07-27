@@ -6,6 +6,7 @@ import type { Crew } from "@/lib/types/crew";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { countCrewsByRegion } from "@/lib/utils/region-utils";
+import { MapPin, List } from "lucide-react";
 
 export type ViewMode = "map" | "list";
 
@@ -16,11 +17,13 @@ const BASE_REGIONS = [{ id: "all", name: "전체", count: 0 }];
 const TAB_ITEMS = [
   {
     mode: "map" as ViewMode,
+    icon: <MapPin className='w-4 h-4' />,
     label: "지도",
     href: "/",
   },
   {
     mode: "list" as ViewMode,
+    icon: <List className='w-4 h-4' />,
     label: "리스트",
     href: "/crew/list",
   },
@@ -39,7 +42,7 @@ const BaseHeader = ({ currentView }: BaseHeaderProps) => {
           key={item.mode}
           href={item.href}
           className={cn(
-            "py-3 text-center relative text-sm font-medium",
+            "py-3 text-center relative text-sm font-medium flex items-center justify-center",
             "transition-all duration-150",
             "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1px]",
             currentView === item.mode
@@ -48,7 +51,10 @@ const BaseHeader = ({ currentView }: BaseHeaderProps) => {
             "active:bg-gray-900/70 active:scale-[0.98]"
           )}
         >
-          {item.label}
+          <div className='flex justify-center items-center'>
+            {item.icon}
+            <span className='ml-2'>{item.label}</span>
+          </div>
         </Link>
       ))}
     </div>
