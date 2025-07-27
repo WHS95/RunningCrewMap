@@ -119,17 +119,39 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
     filterCrewsByRegion(selectedRegion);
   }, [selectedRegion, filterCrewsByRegion]);
 
+  // 전체 지역인지 확인하는 플래그
+  const isShowingAllRegions = selectedRegion === "all";
+
   // 보이는 항목 수 계산
   const hasMoreItems = filteredCrews.length > visibleItemsCount;
 
-  // 현재 보이는 크루 데이터 (레이지 로딩 적용)
-  const visibleCrews = filteredCrews.slice(0, visibleItemsCount);
+  // 전체 지역일 때는 평면 리스트
+  const flatCrewList = useMemo(() => {
+    return isShowingAllRegions ? filteredCrews.slice(0, visibleItemsCount) : [];
+  }, [isShowingAllRegions, filteredCrews, visibleItemsCount]);
 
-  // 그룹화된 크루 데이터
-  const groupedCrews = useMemo(
-    () => groupCrewsByRegion(visibleCrews),
-    [visibleCrews]
-  );
+  // 특정 지역일 때는 그룹화된 리스트
+  const groupedCrewList = useMemo(() => {
+    if (isShowingAllRegions) return [];
+
+    const allGroupedCrews = groupCrewsByRegion(filteredCrews);
+    let remainingItemsCount = visibleItemsCount;
+
+    return allGroupedCrews
+      .map((group) => {
+        const availableSlots = Math.min(
+          group.crews.length,
+          remainingItemsCount
+        );
+        remainingItemsCount -= availableSlots;
+
+        return {
+          ...group,
+          crews: group.crews.slice(0, availableSlots),
+        };
+      })
+      .filter((group) => group.crews.length > 0);
+  }, [isShowingAllRegions, filteredCrews, visibleItemsCount]);
 
   // 무한 스크롤 구현
   useEffect(() => {
@@ -177,7 +199,7 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
 
   return (
     <div
-      className='relative flex flex-col'
+      className='flex relative flex-col'
       style={{
         height: CSS_VARIABLES.CONTENT_HEIGHT,
       }}
@@ -197,14 +219,14 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
       {/* 리스트 컨테이너 */}
       <div
         ref={listContainerRef}
-        className='flex-1 h-full overflow-auto text-black bg-white scrollbar-hide'
+        className='overflow-auto flex-1 h-full text-black bg-white scrollbar-hide'
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
         }}
       >
         {filteredCrews.length === 0 ? (
-          <div className='flex flex-col items-center justify-center h-40 text-center'>
+          <div className='flex flex-col justify-center items-center h-40 text-center'>
             <p className='text-gray-500'>
               {selectedRegion === "all"
                 ? "등록된 크루가 없습니다."
@@ -213,65 +235,110 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
           </div>
         ) : (
           <div className='pb-24'>
-            {groupedCrews.map(({ location, crews }) => (
-              <div key={location} className='mb-4'>
-                <div className='sticky top-0 z-10 flex items-center px-4 py-2 bg-white/95 backdrop-blur-sm'>
-                  <MapPin className='w-4 h-4 mr-2 text-blue-500' />
-                  <h3 className='text-sm font-medium text-gray-800'>
-                    {location}
-                  </h3>
-                  <span className='ml-2 text-xs text-gray-500'>
-                    ({crews.length})
-                  </span>
-                </div>
-
-                <div>
-                  {crews.map((crew) => (
-                    <div
-                      key={crew.id}
-                      className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
-                      onClick={() => setSelectedCrew(crew)}
-                    >
-                      {crew.logo_image ? (
-                        <div className='relative flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
-                          <Image
-                            src={crew.logo_image}
-                            alt={crew.name}
-                            width={40}
-                            height={40}
-                            className='object-cover w-full h-full'
-                            sizes='40px'
-                          />
-                        </div>
-                      ) : (
-                        <div className='flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
-                          {crew.name.charAt(0)}
-                        </div>
-                      )}
-
-                      <div className='flex-1 min-w-0'>
-                        <div className='flex items-center justify-between'>
-                          <h3 className='font-medium text-gray-900'>
-                            {crew.name}
-                          </h3>
-                        </div>
-                        <p className='text-sm text-gray-600 line-clamp-1'>
-                          {crew.description}
-                        </p>
-                        {(crew.location.address ||
-                          crew.location.main_address) && (
-                          <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
-                            <MapPin className='flex-shrink-0 w-3 h-3 mr-1' />
-                            {crew.location.address ||
-                              crew.location.main_address}
-                          </p>
-                        )}
+            {isShowingAllRegions
+              ? // 전체 지역: 평면 리스트 렌더링
+                flatCrewList.map((crew) => (
+                  <div
+                    key={crew.id}
+                    className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
+                    onClick={() => setSelectedCrew(crew)}
+                  >
+                    {crew.logo_image ? (
+                      <div className='flex overflow-hidden relative flex-shrink-0 justify-center items-center mr-3 w-10 h-10 rounded-full border border-gray-200'>
+                        <Image
+                          src={crew.logo_image}
+                          alt={crew.name}
+                          width={40}
+                          height={40}
+                          className='object-cover w-full h-full'
+                          sizes='40px'
+                        />
                       </div>
+                    ) : (
+                      <div className='flex flex-shrink-0 justify-center items-center mr-3 w-10 h-10 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
+                        {crew.name.charAt(0)}
+                      </div>
+                    )}
+
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex justify-between items-center'>
+                        <h3 className='font-medium text-gray-900'>
+                          {crew.name}
+                        </h3>
+                      </div>
+                      <p className='text-sm text-gray-600 line-clamp-1'>
+                        {crew.description}
+                      </p>
+                      {(crew.location.address ||
+                        crew.location.main_address) && (
+                        <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
+                          <MapPin className='flex-shrink-0 mr-1 w-3 h-3' />
+                          {crew.location.address || crew.location.main_address}
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                  </div>
+                ))
+              : // 특정 지역: 그룹화된 리스트 렌더링
+                groupedCrewList.map(({ location, crews }) => (
+                  <div key={location} className='mb-4'>
+                    <div className='flex sticky top-0 z-10 items-center px-4 py-2 backdrop-blur-sm bg-white/95'>
+                      <MapPin className='mr-2 w-4 h-4 text-blue-500' />
+                      <h3 className='text-sm font-medium text-gray-800'>
+                        {location}
+                      </h3>
+                      <span className='ml-2 text-xs text-gray-500'>
+                        ({crews.length})
+                      </span>
+                    </div>
+
+                    <div>
+                      {crews.map((crew) => (
+                        <div
+                          key={crew.id}
+                          className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
+                          onClick={() => setSelectedCrew(crew)}
+                        >
+                          {crew.logo_image ? (
+                            <div className='flex overflow-hidden relative flex-shrink-0 justify-center items-center mr-3 w-10 h-10 rounded-full border border-gray-200'>
+                              <Image
+                                src={crew.logo_image}
+                                alt={crew.name}
+                                width={40}
+                                height={40}
+                                className='object-cover w-full h-full'
+                                sizes='40px'
+                              />
+                            </div>
+                          ) : (
+                            <div className='flex flex-shrink-0 justify-center items-center mr-3 w-10 h-10 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
+                              {crew.name.charAt(0)}
+                            </div>
+                          )}
+
+                          <div className='flex-1 min-w-0'>
+                            <div className='flex justify-between items-center'>
+                              <h3 className='font-medium text-gray-900'>
+                                {crew.name}
+                              </h3>
+                            </div>
+                            <p className='text-sm text-gray-600 line-clamp-1'>
+                              {crew.description}
+                            </p>
+                            {(crew.location.address ||
+                              crew.location.main_address) && (
+                              <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
+                                <MapPin className='flex-shrink-0 mr-1 w-3 h-3' />
+                                {crew.location.address ||
+                                  crew.location.main_address}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
 
             {/* 더 보기 버튼 */}
             {hasMoreItems && (
@@ -279,7 +346,7 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
                 <button
                   onClick={handleLoadMore}
                   disabled={loadingMore}
-                  className='flex items-center gap-2 px-4 py-2 transition-colors bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50'
+                  className='flex gap-2 items-center px-4 py-2 bg-gray-100 rounded-md transition-colors hover:bg-gray-200 disabled:opacity-50'
                 >
                   {loadingMore ? (
                     <>
