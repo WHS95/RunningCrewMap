@@ -71,21 +71,21 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
   }, []);
 
   return (
-    <div ref={searchRef} className='relative w-full max-w-sm mx-auto'>
+    <div ref={searchRef} className='relative mx-auto w-full max-w-sm'>
       <div className='relative px-4'>
-        <Search className='absolute w-4 h-4 text-gray-500 transform -translate-y-1/2 left-7 top-1/2' />
+        <Search className='absolute left-7 top-1/2 w-4 h-4 text-gray-500 transform -translate-y-1/2' />
         <Input
           type='text'
           placeholder='크루명 또는 주소 검색...'
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className='pr-4 text-gray-800 transition-shadow bg-white border border-gray-200 rounded-lg shadow-sm pl-9 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 placeholder:text-gray-400'
+          className='pr-4 pl-9 text-gray-800 bg-white rounded-lg transition-shadow focus:outline-none focus:ring-1 placeholder:text-gray-400'
         />
       </div>
 
       {isOpen && results.length > 0 && (
         <div
-          className='fixed z-[10000] border border-gray-200 rounded-lg shadow-lg bg-white max-h-60 overflow-y-auto mt-1'
+          className='fixed z-[10000]  rounded-lg shadow-lg bg-white max-h-60 overflow-y-auto mt-1'
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left + 16}px`,
@@ -96,7 +96,7 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
             <div
               key={crew.id}
               className={cn(
-                "px-4 py-3 cursor-pointer hover:bg-gray-100 text-gray-800 border-b border-gray-200 last:border-b-0",
+                "px-4 py-3 text-gray-800 border-b border-gray-200 cursor-pointer hover:bg-gray-100 last:border-b-0",
                 "first:rounded-t-lg last:rounded-b-lg"
               )}
               onClick={() => {
@@ -118,7 +118,7 @@ export function SearchBox({ crews, onSelect }: SearchBoxProps) {
 
       {isOpen && query && results.length === 0 && (
         <div
-          className='fixed z-[10000] p-4 text-center border border-gray-200 rounded-lg shadow-lg bg-white text-gray-500 mt-1'
+          className='fixed z-[10000] p-4 text-center rounded-lg shadow-lg bg-white text-gray-500 mt-1'
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left + 16}px`,
