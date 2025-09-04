@@ -42,7 +42,7 @@ export default function EventPage() {
       </div>
 
       {/* 이벤트 내용 - 더 컴팩트하게 */}
-      <div className='flex flex-col px-4 -mt-4 bg-white shadow-sm rounded-t-3xl'>
+      <div className='flex flex-col px-4 -mt-4 bg-white rounded-t-3xl shadow-sm'>
         {/* 메인 타이틀 */}
         <div className='py-6 space-y-3 border-b border-gray-100'>
           <p className='text-sm text-center text-gray-600'>
@@ -72,7 +72,7 @@ export default function EventPage() {
           </ul>
 
           {/* 이미지 - 더 작게 */}
-          <div className='relative w-full h-48 mt-2 overflow-hidden rounded-xl'>
+          <div className='overflow-hidden relative mt-2 w-full h-48 rounded-xl'>
             <Image
               src='/example.webp'
               alt='크루 깃발 예시'

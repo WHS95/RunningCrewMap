@@ -1,6 +1,6 @@
 {
   "name": "RunHouse",
-  "short_name": "전국 러닝크루 지도",
+  "short_name": "RunHouse",
   "description": "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요",
   "start_url": "/home",
   "display": "standalone",
