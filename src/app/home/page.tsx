@@ -37,8 +37,8 @@ const InfoCard = ({ icon, title, subtitle, href }: InfoCardProps) => {
       className='flex items-center justify-between w-full p-4 mb-2 text-white transition-all duration-200 bg-black cursor-pointer rounded-xl hover:bg-gray-900 hover:translate-y-[-2px] hover:scale-[1.01] active:translate-y-[2px] hover:shadow-md'
       onClick={handleClick}
     >
-      <div className='flex items-center gap-3'>
-        <div className='flex items-center justify-center w-8 h-8 transition-colors duration-200 bg-gray-700 rounded-full hover:bg-gray-600'>
+      <div className='flex gap-3 items-center'>
+        <div className='flex justify-center items-center w-8 h-8 bg-gray-700 rounded-full transition-colors duration-200 hover:bg-gray-600'>
           {icon === "running" && <FaRunning size={16} />}
           {icon === "marathon" && <FaMedal size={16} />}
           {icon === "mbti" && <FaBook size={16} />}
@@ -126,10 +126,16 @@ export default function HomePage() {
       {
         id: 1,
         link: "/notice/event/1",
-        // imageUrl: "/event4.png",
         imageUrl: "/event5.webp",
-        // title: "크루 깃발 무료 제작 이벤트",
-        // description: "보아델와 런하우스 협업 프로모션",
+        title: "크루 깃발 무료 제작",
+        description: "보아델와 런하우스 협업 프로모션",
+      },
+      {
+        id: 2,
+        link: "/notice/event/2",
+        imageUrl: "/배너크라운.png",
+        title: "크라운 뉴트리션 x 런하우스",
+        description: "마라톤 대비 공구 이벤트 - 최저가 보장",
       },
     ],
     []
@@ -157,7 +163,7 @@ export default function HomePage() {
   if (isLoading) {
     return (
       <div
-        className='flex items-center justify-center min-h-screen'
+        className='flex justify-center items-center min-h-screen'
         style={{
           paddingTop: CSS_VARIABLES.HEADER_PADDING,
         }}

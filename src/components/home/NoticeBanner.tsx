@@ -111,7 +111,7 @@ export const NoticeBanner = memo(
     const currentItem = items[currentIndex];
 
     return (
-      <div className='relative w-full p-0 m-0 overflow-hidden'>
+      <div className='overflow-hidden relative p-0 m-0 w-full'>
         <div
           className='relative w-full h-40 sm:h-44 md:h-48'
           onTouchStart={handleTouchStart}
@@ -136,10 +136,9 @@ export const NoticeBanner = memo(
                 className='object-cover'
                 style={{ objectPosition: "center" }}
               />
-
-              {/* 텍스트 오버레이 */}
-              {(currentItem.title || currentItem.description) && (
-                <div className='absolute bottom-0 left-0 right-0 p-3 text-white bg-gradient-to-t from-black/70 to-transparent'>
+              텍스트 오버레이
+              {/* {(currentItem.title || currentItem.description) && (
+                <div className='absolute right-0 bottom-0 left-0 p-3 text-white bg-gradient-to-t to-transparent from-black/70'>
                   {currentItem.title && (
                     <h3 className='text-lg font-bold leading-tight'>
                       {currentItem.title}
@@ -149,14 +148,14 @@ export const NoticeBanner = memo(
                     <p className='mt-1 text-sm'>{currentItem.description}</p>
                   )}
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
 
         {/* 인디케이터 */}
         {items.length > 1 && (
-          <div className='flex justify-center gap-1 mt-2'>
+          <div className='flex gap-1 justify-center mt-2'>
             {items.map((_, index) => (
               <button
                 key={index}

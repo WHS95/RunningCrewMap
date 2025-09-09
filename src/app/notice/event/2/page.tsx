@@ -33,7 +33,7 @@ export default function Event2Page() {
       {/* 신청 버튼 - 최상단 고정 */}
       <div className='relative z-10 p-4 bg-white shadow-sm'>
         <Link
-          href='https://forms.gle/XrY68pzGczPdSP9j8'
+          href='https://forms.gle/Nd29zhmeNvNgKptaA'
           target='_blank'
           className='block w-full py-4 text-lg font-bold text-center text-white transition bg-gradient-to-r from-orange-500 to-red-500 rounded-full shadow-lg hover:from-orange-600 hover:to-red-600 active:transform active:scale-[0.98]'
         >
@@ -78,17 +78,37 @@ export default function Event2Page() {
             </div>
           </div>
         </div>
-        {/* 가격 정보 */}
+        {/* 가격 정보 - 최저가 강조 */}
         <div className='py-4 space-y-3 border-b border-gray-100'>
           <h3 className='flex items-center text-base font-medium text-gray-900'>
             <span className='mr-1.5'>💰</span> 특가 정보
           </h3>
-          <div className='ml-6 space-y-2'>
-            <div className='p-3 bg-orange-50 rounded-lg'>
-              <p className='text-lg font-bold text-orange-600'>
-                1박스당 36,000원
+          <div className='ml-6 space-y-3'>
+            {/* 최저가 비교 강조 */}
+            <div className='p-4 bg-red-50 rounded-lg border border-red-200'>
+              <div className='flex justify-between items-center mb-2'>
+                <span className='text-sm font-medium text-red-600'>
+                  인터넷 최저가
+                </span>
+                <span className='text-lg font-bold text-red-600 line-through'>
+                  42,000원
+                </span>
+              </div>
+              <div className='flex justify-between items-center'>
+                <span className='text-base font-medium text-gray-800'>
+                  런하우스 특가
+                </span>
+                <span className='text-2xl font-bold text-orange-600'>
+                  36,000원
+                </span>
+              </div>
+            </div>
+
+            {/* 배송비 정보 */}
+            <div className='p-3 bg-blue-50 rounded-lg'>
+              <p className='mb-1 text-sm text-gray-700'>
+                배송비: <span className='font-medium'>3,500원</span>
               </p>
-              <p className='text-sm text-gray-600'>배송비 3,500원</p>
               <p className='text-xs font-medium text-green-600'>
                 🎉 10만원 이상 구매시 배송비 무료!
               </p>
