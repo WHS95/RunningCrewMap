@@ -130,13 +130,6 @@ export default function HomePage() {
         title: "크루 깃발 무료 제작",
         description: "보아델와 런하우스 협업 프로모션",
       },
-      {
-        id: 2,
-        link: "/notice/event/2",
-        imageUrl: "/배너크라운.png",
-        title: "크라운 뉴트리션 x 런하우스",
-        description: "마라톤 대비 공구 이벤트 - 최저가 보장",
-      },
     ],
     []
   );
