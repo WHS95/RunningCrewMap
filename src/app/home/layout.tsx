@@ -20,7 +20,7 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className='relative min-h-screen pb-16'>
+    <div className='relative pb-16 min-h-screen'>
       {children}
       <Analytics />
     </div>
