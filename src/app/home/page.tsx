@@ -125,6 +125,13 @@ export default function HomePage() {
     () => [
       {
         id: 1,
+        link: "/notice/event/3",
+        imageUrl: "/runhousecapThumnail.png",
+        title: "런하우스 러닝 기능성 모자",
+        description: "등록 크루 한정 특가 - 러닝 최적화 모자",
+      },
+      {
+        id: 2,
         link: "/notice/event/1",
         imageUrl: "/event5.webp",
         title: "크루 깃발 무료 제작",
