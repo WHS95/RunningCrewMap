@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
       username === process.env.ADMIN_USERNAME &&
       password === process.env.ADMIN_PASSWORD
     ) {
-      // 성공 시 쿠키 설정
-      const cookieStore = cookies();
+      // 성공 시 쿠키 설정 (Next.js 15: cookies()는 비동기)
+      const cookieStore = await cookies();
 
       // HTTP only 쿠키 설정 (JavaScript에서 접근 불가능)
       cookieStore.set("auth", "true", {

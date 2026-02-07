@@ -455,30 +455,12 @@ class CrewService {
 
       // 크루 대표 활동 사진 업로드 및 저장
       if (input.photos && input.photos.length > 0) {
-        console.log(
-          `=== 크루 대표 활동 사진 ${input.photos.length}개 처리 시작 ===`
+        // 모든 사진을 병렬로 업로드 (Promise.all)
+        const uploadResults = await Promise.all(
+          input.photos.map((photo) => this.uploadCrewPhoto(photo, crewId))
         );
-        const photoUrls: string[] = [];
-
-        // 각 사진 파일을 순차적으로 업로드
-        for (let i = 0; i < input.photos.length; i++) {
-          const photo = input.photos[i];
-          console.log(
-            `사진 ${i + 1}/${input.photos.length} 업로드 시작:`,
-            photo.name
-          );
-          const photoUrl = await this.uploadCrewPhoto(photo, crewId);
-
-          if (photoUrl) {
-            console.log(`사진 ${i + 1} 업로드 성공:`, photoUrl);
-            photoUrls.push(photoUrl);
-          } else {
-            console.error(`사진 ${i + 1} 업로드 실패`);
-          }
-        }
-
-        console.log(
-          `총 ${photoUrls.length}/${input.photos.length}개 사진 업로드 완료`
+        const photoUrls = uploadResults.filter(
+          (url): url is string => url !== null && url !== undefined
         );
 
         // 업로드된 사진 URL을 DB에 저장
@@ -1128,108 +1110,55 @@ class CrewService {
       // 위치 정보 유효성 검사
       this.validateLocation(updateData.location);
 
-      // 트랜잭션 처리를 위해 여러 업데이트를 순차적으로 실행
-
-      // 1. 기본 크루 정보 업데이트
-      const { error: crewError } = await supabase
-        .from("crews")
-        .update({
-          name: updateData.name,
-          description: updateData.description,
-          instagram: updateData.instagram || null,
-          founded_date: updateData.founded_date || undefined,
-          logo_image_url: updateData.logo_image_url || undefined,
-        })
-        .eq("id", crewId);
-
-      if (crewError) throw crewError;
-
-      // 2. 위치 정보 업데이트
-      const { error: locationError } = await supabase
-        .from("crew_locations")
-        .update({
-          main_address: updateData.location.main_address,
-          detail_address: updateData.location.detail_address,
-          latitude: updateData.location.latitude,
-          longitude: updateData.location.longitude,
-        })
-        .eq("crew_id", crewId);
-
-      if (locationError) throw locationError;
-
-      // 3. 활동 요일 업데이트 (기존 데이터 삭제 후 새로 추가)
-      // 3-1. 기존 활동 요일 삭제
-      const { error: deleteActivityDaysError } = await supabase
-        .from("crew_activity_days")
-        .delete()
-        .eq("crew_id", crewId);
-
-      if (deleteActivityDaysError) throw deleteActivityDaysError;
-
-      // 3-2. 새 활동 요일 추가
-      const { error: insertActivityDaysError } = await supabase
-        .from("crew_activity_days")
-        .insert(
-          updateData.activity_days.map((day) => ({
-            crew_id: crewId,
-            day_of_week: day,
-          }))
-        );
-
-      if (insertActivityDaysError) throw insertActivityDaysError;
-
-      // 4. 연령대 업데이트 (있는 경우)
-      if (updateData.age_range) {
-        const { error: ageRangeError } = await supabase
-          .from("crew_age_ranges")
+      // 1+2. 기본 크루 정보 + 위치 정보 병렬 업데이트
+      const [crewResult, locationResult] = await Promise.all([
+        supabase
+          .from("crews")
           .update({
-            min_age: updateData.age_range.min_age,
-            max_age: updateData.age_range.max_age,
+            name: updateData.name,
+            description: updateData.description,
+            instagram: updateData.instagram || null,
+            founded_date: updateData.founded_date || undefined,
+            logo_image_url: updateData.logo_image_url || undefined,
           })
-          .eq("crew_id", crewId);
+          .eq("id", crewId),
+        supabase
+          .from("crew_locations")
+          .update({
+            main_address: updateData.location.main_address,
+            detail_address: updateData.location.detail_address,
+            latitude: updateData.location.latitude,
+            longitude: updateData.location.longitude,
+          })
+          .eq("crew_id", crewId),
+      ]);
 
-        if (ageRangeError) throw ageRangeError;
+      if (crewResult.error) throw crewResult.error;
+      if (locationResult.error) throw locationResult.error;
+
+      // 3-6. 독립적인 삭제 작업들을 병렬 실행
+      const deleteResults = await Promise.all([
+        supabase.from("crew_activity_days").delete().eq("crew_id", crewId),
+        updateData.activity_locations && updateData.activity_locations.length > 0
+          ? supabase
+              .from("crew_activity_locations")
+              .delete()
+              .eq("crew_id", crewId)
+          : Promise.resolve({ error: null }),
+        supabase.from("crew_join_methods").delete().eq("crew_id", crewId),
+      ]);
+
+      for (const result of deleteResults) {
+        if (result.error) throw result.error;
       }
 
-      // 5. 활동 장소 업데이트 (기존 데이터 삭제 후 새로 추가)
-      if (
-        updateData.activity_locations &&
-        updateData.activity_locations.length > 0
-      ) {
-        // 5-1. 기존 활동 장소 삭제
-        const { error: deleteActivityLocationsError } = await supabase
-          .from("crew_activity_locations")
-          .delete()
-          .eq("crew_id", crewId);
-
-        if (deleteActivityLocationsError) throw deleteActivityLocationsError;
-
-        // 5-2. 새 활동 장소 추가
-        const { error: insertActivityLocationsError } = await supabase
-          .from("crew_activity_locations")
-          .insert(
-            updateData.activity_locations.map((location) => ({
-              crew_id: crewId,
-              location_name: location,
-            }))
-          );
-
-        if (insertActivityLocationsError) throw insertActivityLocationsError;
-      }
-
-      // 6. 가입 방식 정보 처리
-      // 6-1. 기존 가입 방식 삭제
-      const { error: deleteJoinMethodsError } = await supabase
-        .from("crew_join_methods")
-        .delete()
-        .eq("crew_id", crewId);
-
-      if (deleteJoinMethodsError) throw deleteJoinMethodsError;
-
-      // 6-2. 새 가입 방식 추가
-      const joinMethods = [];
-
-      // 인스타그램 DM 사용 여부
+      // 3-6. 삭제 후 독립적인 삽입 작업들을 병렬 실행
+      const joinMethods: {
+        crew_id: string;
+        method_type: string;
+        link_url: string | null;
+        description: string;
+      }[] = [];
       if (updateData.use_instagram_dm) {
         joinMethods.push({
           crew_id: crewId,
@@ -1238,8 +1167,6 @@ class CrewService {
           description: "인스타그램 DM으로 문의",
         });
       }
-
-      // 오픈채팅 링크
       if (updateData.open_chat_link) {
         joinMethods.push({
           crew_id: crewId,
@@ -1249,13 +1176,51 @@ class CrewService {
         });
       }
 
-      // 새 가입 방식이 있으면 추가
-      if (joinMethods.length > 0) {
-        const { error: insertJoinMethodsError } = await supabase
-          .from("crew_join_methods")
-          .insert(joinMethods);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const insertPromises: PromiseLike<{ error: any }>[] = [
+        supabase.from("crew_activity_days").insert(
+          updateData.activity_days.map((day) => ({
+            crew_id: crewId,
+            day_of_week: day,
+          }))
+        ),
+      ];
 
-        if (insertJoinMethodsError) throw insertJoinMethodsError;
+      if (updateData.age_range) {
+        insertPromises.push(
+          supabase
+            .from("crew_age_ranges")
+            .update({
+              min_age: updateData.age_range.min_age,
+              max_age: updateData.age_range.max_age,
+            })
+            .eq("crew_id", crewId)
+        );
+      }
+
+      if (
+        updateData.activity_locations &&
+        updateData.activity_locations.length > 0
+      ) {
+        insertPromises.push(
+          supabase.from("crew_activity_locations").insert(
+            updateData.activity_locations.map((location) => ({
+              crew_id: crewId,
+              location_name: location,
+            }))
+          )
+        );
+      }
+
+      if (joinMethods.length > 0) {
+        insertPromises.push(
+          supabase.from("crew_join_methods").insert(joinMethods)
+        );
+      }
+
+      const insertResults = await Promise.all(insertPromises);
+      for (const result of insertResults) {
+        if (result.error) throw result.error;
       }
 
       // 7. 크루 활동 사진 처리 (있는 경우)

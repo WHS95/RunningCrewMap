@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useState, useRef, useCallback, Suspense } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  Suspense,
+} from "react";
 import dynamic from "next/dynamic";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { eventEmitter, EVENTS } from "@/lib/events";
@@ -18,7 +25,7 @@ const CrewDetailView = dynamic(
     import("@/components/map/CrewDetailView").then((mod) => mod.CrewDetailView),
   {
     loading: () => <LoadingSpinner message='로딩 중' />,
-  }
+  },
 );
 
 // 서울시청 좌표 (기본값)
@@ -49,7 +56,10 @@ function HomePage() {
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [preloadedMapUrl, setPreloadedMapUrl] = useState<string | null>(null);
+  // preloadedMapUrl을 useMemo로 파생 (렌더 중 계산, useEffect + setState 제거)
+  const preloadedMapUrl = useMemo(() => {
+    return `https://naveropenapi.apigw.ntruss.com/map-static/v2/raster?w=640&h=640&center=${center.lng},${center.lat}&level=13&format=png&scale=2&markers=type:d|size:mid|pos:${center.lng} ${center.lat}`;
+  }, [center]);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 캐시 무효화 이벤트 리스너 등록
@@ -104,7 +114,7 @@ function HomePage() {
         };
         localStorage.setItem(
           LOCATION_STORAGE_KEY,
-          JSON.stringify(locationData)
+          JSON.stringify(locationData),
         );
       } catch (error) {
         console.error("위치 정보 저장에 실패했습니다:", error);
@@ -141,7 +151,7 @@ function HomePage() {
           setCenter(DEFAULT_CENTER);
           setIsLocationLoading(false);
         },
-        geoOptions
+        geoOptions,
       );
     } else {
       // 위치 정보 사용 불가능한 경우
@@ -182,16 +192,6 @@ function HomePage() {
     }
     setMapLoaded(true);
   }, []);
-
-  // 네이버 지도 초기 로딩 시 정적 이미지로 교체
-  useEffect(() => {
-    // 서버에서 위치 정보를 가져올 때 미리 지도 이미지 URL 생성
-    // 참고: Static Map API는 별도의 API이므로 기존 엔드포인트 유지
-    const mapCenter = center;
-    const mapImageUrl = `https://naveropenapi.apigw.ntruss.com/map-static/v2/raster?w=640&h=640&center=${mapCenter.lng},${mapCenter.lat}&level=13&format=png&scale=2&markers=type:d|size:mid|pos:${mapCenter.lng} ${mapCenter.lat}`;
-
-    setPreloadedMapUrl(mapImageUrl);
-  }, [center]);
 
   // 지도가 로드될 때까지 로딩 표시
   const showLoading = !mapLoaded || isLocationLoading || isCrewsLoading;

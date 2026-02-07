@@ -1,4 +1,5 @@
-import { createClient, PostgrestError } from "@supabase/supabase-js";
+import { PostgrestError } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase/client";
 import { AppError } from "@/lib/errors/app-error";
 import { ErrorCode } from "@/lib/errors/error-codes";
 
@@ -75,16 +76,8 @@ interface ErrorContext {
 export class RecordService {
   private readonly CERTIFICATE_BUCKET_NAME = "raceCertificates";
   private readonly PROFILE_BUCKET_NAME = "runnerProfiles";
-  private supabase;
+  private supabase = supabase;
   private storageInitialized = false;
-
-  constructor() {
-    // Supabase 클라이언트 초기화
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-    );
-  }
 
   // 스토리지 초기화
   private async initializeStorage() {
@@ -406,20 +399,13 @@ export class RecordService {
       const { data: uuidData } = await this.supabase.rpc("generate_uuid");
       const recordId = uuidData;
 
-      // 기록증 이미지 업로드
-      const certificateImageUrl = await this.uploadCertificateImage(
-        input.raceCertificateImage,
-        recordId
-      );
-
-      // 프로필 이미지 업로드 (선택 사항)
-      let profileImageUrl = null;
-      if (input.profileImage) {
-        profileImageUrl = await this.uploadProfileImage(
-          input.profileImage,
-          recordId
-        );
-      }
+      // 기록증 및 프로필 이미지 병렬 업로드 (Promise.all)
+      const [certificateImageUrl, profileImageUrl] = await Promise.all([
+        this.uploadCertificateImage(input.raceCertificateImage, recordId),
+        input.profileImage
+          ? this.uploadProfileImage(input.profileImage, recordId)
+          : Promise.resolve(null),
+      ]);
 
       // ISO8601 Duration 형식으로 레이스 타임 변환
       const [hours, minutes, seconds] = input.raceTime.split(":").map(Number);

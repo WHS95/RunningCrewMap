@@ -1,5 +1,4 @@
 import { RunningMBTIResult } from './types';
-import html2canvas from 'html2canvas';
 
 // Kakao SDK 타입 정의
 type KakaoSDK = {
@@ -103,6 +102,8 @@ export const downloadResult = async (elementId: string) => {
     // 이미지 로딩을 위한 지연 처리
     await new Promise(resolve => setTimeout(resolve, 500));
 
+    // 동적 import로 html2canvas 로드 (번들 사이즈 최적화)
+    const html2canvas = (await import('html2canvas')).default;
     const canvas = await html2canvas(element, {
       useCORS: true,
       scale: 2,

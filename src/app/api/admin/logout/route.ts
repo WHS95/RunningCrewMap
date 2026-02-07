@@ -3,8 +3,8 @@ import { cookies } from "next/headers";
 
 export async function POST() {
   try {
-    // 인증 쿠키 제거
-    const cookieStore = cookies();
+    // 인증 쿠키 제거 (Next.js 15: cookies()는 비동기)
+    const cookieStore = await cookies();
     cookieStore.delete("auth");
 
     return NextResponse.json({ success: true });
