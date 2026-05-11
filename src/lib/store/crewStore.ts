@@ -16,6 +16,7 @@ interface CrewState {
   isDetailOpen: boolean;
   
   // 액션
+  hydrateCrews: (crews: Crew[]) => void;
   loadCrews: () => Promise<void>;
   invalidateCache: () => Promise<void>;
   filterCrewsByRegion: (region: string) => void;
@@ -31,7 +32,17 @@ export const useCrewStore = create<CrewState>((set, get) => ({
   selectedCrew: null,
   isDetailOpen: false,
   
-  // 크루 데이터 로드
+  // 서버에서 미리 가져온 크루 데이터로 스토어 초기화 (SSR hydration)
+  hydrateCrews: (initialCrews: Crew[]) => {
+    if (get().crews.length > 0) return;
+    set({
+      crews: initialCrews,
+      filteredCrews: initialCrews,
+      isLoading: false,
+    });
+  },
+
+  // 크루 데이터 로드 (클라이언트 fallback)
   loadCrews: async () => {
     // 이미 데이터가 있으면 다시 로드하지 않음
     if (get().crews.length > 0) {
