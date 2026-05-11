@@ -12,9 +12,9 @@ export const LAYOUT = {
 export const CSS_VARIABLES = {
   // 전체 높이에서 헤더 높이를 뺀 값
   CONTENT_HEIGHT: `calc(100vh - ${LAYOUT.HEADER_HEIGHT})`,
-  // 전체 높이에서 헤더와 모바일 네비게이션 높이를 뺀 값
-  CONTENT_HEIGHT_MOBILE: `calc(100vh - ${LAYOUT.HEADER_HEIGHT} - ${LAYOUT.MOBILE_NAV_HEIGHT})`,
+  // 전체 높이에서 헤더와 모바일 네비게이션 높이를 뺀 값 (safe area 포함)
+  CONTENT_HEIGHT_MOBILE: `calc(100vh - ${LAYOUT.HEADER_HEIGHT} - ${LAYOUT.MOBILE_NAV_HEIGHT} - env(safe-area-inset-bottom, 0px))`,
   // 헤더 높이만큼의 상단 패딩
   HEADER_PADDING: LAYOUT.HEADER_HEIGHT,
-  MOBILE_NAV_PADDING: LAYOUT.MOBILE_NAV_HEIGHT,
+  MOBILE_NAV_PADDING: `calc(${LAYOUT.MOBILE_NAV_HEIGHT} + env(safe-area-inset-bottom, 0px))`,
 } as const;

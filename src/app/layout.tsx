@@ -1,12 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Toaster } from "@/components/ui/sonner";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+const notoSansKR = Noto_Sans_KR({
+  subsets: ["latin"],
+  variable: "--font-noto-sans-kr",
+  display: "swap",
+  weight: ["300", "400", "500", "700"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://running-crew-map.vercel.app"),
@@ -89,6 +101,7 @@ export const viewport: Viewport = {
   minimumScale: 1,
   userScalable: false,
   themeColor: "#000000",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -98,7 +111,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang='ko' suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${outfit.variable} ${notoSansKR.variable} font-sans`} suppressHydrationWarning>
         <ClientLayout>
           <div className='min-h-screen bg-background'>
             <Header />

@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { MapPinned, Trophy, Menu, Home } from "lucide-react";
-// import { EXTERNAL_LINKS } from "@/lib/constants";
 import { useState } from "react";
 import { RunningEventList } from "@/components/events/RunningEventList";
-// import { MenuList } from "@/components/menu/MenuList";
-// import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LAYOUT } from "@/lib/constants";
@@ -45,30 +42,41 @@ export function MobileNav() {
   return (
     <>
       <nav
-        className='fixed bottom-0 left-0 right-0 border-t bg-black z-[9999]'
-        style={{ height: LAYOUT.MOBILE_NAV_HEIGHT }} // 높이 조정: LAYOUT.MOBILE_NAV_HEIGHT 값을 변경하거나 직접 px 값 지정
+        className='fixed bottom-0 left-0 right-0 z-[9999] border-t border-white/[0.06]'
+        style={{
+          height: `calc(${LAYOUT.MOBILE_NAV_HEIGHT} + env(safe-area-inset-bottom, 0px))`,
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
-        <div className='flex justify-around items-start h-full'>
+        <div className='absolute inset-0 bg-black/85 backdrop-blur-2xl' />
+        <div className='relative flex justify-around items-start h-full pt-2'>
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center space-y-1",
-                "transition-all duration-150",
-                "active:bg-gray-900/70 active:scale-[0.95] px-4 py-3 rounded-md" // 패딩 조정: py-2를 py-3 또는 py-4로 변경하여 높이 증가
+                "flex flex-col items-center justify-center gap-1",
+                "transition-all duration-200 ease-out",
+                "px-5 py-2 rounded-xl",
+                "active:scale-[0.92]",
               )}
             >
-              <item.icon
-                className={cn(
-                  "w-5 h-5", // 아이콘 크기 조정: w-6 h-6 또는 w-7 h-7로 변경
-                  item.isActive ? "text-white" : "text-gray-400"
+              <div className='relative'>
+                <item.icon
+                  className={cn(
+                    "w-[22px] h-[22px] transition-colors duration-200",
+                    item.isActive ? "text-[hsl(72,100%,50%)]" : "text-gray-500"
+                  )}
+                  strokeWidth={item.isActive ? 2.2 : 1.8}
+                />
+                {item.isActive && (
+                  <div className='absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[hsl(72,100%,50%)] nav-active-dot' />
                 )}
-              />
+              </div>
               <span
                 className={cn(
-                  "text-xs", // 텍스트 크기 조정: text-sm 또는 text-base로 변경
-                  item.isActive ? "text-white" : "text-gray-400"
+                  "text-[10px] font-medium tracking-tight transition-colors duration-200",
+                  item.isActive ? "text-[hsl(72,100%,50%)]" : "text-gray-500"
                 )}
               >
                 {item.label}
@@ -78,7 +86,6 @@ export function MobileNav() {
         </div>
       </nav>
 
-      {/* 대회 일정 시트 */}
       <RunningEventList
         isOpen={isEventListOpen}
         onClose={() => setIsEventListOpen(false)}
