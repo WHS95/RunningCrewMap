@@ -17,13 +17,13 @@ export const CLOTHING_RANGES: ClothingRange[] = [
     items: [
       {
         name: "민소매",
-        icon: "IoShirtOutline",
+        icon: "Shirt",
         description: "통기성 좋은 민소매",
       },
-      { name: "반바지", icon: "GiShorts", description: "가벼운 반바지" },
+      { name: "반바지", icon: "RectangleHorizontal", description: "가벼운 반바지" },
       {
         name: "실내러닝",
-        icon: "FaPersonRunning",
+        icon: "PersonStanding",
         description: "실내 러닝 권장",
       },
     ],
@@ -33,8 +33,8 @@ export const CLOTHING_RANGES: ClothingRange[] = [
     maxTemp: 29,
     description: "따뜻한 날씨",
     items: [
-      { name: "반팔", icon: "IoShirtOutline", description: "반팔 티셔츠" },
-      { name: "반바지", icon: "GiShorts", description: "반바지" },
+      { name: "반팔", icon: "Shirt", description: "반팔 티셔츠" },
+      { name: "반바지", icon: "RectangleHorizontal", description: "반바지" },
     ],
   },
   {
@@ -42,15 +42,15 @@ export const CLOTHING_RANGES: ClothingRange[] = [
     maxTemp: 19,
     description: "선선한 날씨",
     items: [
-      { name: "긴팔", icon: "IoShirtOutline", description: "얇은 긴팔 티셔츠" },
+      { name: "긴팔", icon: "Shirt", description: "얇은 긴팔 티셔츠" },
       {
         name: "반바지/7부",
-        icon: "GiShorts",
+        icon: "RectangleHorizontal",
         description: "반바지 또는 7부 바지",
       },
       {
         name: "얇은 자켓",
-        icon: "IoShirtOutline",
+        icon: "Shirt",
         description: "가벼운 러닝 자켓",
       },
     ],
@@ -62,11 +62,11 @@ export const CLOTHING_RANGES: ClothingRange[] = [
     items: [
       {
         name: "긴팔",
-        icon: "IoShirtOutline",
+        icon: "Shirt",
         description: "기능성 긴팔 티셔츠",
       },
-      { name: "긴바지", icon: "GiShorts", description: "긴바지" },
-      { name: "자켓", icon: "IoShirtOutline", description: "방풍 자켓" },
+      { name: "긴바지", icon: "RectangleHorizontal", description: "긴바지" },
+      { name: "자켓", icon: "Shirt", description: "방풍 자켓" },
     ],
   },
   {
@@ -74,10 +74,10 @@ export const CLOTHING_RANGES: ClothingRange[] = [
     maxTemp: -1,
     description: "추운 날씨",
     items: [
-      { name: "내복", icon: "IoShirtOutline", description: "기능성 내복" },
-      { name: "긴바지", icon: "GiShorts", description: "기모 긴바지" },
-      { name: "패딩", icon: "IoShirtOutline", description: "러닝용 패딩" },
-      { name: "목토시", icon: "IoShirtOutline", description: "넥워머" },
+      { name: "내복", icon: "Shirt", description: "기능성 내복" },
+      { name: "긴바지", icon: "RectangleHorizontal", description: "기모 긴바지" },
+      { name: "패딩", icon: "Shirt", description: "러닝용 패딩" },
+      { name: "목토시", icon: "Shirt", description: "넥워머" },
     ],
   },
 ];

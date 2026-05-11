@@ -4,12 +4,7 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { NoticeBanner } from "@/components/home/NoticeBanner";
 
-// react-icons import
-import { FaRunning, FaMedal, FaBook } from "react-icons/fa";
-import { MdTimer } from "react-icons/md";
-import { BsStopwatch, BsBarChartFill } from "react-icons/bs";
-import { AiOutlineArrowRight } from "react-icons/ai";
-import { FaHeartbeat } from "react-icons/fa";
+import { Footprints, Medal, BookOpen, Timer, Clock, BarChart3, HeartPulse, ArrowRight } from "lucide-react";
 
 // 배너 데이터 (모듈 레벨 상수로 호이스팅)
 const BANNER_ITEMS = [
@@ -47,9 +42,9 @@ const InfoCard = ({ icon, title, subtitle, href }: InfoCardProps) => {
     >
       <div className='flex gap-3 items-center'>
         <div className='flex justify-center items-center w-8 h-8 bg-gray-700 rounded-full transition-colors duration-200 hover:bg-gray-600'>
-          {icon === "running" && <FaRunning size={16} />}
-          {icon === "marathon" && <FaMedal size={16} />}
-          {icon === "mbti" && <FaBook size={16} />}
+          {icon === "running" && <Footprints size={16} />}
+          {icon === "marathon" && <Medal size={16} />}
+          {icon === "mbti" && <BookOpen size={16} />}
         </div>
         <div>
           <h3 className='text-sm font-medium'>{title}</h3>
@@ -57,7 +52,7 @@ const InfoCard = ({ icon, title, subtitle, href }: InfoCardProps) => {
         </div>
       </div>
       <div className='transition-transform duration-150 group-hover:translate-x-1'>
-        <AiOutlineArrowRight size={16} />
+        <ArrowRight size={16} />
       </div>
     </div>
   );
@@ -84,10 +79,10 @@ const CalcMenuCard = ({ icon, title, color, href }: CalcMenuCardProps) => {
       onClick={() => router.push(href)}
     >
       <div className='flex justify-end mb-auto transition-transform duration-150'>
-        {icon === "pace" && <BsStopwatch size={20} />}
-        {icon === "heart-rate" && <FaHeartbeat size={20} />}
-        {icon === "split-time" && <MdTimer size={20} />}
-        {icon === "prediction" && <BsBarChartFill size={20} />}
+        {icon === "pace" && <Clock size={20} />}
+        {icon === "heart-rate" && <HeartPulse size={20} />}
+        {icon === "split-time" && <Timer size={20} />}
+        {icon === "prediction" && <BarChart3 size={20} />}
       </div>
       <div className='mt-auto'>
         <h3 className='text-lg font-medium'>

@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { IoShirtOutline, IoThermometerOutline } from "react-icons/io5";
-import { GiShorts } from "react-icons/gi";
-import { FaPersonRunning } from "react-icons/fa6";
+import { Shirt, Thermometer, RectangleHorizontal, PersonStanding } from "lucide-react";
 import { CLOTHING_RANGES } from "@/lib/types/clothing";
 
 interface RunningClothingGuideProps {
@@ -11,9 +9,9 @@ interface RunningClothingGuideProps {
 }
 
 const ICONS = {
-  IoShirtOutline,
-  GiShorts,
-  FaPersonRunning,
+  Shirt,
+  RectangleHorizontal,
+  PersonStanding,
 } as const;
 
 export function RunningClothingGuide({
@@ -58,7 +56,7 @@ export function RunningClothingGuide({
                   ? `${range.maxTemp}°C 이하`
                   : `${range.minTemp}~${range.maxTemp}°C`}
               </span>
-              <IoThermometerOutline className={`w-5 h-5 ${tempColor}`} />
+              <Thermometer className={`w-5 h-5 ${tempColor}`} />
             </div>
             <div className='flex flex-wrap gap-3'>
               {range.items.map((item) => {
