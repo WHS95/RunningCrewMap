@@ -91,6 +91,9 @@ export const metadata: Metadata = {
     telephone: true,
   },
   category: "sports",
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 // viewport 및 themeColor를 별도의 export로 분리 (Next.js 14.2.23 이상 권장사항)
