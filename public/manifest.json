@@ -1,11 +1,13 @@
 {
-  "name": "RunHouse",
+  "name": "RunHouse - 전국 러닝크루 지도",
   "short_name": "RunHouse",
   "description": "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "background_color": "#0a0b0f",
   "theme_color": "#000000",
+  "categories": ["sports", "fitness", "health"],
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -18,10 +20,15 @@
       "type": "image/png"
     },
     {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "apple touch icon"
+      "type": "image/png"
     }
   ]
-} 
+}
