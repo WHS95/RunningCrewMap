@@ -2,6 +2,9 @@ import withSerwist from "@serwist/next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns", "recharts", "@radix-ui/react-dialog", "@radix-ui/react-select"],
+  },
   modularizeImports: {
     "lucide-react": {
       transform: "lucide-react/dist/esm/icons/{{kebabCase member}}",
