@@ -1,16 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { MapPinned, Trophy, Menu, Home } from "lucide-react";
 import { useState } from "react";
 import { RunningEventList } from "@/components/events/RunningEventList";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LAYOUT } from "@/lib/constants";
+import { usePageTransition } from "@/lib/hooks/usePageTransition";
+import { useHaptic } from "@/lib/hooks/useHaptic";
 
 export function MobileNav() {
   const [isEventListOpen, setIsEventListOpen] = useState(false);
   const pathname = usePathname();
+  const { navigate } = usePageTransition();
+  const { trigger: haptic } = useHaptic();
 
   const navItems = [
     {
@@ -51,9 +54,15 @@ export function MobileNav() {
         <div className='absolute inset-0 bg-black/85 backdrop-blur-2xl' />
         <div className='relative flex justify-around items-start h-full pt-2'>
           {navItems.map((item) => (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
+              type="button"
+              onClick={() => {
+                if (!item.isActive) {
+                  haptic("light");
+                  navigate(item.href);
+                }
+              }}
               className={cn(
                 "flex flex-col items-center justify-center gap-1",
                 "transition-all duration-200 ease-out",
@@ -64,8 +73,8 @@ export function MobileNav() {
               <div className='relative'>
                 <item.icon
                   className={cn(
-                    "w-[22px] h-[22px] transition-colors duration-200",
-                    item.isActive ? "text-[hsl(72,100%,50%)]" : "text-gray-500"
+                    "w-[22px] h-[22px] transition-all duration-200",
+                    item.isActive ? "text-[hsl(72,100%,50%)] scale-110" : "text-gray-500 scale-100"
                   )}
                   strokeWidth={item.isActive ? 2.2 : 1.8}
                 />
@@ -81,7 +90,7 @@ export function MobileNav() {
               >
                 {item.label}
               </span>
-            </Link>
+            </button>
           ))}
         </div>
       </nav>
