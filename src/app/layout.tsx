@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Toaster } from "@/components/ui/sonner";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { PageTransition } from "@/components/layout/PageTransition";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -84,7 +85,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "런하우스",
   },
   formatDetection: {
@@ -118,7 +119,9 @@ export default function RootLayout({
         <ClientLayout>
           <div className='min-h-screen bg-background'>
             <Header />
-            <main className='w-full'>{children}</main>
+            <main className='w-full'>
+              <PageTransition>{children}</PageTransition>
+            </main>
             <MobileNav />
           </div>
           <Toaster />
