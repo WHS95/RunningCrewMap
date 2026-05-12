@@ -279,7 +279,7 @@ export default function CrewCertificationPage() {
   useEffect(() => {
     const loadCrews = async () => {
       try {
-        const data = await crewService.getAllCrews();
+        const data = await crewService.getCrews();
         setCrews(data);
       } catch (error) {
         console.error("Failed to load crews:", error);

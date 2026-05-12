@@ -296,20 +296,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   animation: shimmer 1.5s infinite;
 }
 
-/* View Transitions API */
-::view-transition-old(root) {
-  animation: fade-out 0.15s ease-out;
-}
-
-::view-transition-new(root) {
-  animation: slide-in-right 0.2s ease-out;
-}
-
-@keyframes slide-in-right {
-  from { transform: translateX(20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
 /* Touch ripple effect */
 .touch-ripple {
   position: relative;

@@ -8,14 +8,7 @@ export function usePageTransition() {
 
   const navigate = useCallback(
     (href: string) => {
-      if (!document.startViewTransition) {
-        router.push(href);
-        return;
-      }
-
-      document.startViewTransition(() => {
-        router.push(href);
-      });
+      router.push(href);
     },
     [router]
   );

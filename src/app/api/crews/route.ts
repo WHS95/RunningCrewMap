@@ -1,3 +1,7 @@
+// DEPRECATED: This file-based API route is no longer the primary data source.
+// Data is now served via Server Components using src/lib/server/crews.ts
+// This route is kept for backwards compatibility with external tools.
+
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
