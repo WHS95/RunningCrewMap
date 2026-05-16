@@ -24,18 +24,22 @@ export function MobileNav() {
     return null;
   }
 
+  // / is now the landing/home page, /map is the interactive map view.
+  // `isActive` matches both literal paths AND the legacy /home (which
+  // server-redirects to /) so deep-linked PWA installs still highlight
+  // the home tab correctly.
   const navItems = [
     {
-      href: "/home",
+      href: "/",
       icon: Home,
       label: "홈",
-      isActive: pathname === "/home",
+      isActive: pathname === "/" || pathname === "/home",
     },
     {
-      href: "/",
+      href: "/map",
       icon: MapPinned,
       label: "크루",
-      isActive: pathname === "/",
+      isActive: pathname === "/map",
     },
     {
       href: "/events",

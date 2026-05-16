@@ -485,7 +485,7 @@ export async function updateCrewByToken(
   // calls bust the per-route render cache for navigation freshness.
   revalidateTag(CREWS_CACHE_TAG);
   revalidatePath("/");
-  revalidatePath("/home");
+  revalidatePath("/map");
   revalidatePath("/crew/list");
   revalidatePath(`/crew/edit/${crewId}`);
 
@@ -614,7 +614,7 @@ export async function updateCrewVisibility(
 
     revalidateTag(CREWS_CACHE_TAG);
     revalidatePath("/");
-    revalidatePath("/home");
+    revalidatePath("/map");
     return { success: true };
   } catch (err) {
     console.error("크루 가시성 업데이트 실패:", err);
@@ -670,7 +670,7 @@ export async function deleteCrew(
 
     revalidateTag(CREWS_CACHE_TAG);
     revalidatePath("/");
-    revalidatePath("/home");
+    revalidatePath("/map");
     return { success: true };
   } catch (err) {
     console.error("크루 삭제 실패:", err);

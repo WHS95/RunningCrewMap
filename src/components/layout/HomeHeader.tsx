@@ -19,7 +19,7 @@ const TAB_ITEMS = [
     mode: "map" as ViewMode,
     icon: <MapPin className='w-4 h-4' />,
     label: "지도",
-    href: "/",
+    href: "/map",
   },
   {
     mode: "list" as ViewMode,

@@ -220,7 +220,7 @@ export async function createBanner(
       .select("id")
       .single();
     if (error) return { success: false, error: error.message };
-    revalidatePath("/home");
+    revalidatePath("/");
     revalidatePath("/admin/events");
     return { success: true, id: (data as { id: string }).id };
   } catch (e) {
@@ -259,7 +259,7 @@ export async function updateBanner(
       .update(patch)
       .eq("id", id);
     if (error) return { success: false, error: error.message };
-    revalidatePath("/home");
+    revalidatePath("/");
     revalidatePath("/admin/events");
     return { success: true };
   } catch (e) {
@@ -276,7 +276,7 @@ export async function deleteBanner(
   try {
     const { error } = await serverSupabase.from(TABLE).delete().eq("id", id);
     if (error) return { success: false, error: error.message };
-    revalidatePath("/home");
+    revalidatePath("/");
     revalidatePath("/admin/events");
     return { success: true };
   } catch (e) {
@@ -316,7 +316,7 @@ export async function reorderBanner(
       .eq("id", b.id);
     if (e2) return { success: false, error: e2.message };
 
-    revalidatePath("/home");
+    revalidatePath("/");
     revalidatePath("/admin/events");
     return { success: true };
   } catch (e) {

@@ -6,7 +6,8 @@ import type { Crew } from "@/lib/types/crew";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { VisibleCrewList } from "@/components/map/VisibleCrewList";
 import { SearchBox } from "@/components/search/SearchBox";
-import { ListFilter, Target, Loader2 } from "lucide-react";
+import { ListFilter, Target, Loader2, Plus } from "lucide-react";
+import Link from "next/link";
 import { crewService } from "@/lib/services/crew.service";
 
 // ======================================
@@ -1078,6 +1079,20 @@ export default function NaverMap({
             "invert(0.92) hue-rotate(180deg) saturate(0.55) brightness(0.95) contrast(0.95)",
         }}
       />
+
+      {/* Primary action FAB — go register a crew. Lime fill + larger size
+          so it reads as "the thing to do" if you're a crew leader. Sits
+          atop the right-side stack above the location/list utility buttons.
+          Routes directly to /register (the in-context shortcut admins
+          asked for, equivalent to the menu's "크루 등록" entry). */}
+      <Link
+        href='/register'
+        aria-label='크루 등록'
+        title='크루 등록'
+        className='absolute bottom-52 right-4 z-[101] w-14 h-14 rounded-full bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] shadow-[0_8px_24px_-4px_hsl(var(--lime)/0.45),0_2px_6px_rgba(0,0,0,0.35)] border-2 border-[hsl(var(--lime-foreground))]/10 flex items-center justify-center active:scale-95 hover:scale-[1.04] transition-transform'
+      >
+        <Plus className='w-7 h-7' strokeWidth={2.4} />
+      </Link>
 
       {/* 현재 위치로 이동 버튼 */}
       <button

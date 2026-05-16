@@ -90,7 +90,7 @@ export default function NotFound() {
         {/* CTAs */}
         <div className='mt-6 flex flex-col gap-2'>
           <Link
-            href='/'
+            href='/map'
             className='w-full py-3 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-display text-[14px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90 flex items-center justify-center gap-2'
           >
             <MapPin className='w-4 h-4' strokeWidth={2} />
@@ -100,7 +100,7 @@ export default function NotFound() {
             </span>
           </Link>
           <Link
-            href='/home'
+            href='/'
             className='w-full py-2.5 rounded-[4px] border border-cart-rule bg-background text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all flex items-center justify-center gap-2'
           >
             <Home className='w-3.5 h-3.5' />

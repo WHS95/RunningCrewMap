@@ -12,11 +12,81 @@ import {
   BarChart3,
   HeartPulse,
   ChevronRight,
+  MapPin,
+  ArrowRight,
 } from "lucide-react";
 import {
   KickerLabel,
   SectionTitle,
 } from "@/components/design/cartographic";
+
+// ── Hero CTA — landing page's primary action ────────────────────
+// Tall lime card with a big "주변 크루 찾으러 가기" headline. Replaces
+// the old short InfoCard that used to point at /. Visual hierarchy is
+// deliberately bigger so it's clearly *the* thing to tap first.
+function MapHeroCTA({ crewCount }: { crewCount: number }) {
+  const { navigate } = usePageTransition();
+  return (
+    <div
+      role='button'
+      tabIndex={0}
+      onClick={() => navigate("/map")}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate("/map");
+        }
+      }}
+      className='group relative w-full overflow-hidden rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] cursor-pointer
+        transition-[transform,box-shadow] duration-200 ease-out
+        active:scale-[0.985] active:duration-75
+        hover:shadow-[0_12px_32px_-8px_hsl(var(--lime)/0.5)]
+        animate-fade-in-up'
+      style={{ minHeight: 168 }}
+    >
+      {/* Faint pin watermark — subtle map texture without competing
+          with the headline. */}
+      <MapPin
+        aria-hidden
+        className='absolute -right-3 -bottom-3 w-32 h-32 opacity-[0.10]'
+        strokeWidth={1.5}
+      />
+
+      <div className='relative z-10 flex flex-col h-full p-5 gap-3'>
+        <div className='flex items-center justify-between'>
+          <span className='font-mono text-[10px] tracking-[0.22em] font-bold opacity-80'>
+            ● NEARBY · CREWS · {crewCount.toString().padStart(3, "0")}
+          </span>
+          <span className='font-mono text-[9px] tracking-[0.18em] font-bold opacity-60'>
+            LIVE
+          </span>
+        </div>
+
+        <div className='flex-1'>
+          <h1 className='font-display text-[26px] font-extrabold tracking-[-0.025em] leading-[1.1]'>
+            주변 크루 찾으러
+            <br />
+            가기
+          </h1>
+          <p className='font-mono text-[10px] tracking-[0.04em] mt-2 opacity-75'>
+            지도에서 가까운 러닝 크루를 둘러보세요
+          </p>
+        </div>
+
+        <div className='flex items-center justify-between border-t border-[hsl(var(--lime-foreground))]/15 pt-3 mt-1'>
+          <span className='inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.12em] font-bold uppercase'>
+            <MapPin className='w-3.5 h-3.5' strokeWidth={2.2} />
+            지도 열기 · OPEN MAP
+          </span>
+          <ArrowRight
+            className='w-5 h-5 transition-transform duration-200 group-hover:translate-x-0.5'
+            strokeWidth={2.2}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Fallback banners — used only if the DB has no active rows (e.g. before
 // the migration is applied). Once /admin/events has entries, those win.
@@ -224,17 +294,16 @@ export function HomeContent({
         <NoticeBanner items={items} />
       </section>
 
-      {/* Info cards */}
+      {/* Hero CTA — the primary action on the landing page. Taller card,
+          lime fill, large display headline so it reads as THE thing to do
+          first. Replaces the old small "러닝 크루" InfoCard which used to
+          link to /. */}
+      <section className="px-[18px] mb-3">
+        <MapHeroCTA crewCount={registeredCrews} />
+      </section>
+
+      {/* Secondary info cards — smaller, supporting the hero above. */}
       <section className="px-[18px] mb-6 space-y-2">
-        <InfoCard
-          icon="running"
-          title="러닝 크루"
-          en="CREWS"
-          meta={`${registeredCrews}개의 크루와 함께 합니다`}
-          count={registeredCrews}
-          href="/"
-          index={0}
-        />
         <InfoCard
           icon="marathon"
           title="마라톤 대회"
