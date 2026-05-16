@@ -6,6 +6,8 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { KickerLabel, TagPill } from "@/components/design/cartographic";
+import { cn } from "@/lib/utils";
 import { questions } from "@/util/mbti/questions";
 import {
   calculateMBTI,
@@ -394,7 +396,7 @@ export default function MBTIPage() {
 
   return (
     <div
-      className='flex flex-col min-h-screen bg-gray-50'
+      className='flex flex-col min-h-screen bg-background'
       style={{
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
         paddingBottom: "80px", // 하단 네비게이션바 높이보다 넉넉하게 설정
@@ -402,52 +404,81 @@ export default function MBTIPage() {
     >
       <div className='w-full max-w-md px-3 pt-6 pb-16 mx-auto'>
         {showGenderSelection ? (
-          // 문방구 카드 선택 화면
+          // Cartographic intro + gender selection
           <div className='px-3 py-6'>
-            <h1 className='mb-2 text-2xl font-bold text-center text-gray-800'>
-              러닝 MBTI 테스트
+            <KickerLabel tone="lime" className='text-center mb-3'>
+              · RUNNING MBTI · 16 TYPES
+            </KickerLabel>
+            <h1 className='font-display text-[30px] font-bold tracking-[-0.025em] text-cart-ink text-center leading-[1.1] mb-8'>
+              당신의<br/>러너 타입은?
             </h1>
 
             {!startButtonClicked ? (
-              // 시작 버튼
               <div className='flex flex-col items-center justify-center gap-6'>
-                <div className='relative perspective-500'>
-                  <div className='absolute top-0 left-0 w-full h-full -mt-2 -ml-2 bg-primary/10 rounded-xl'></div>
-                  <div className='absolute top-0 left-0 w-full h-full -mt-1 -ml-1 bg-primary/10 rounded-xl'></div>
-                  <div className='relative flex items-center justify-center w-48 transition-transform duration-300 bg-white border-2 border-gray-200 shadow-md h-60 rounded-xl preserve-3d hover:rotate-y-5'>
-                    <div className='flex flex-col items-center'>
+                <div className='relative w-full max-w-[280px]'>
+                  <div className='aspect-[3/4] bg-cart-paper border border-cart-rule rounded-[4px] flex items-center justify-center'>
+                    <div className='flex flex-col items-center px-6'>
                       <svg
-                        className='w-20 h-20 mb-2 text-primary'
+                        className='w-16 h-16 mb-4 text-[hsl(var(--lime))]'
                         xmlns='http://www.w3.org/2000/svg'
                         fill='none'
                         viewBox='0 0 24 24'
                         stroke='currentColor'
+                        strokeWidth={1.5}
                       >
                         <path
                           strokeLinecap='round'
                           strokeLinejoin='round'
-                          strokeWidth={1.5}
                           d='M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5'
                         />
                       </svg>
-                      <p className='text-base font-medium text-center text-gray-700'>
-                        당신의 러너 타입은?
+                      <KickerLabel tone="lime" className='mb-2'>· 12 QUESTIONS · 16 TYPES ·</KickerLabel>
+                      <p className='font-mono text-[10px] tracking-[0.05em] text-cart-ink-60 text-center mt-2'>
+                        나의 러닝 스타일을 알아보세요
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <Button
-                  className='w-full py-5 text-lg font-medium transition-transform rounded-xl hover:scale-105 active:scale-95'
+                  className='w-full py-4 text-[15px] font-bold bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] active:scale-[0.98] hover:bg-[hsl(var(--lime))]/90'
                   onClick={handleStartClick}
                 >
-                  <span className='flex items-center justify-center'>시작</span>
+                  시작하기 →
                 </Button>
               </div>
             ) : (
-              // 카드 선택 화면
-              <div className='flex flex-col items-center'>
-                <div className='relative w-full h-[300px] mb-6 perspective-500'>
+              // Cartographic gender selection
+              <div className='flex flex-col items-center w-full'>
+                <KickerLabel tone="muted" className='mb-5 tracking-[0.22em]'>
+                  · SELECT YOUR PROFILE ·
+                </KickerLabel>
+                <div className='w-full flex flex-col gap-2.5 mb-6'>
+                  {[
+                    { g: "male" as const, letter: "A", kr: "남성", en: "MALE RUNNER" },
+                    { g: "female" as const, letter: "B", kr: "여성", en: "FEMALE RUNNER" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.g}
+                      onClick={() => handleCardSelect(opt.g, 0)}
+                      className='w-full py-4 px-4 bg-cart-paper border border-cart-rule rounded-[4px] text-left transition-transform active:scale-[0.98] hover:border-[hsl(var(--lime))]/40'
+                    >
+                      <div className='flex items-center gap-3.5'>
+                        <div className='w-9 h-9 rounded-[4px] border border-cart-rule flex items-center justify-center font-display text-[14px] font-bold text-cart-ink flex-shrink-0'>
+                          {opt.letter}
+                        </div>
+                        <div className='flex-1'>
+                          <div className='text-[15px] font-semibold text-cart-ink'>{opt.kr}</div>
+                          <KickerLabel tone="muted" className='mt-1 tracking-[0.18em]'>
+                            · {opt.en}
+                          </KickerLabel>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {/* legacy card-flip layout retained but hidden — preserves animation state hooks */}
+                <div className='relative w-full h-0 mb-0 overflow-hidden opacity-0 pointer-events-none'>
                   {/* 남성 카드 덱 - z-index 조정하여 뒤로 이동 */}
                   <div
                     className={`absolute ${
@@ -663,23 +694,34 @@ export default function MBTIPage() {
           </div>
         ) : !showResult ? (
           <>
-            {/* 질문 섹션 - 카드 스택 UI로 변경 */}
+            {/* Cartographic stepper header */}
             <div className='mb-7'>
-              <h1 className='mb-3 text-xl font-bold text-center text-gray-800'>
-                {currentQuestion ? "러닝 MBTI 테스트" : "로딩 중..."}
-              </h1>
-              <Progress value={progress} className='h-2.5 mb-1' />
-              <p className='text-sm text-center text-gray-500'>
-                {currentQuestionIndex + 1} / {questions.length}
-              </p>
+              <KickerLabel tone="lime" className='text-center mb-3'>
+                ● QUESTION · {String(currentQuestionIndex + 1).padStart(2, "0")} / {String(questions.length).padStart(2, "0")}
+              </KickerLabel>
+              {/* segmented progress dots */}
+              <div className='flex gap-1 mb-2'>
+                {Array.from({ length: questions.length }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`flex-1 h-[3px] rounded-full ${
+                      i < currentQuestionIndex
+                        ? "bg-[hsl(var(--lime))]"
+                        : i === currentQuestionIndex
+                        ? "bg-[hsl(var(--lime))]/60"
+                        : "bg-cart-rule"
+                    }`}
+                  />
+                ))}
+              </div>
+              <Progress value={progress} className='hidden' />
             </div>
 
             {isCompleted ? (
-              // 완료 화면 - 간단한 로딩 스피너로 변경
-              <div className='flex flex-col items-center justify-center p-8 bg-white shadow-md rounded-2xl'>
+              <div className='flex flex-col items-center justify-center p-8 bg-cart-paper border border-cart-rule rounded-[4px]'>
                 <div className='flex flex-col items-center mb-6'>
                   <svg
-                    className='w-16 h-16 mb-4 text-primary animate-spin'
+                    className='w-12 h-12 mb-4 text-[hsl(var(--lime))] animate-spin'
                     xmlns='http://www.w3.org/2000/svg'
                     fill='none'
                     viewBox='0 0 24 24'
@@ -698,297 +740,191 @@ export default function MBTIPage() {
                       d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
                     ></path>
                   </svg>
-                  <h2 className='text-xl font-bold text-center'>
-                    결과 분석 중...
+                  <KickerLabel tone="lime" className='mb-2'>· ANALYZING ·</KickerLabel>
+                  <h2 className='font-display text-[20px] font-bold tracking-[-0.02em] text-cart-ink text-center'>
+                    결과 분석 중
                   </h2>
                 </div>
 
-                <div className='w-full mb-6 bg-gray-100 h-1.5 rounded-full overflow-hidden'>
-                  <div className='h-full bg-primary animate-progress-completion'></div>
+                <div className='w-full bg-cart-rule h-[2px] rounded-full overflow-hidden'>
+                  <div className='h-full bg-[hsl(var(--lime))] animate-progress-completion'></div>
                 </div>
               </div>
             ) : (
               currentQuestion && (
-                // 질문 UI 개선
                 <div className='flex flex-col'>
-                  {/* 질문 카드 - 고정 위치 */}
-                  <div className='p-6 mb-5 bg-white shadow-md rounded-2xl'>
-                    <h2 className='text-[17px] font-semibold leading-snug text-gray-800'>
+                  {/* Question */}
+                  <div className='px-2 mb-7'>
+                    <KickerLabel tone="muted" className='mb-3 tracking-[0.22em]'>
+                      QUESTION · {String(currentQuestionIndex + 1).padStart(2, "0")} / {String(questions.length).padStart(2, "0")}
+                    </KickerLabel>
+                    <h2 className='font-display text-[26px] font-bold leading-[1.15] tracking-[-0.025em] text-cart-ink'>
                       {currentQuestion.text}
                     </h2>
                   </div>
 
-                  {/* 답변 옵션 카드 - 별도 컴포넌트 */}
-                  <div className='p-5 bg-white shadow-md rounded-2xl'>
-                    <div className='space-y-3'>
-                      {currentQuestion.options.map((option, index) => (
+                  {/* Options */}
+                  <div className='flex flex-col gap-2.5 px-2'>
+                    {currentQuestion.options.map((option, index) => {
+                      const letter = String.fromCharCode(65 + index);
+                      return (
                         <button
                           key={option.value}
                           onClick={() => handleAnswer(option.value)}
                           disabled={isLoading}
-                          className={`w-full py-4 px-5 relative
-                         bg-gray-50 text-gray-800 hover:bg-gray-200 border-2 border-gray-100
-                            font-medium rounded-xl transition-all 
-                            hover:scale-[1.02] hover:shadow-md 
-                            active:scale-[0.98] active:bg-gray-300 active:shadow-inner
-                            ${
-                              isLoading ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
+                          className={`relative w-full py-4 px-4 bg-cart-paper border border-cart-rule rounded-[4px] text-left transition-transform active:scale-[0.98] hover:border-[hsl(var(--lime))]/40 ${
+                            isLoading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         >
-                          <span className='flex items-start text-sm whitespace-pre-line'>
-                            <span className='w-full text-left'>
-                              {option.text}
-                            </span>
-                          </span>
-
-                          {/* 호버 효과 애니메이션 */}
-                          <span className='absolute transition-opacity -translate-y-1/2 opacity-0 right-4 top-1/2 group-hover:opacity-100'>
-                            <svg
-                              xmlns='http://www.w3.org/2000/svg'
-                              className='w-5 h-5 text-gray-600'
-                              fill='none'
-                              viewBox='0 0 24 24'
-                              stroke='currentColor'
-                            >
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M9 5l7 7-7 7'
-                              />
-                            </svg>
-                          </span>
+                          <div className='flex items-center gap-3.5'>
+                            <div className='w-8 h-8 rounded-[4px] border border-cart-rule flex items-center justify-center font-display text-[14px] font-bold text-cart-ink flex-shrink-0 group-hover:bg-[hsl(var(--lime))]'>
+                              {letter}
+                            </div>
+                            <div className='flex-1 min-w-0'>
+                              <div className='text-[14px] font-semibold text-cart-ink leading-[1.3] whitespace-pre-line'>
+                                {option.text}
+                              </div>
+                            </div>
+                          </div>
                         </button>
-                      ))}
+                      );
+                    })}
+                  </div>
+
+                  {isLoading && (
+                    <div className='flex justify-center mt-5'>
+                      <KickerLabel tone="lime" className='inline-flex items-center gap-2 px-3 py-1.5 bg-cart-paper border border-cart-rule rounded-[4px]'>
+                        <span className='size-1.5 rounded-full bg-[hsl(var(--lime))] animate-pulse' />
+                        PROCESSING…
+                      </KickerLabel>
                     </div>
+                  )}
 
-                    {/* 로딩 인디케이터 */}
-                    {isLoading && (
-                      <div className='flex justify-center mt-4'>
-                        <div className='inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded-full'>
-                          <svg
-                            className='w-4 h-4 mr-2 animate-spin'
-                            xmlns='http://www.w3.org/2000/svg'
-                            fill='none'
-                            viewBox='0 0 24 24'
-                          >
-                            <circle
-                              className='opacity-25'
-                              cx='12'
-                              cy='12'
-                              r='10'
-                              stroke='currentColor'
-                              strokeWidth='4'
-                            ></circle>
-                            <path
-                              className='opacity-75'
-                              fill='currentColor'
-                              d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-                            ></path>
-                          </svg>
-                          처리 중...
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 다음 질문 슬라이드 */}
-                  <div
-                    className={`p-6 mb-5 bg-white shadow-md rounded-2xl transition-all duration-500 absolute right-0 bottom-0
-                      ${
-                        isTransitioning
-                          ? "opacity-100 transform translate-x-[0] translate-y-[0] scale-100 z-10"
-                          : "opacity-0 transform translate-x-[100%] translate-y-[100%] scale-50 -z-10"
-                      }`}
-                    style={{ width: "calc(100% - 24px)" }}
-                  >
-                    <h2 className='text-[17px] font-semibold leading-snug text-gray-800'>
-                      {questions[(currentQuestionIndex + 1) % questions.length]
-                        ?.text || ""}
-                    </h2>
-                  </div>
+                  {/* Footer hint */}
+                  <KickerLabel tone="muted" className='text-center mt-7 tracking-[0.2em]'>
+                    · 8,420 RUNNERS HAVE ANSWERED ·
+                  </KickerLabel>
                 </div>
               )
             )}
+
+            {/* keep transition placeholder hidden */}
+            <span aria-hidden className={isTransitioning ? "" : "hidden"} />
           </>
         ) : (
           <>
-            {/* 결과 섹션 - 더 인터랙티브하게 */}
+            {/* Result hero card */}
             <div
               id='result-container'
-              className='p-6 mb-6 bg-white shadow-md rounded-xl'
+              className='mb-5 bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] p-5 relative overflow-hidden'
             >
-              <div className='mb-4'>
-                <h1 className='mb-1 text-xl font-bold text-center'>
-                  💫MY MBTI: {result?.mbtiType}
-                </h1>
-                <h2 className='text-base font-medium text-center text-primary'>
+              <div className='absolute top-2 right-3 font-display text-[90px] font-bold opacity-[0.12] tracking-[-0.05em] leading-[0.85] pointer-events-none'>
+                {result?.mbtiType?.slice(0, 2)}
+              </div>
+              <div className='relative'>
+                <div className='font-mono text-[9px] tracking-[0.22em] font-bold'>· CHAMPION TYPE ·</div>
+                <div className='font-display text-[36px] font-bold tracking-[-0.025em] mt-2 leading-[1]'>
+                  {result?.mbtiType}
+                </div>
+                <div className='text-[13px] font-semibold mt-1 opacity-80'>
                   {result?.runningStyle}
-                </h2>
-              </div>
-
-              {/* 결과 이미지 추가 - 애니메이션 효과 */}
-              {result && (
-                <div className='flex justify-center mb-4'>
-                  <div
-                    className='p-2 transition-all duration-700 border border-gray-200 rounded-lg shadow-sm hover:shadow-md'
-                    style={{
-                      maxWidth: "80%",
-                      background: "#fafbfc",
-                    }}
-                  >
-                    <div className='relative'>
-                      <img
-                        src={getResultImagePath(result.mbtiType)}
-                        alt={`${result.mbtiType} 유형 이미지`}
-                        className='w-full h-auto rounded-lg'
-                        style={{ maxHeight: "200px", objectFit: "contain" }}
-                        onLoad={() =>
-                          console.log(
-                            "이미지 로드 성공:",
-                            getResultImagePath(result.mbtiType)
-                          )
-                        }
-                        onError={(e) => {
-                          console.log(
-                            "이미지 로드 실패:",
-                            getResultImagePath(result.mbtiType)
-                          );
-                          handleImageError(e, result.mbtiType);
-                        }}
-                      />
-                      {/* 반짝이는 효과 제거 */}
-                    </div>
-                  </div>
                 </div>
-              )}
-
-              {/* 최적의 러닝 파트너 - 이미지 바로 아래로 이동 */}
-              <div className='mb-4'>
-                <h3 className='mb-2 text-[16px] font-semibold'>
-                  러닝 파트너 관계 성향
-                </h3>
-                <div className='flex flex-col gap-2'>
-                  <div className='p-3 border border-green-100 rounded-lg bg-green-50'>
-                    <p className='font-medium text-[14px] text-green-800'>
-                      좋은 조합
-                    </p>
-                    <ul className='pl-4 mt-1 space-y-0.5 text-[14px] list-disc'>
-                      {result?.compatibility.bestPartners.map(
-                        (partner, index) => (
-                          <li key={index} className='text-gray-700'>
-                            {partner}
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-
-                  <div className='p-3 border border-red-100 rounded-lg bg-red-50'>
-                    <p className='font-medium text-[14px] text-red-800'>
-                      어려울 수도 있는(?) 조합
-                    </p>
-                    <ul className='pl-4 mt-1 space-y-0.5 text-[14px] list-disc'>
-                      {result?.compatibility.challengingPartners.map(
-                        (partner, index) => (
-                          <li key={index} className='text-gray-700'>
-                            {partner}
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* <div className='p-3 mb-4 rounded-lg bg-gray-50'>
-                <p className='text-[14px] leading-relaxed text-gray-700'>
-                  {result?.description}
-                </p>
-              </div> */}
-
-              <div className='mb-5'>
-                <h3 className='mb-2 text-[16px] font-semibold'>추천 활동</h3>
-                <ul className='pl-4 space-y-1 text-[14px] list-disc'>
-                  {result?.recommendations.map((rec, index) => (
-                    <li key={index} className='text-gray-700'>
-                      {rec}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
 
-            {/* 공유 및 다시하기 버튼 - 디자인 개선 */}
-            <div className='flex flex-col gap-3 mb-8'>
-              <Button
-                variant='outline'
-                className='w-full py-3 font-medium border-gray-200 rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.02] active:scale-[0.98]'
+            {/* Result image */}
+            {result && (
+              <div className='mb-5 bg-cart-paper border border-cart-rule rounded-[4px] p-3 flex justify-center'>
+                <img
+                  src={getResultImagePath(result.mbtiType)}
+                  alt={`${result.mbtiType} 유형 이미지`}
+                  className='w-full h-auto rounded-[4px]'
+                  style={{ maxHeight: "240px", objectFit: "contain" }}
+                  onError={(e) => handleImageError(e, result.mbtiType)}
+                />
+              </div>
+            )}
+
+            {/* Partner compatibility — cartographic two-column */}
+            <div className='mb-5'>
+              <KickerLabel tone="lime" className='mb-2.5 tracking-[0.22em]'>
+                · 러닝 파트너 관계 성향
+              </KickerLabel>
+              <div className='flex flex-col gap-2'>
+                <div className='bg-cart-paper border border-cart-rule rounded-[4px] p-3'>
+                  <KickerLabel tone="lime" className='mb-2 tracking-[0.18em]'>
+                    GOOD MATCH · 좋은 조합
+                  </KickerLabel>
+                  <div className='flex flex-wrap gap-1.5'>
+                    {result?.compatibility.bestPartners.map((partner, index) => (
+                      <TagPill key={index} variant="outline">
+                        {partner}
+                      </TagPill>
+                    ))}
+                  </div>
+                </div>
+
+                <div className='bg-cart-paper border border-cart-rule rounded-[4px] p-3'>
+                  <KickerLabel tone="muted" className='mb-2 tracking-[0.18em]'>
+                    CHALLENGING · 어려울 수도 있는 조합
+                  </KickerLabel>
+                  <div className='flex flex-wrap gap-1.5'>
+                    {result?.compatibility.challengingPartners.map((partner, index) => (
+                      <TagPill key={index} variant="ghost">
+                        {partner}
+                      </TagPill>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            <div className='mb-7'>
+              <KickerLabel tone="lime" className='mb-2.5 tracking-[0.22em]'>
+                · 추천 활동 · ACTIVITIES
+              </KickerLabel>
+              <div>
+                {result?.recommendations.map((rec, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex items-start gap-3 py-2.5",
+                      index === 0 ? "" : "border-t border-cart-rule"
+                    )}
+                  >
+                    <span className='font-mono text-[10px] tracking-[0.05em] text-cart-ink-60 tabular-nums w-6 mt-0.5'>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className='text-[13px] text-cart-ink flex-1'>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className='flex flex-col gap-2 mb-8'>
+              <button
                 onClick={handleShare}
+                className='w-full py-3.5 bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] flex items-center justify-between px-4 active:scale-[0.98] transition-transform'
               >
-                <span className='flex items-center justify-center'>
-                  <svg
-                    className='w-5 h-5 mr-2'
-                    xmlns='http://www.w3.org/2000/svg'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z'
-                    />
-                  </svg>
-                  단짝 러닝메이트 에게 공유하기
-                </span>
-              </Button>
-              <Button
-                variant='outline'
-                className='w-full py-3 font-medium border-gray-200 rounded-xl hover:bg-gray-50 transition-all hover:scale-[1.02] active:scale-[0.98]'
+                <span className='font-display text-[14px] font-bold'>러닝메이트에게 공유</span>
+                <span className='font-mono text-[10px] font-semibold tracking-[0.12em]'>SHARE →</span>
+              </button>
+              <button
                 onClick={handleDownload}
+                className='w-full py-3.5 bg-cart-paper border border-cart-rule text-cart-ink rounded-[4px] flex items-center justify-between px-4 active:scale-[0.98] transition-transform'
               >
-                <span className='flex items-center justify-center'>
-                  <svg
-                    className='w-5 h-5 mr-2'
-                    xmlns='http://www.w3.org/2000/svg'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'
-                    />
-                  </svg>
-                  결과 이미지 저장하기
-                </span>
-              </Button>
-              <Button
-                className='w-full py-3 font-medium rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]'
+                <span className='text-[14px] font-semibold'>결과 이미지 저장</span>
+                <span className='font-mono text-[10px] font-semibold tracking-[0.12em] text-cart-ink-60'>DOWNLOAD ↓</span>
+              </button>
+              <button
                 onClick={handleRestart}
+                className='w-full py-3.5 bg-cart-paper border border-cart-rule text-cart-ink rounded-[4px] flex items-center justify-between px-4 active:scale-[0.98] transition-transform'
               >
-                <span className='flex items-center justify-center'>
-                  <svg
-                    className='w-5 h-5 mr-2'
-                    xmlns='http://www.w3.org/2000/svg'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                    />
-                  </svg>
-                  다시 테스트하기
-                </span>
-              </Button>
+                <span className='text-[14px] font-semibold'>다시 테스트하기</span>
+                <span className='font-mono text-[10px] font-semibold tracking-[0.12em] text-cart-ink-60'>RESTART ↻</span>
+              </button>
             </div>
           </>
         )}

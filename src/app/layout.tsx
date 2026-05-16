@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Noto_Sans_KR } from "next/font/google";
+import { Outfit, Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -19,6 +19,13 @@ const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
   display: "swap",
   weight: ["300", "400", "500", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -114,10 +121,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='ko' suppressHydrationWarning>
-      <body className={`${outfit.variable} ${notoSansKR.variable} font-sans`} suppressHydrationWarning>
+    <html lang='ko' className='dark' suppressHydrationWarning>
+      <body
+        className={`${outfit.variable} ${notoSansKR.variable} ${jetbrainsMono.variable} font-sans bg-background text-foreground md:bg-[hsl(var(--canvas-outer))]`}
+        suppressHydrationWarning
+      >
+        {/* Desktop-only ambient dot pattern. Sits behind the mobile frame so
+            the surrounding "desk" feels tactile rather than dead flat. */}
+        <div
+          aria-hidden
+          className='hidden md:block fixed inset-0 pointer-events-none z-0'
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, hsl(var(--cart-ink-40)) 1px, transparent 1.2px)",
+            backgroundSize: "26px 26px",
+            opacity: 0.18,
+          }}
+        />
         <ClientLayout>
-          <div className='min-h-screen bg-background'>
+          <div className='mx-auto max-w-[430px] min-h-screen bg-background relative md:ring-1 md:ring-[hsl(var(--canvas-outer-rule))] md:shadow-[0_10px_60px_-10px_rgba(0,0,0,0.6),0_0_0_1px_rgba(199,255,0,0.04)] z-10'>
             <Header />
             <main className='w-full'>
               <PageTransition>{children}</PageTransition>

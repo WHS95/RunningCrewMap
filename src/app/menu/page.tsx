@@ -1,119 +1,127 @@
 "use client";
 
-// import { PlusCircle, MessageCircle, Calculator, Medal } from "lucide-react";
-import { PlusCircle, MessageCircle, Calculator } from "lucide-react";
-// import { useToast } from "@/components/ui/use-toast";
+import { PlusCircle, MessageCircle, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CSS_VARIABLES } from "@/lib/constants";
+import {
+  CartographicHeader,
+  KickerLabel,
+} from "@/components/design/cartographic";
+
+interface MenuLinkRow {
+  title: string;
+  en: string;
+  path: string;
+  isExternal?: boolean;
+  href?: string;
+}
+
+const PRIMARY_LINKS: MenuLinkRow[] = [
+  { title: "크루 등록", en: "REGISTER", path: "/register" },
+  {
+    title: "문의 및 건의",
+    en: "CONTACT",
+    path: "https://open.kakao.com/me/runhouse",
+    isExternal: true,
+  },
+];
+
+const CALCULATOR_LINKS: MenuLinkRow[] = [
+  { title: "스플릿 타임 계산기", en: "SPLIT", path: "/calculator/split-time" },
+  { title: "완주 시간 예측기", en: "FORECAST", path: "/calculator/prediction" },
+  { title: "심박수 존 계산기", en: "HEART RATE", path: "/calculator/heart-rate" },
+  { title: "페이스 계산기", en: "PACE", path: "/calculator/pace" },
+];
 
 export default function MenuPage() {
-  // const { toast } = useToast();
   const router = useRouter();
 
-  // const handleComingSoon = () => {
-  //   toast({
-  //     description: "기능 준비중입니다.",
-  //     duration: 1000,
-  //     className: "text-center",
-  //   });
-  // };
+  const handleClick = (item: MenuLinkRow) => {
+    if (item.isExternal) {
+      window.open(item.path, "_blank");
+    } else {
+      router.push(item.path);
+    }
+  };
 
   return (
     <div
-      className='flex flex-col bg-background'
+      className="flex flex-col bg-background"
       style={{
         height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE,
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
-      <div className='p-4'>
-        <div className='mb-4'>
-          <button
-            onClick={() => router.push("/register")}
-            className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
-          >
-            <PlusCircle className='w-4 h-4' />
-            <span className='text-sm'>크루 등록</span>
-          </button>
-        </div>
+      <CartographicHeader
+        kicker={`MENU · ${PRIMARY_LINKS.length + CALCULATOR_LINKS.length} ITEMS`}
+        title="메뉴"
+      />
 
-        <div className='mb-4'>
-          <button
-            onClick={
-              () => window.open("https://open.kakao.com/me/runhouse", "_blank")
-              // window.open("http://pf.kakao.com/_jUgnn/chat", "_blank")
-            }
-            className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
-          >
-            <MessageCircle className='w-4 h-4' />
-            <span className='text-sm'>문의 및 건의</span>
-          </button>
+      {/* Primary actions */}
+      <section className="px-[22px]">
+        <KickerLabel tone="muted" className="py-2 tracking-[0.18em]">
+          ACTIONS
+        </KickerLabel>
+        <div>
+          {PRIMARY_LINKS.map((item, idx) => (
+            <button
+              key={item.path}
+              onClick={() => handleClick(item)}
+              className={`flex items-center gap-3 w-full py-3.5 text-left transition-transform active:scale-[0.99] ${
+                idx === 0 ? "" : "border-t border-cart-rule"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-[4px] bg-cart-paper border border-cart-rule flex items-center justify-center flex-shrink-0">
+                {item.en === "REGISTER" ? (
+                  <PlusCircle className="w-4 h-4 text-[hsl(var(--lime))]" strokeWidth={1.6} />
+                ) : (
+                  <MessageCircle className="w-4 h-4 text-[hsl(var(--lime))]" strokeWidth={1.6} />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-semibold text-cart-ink">
+                  {item.title}
+                </div>
+                <KickerLabel tone="muted" className="mt-0.5 tracking-[0.18em]">
+                  · {item.en}
+                </KickerLabel>
+              </div>
+              <ChevronRight className="w-4 h-4 text-cart-ink-40" />
+            </button>
+          ))}
         </div>
+      </section>
 
-        {/* 인증 카테고리 */}
-        {/* <div className='pt-2 mb-4'>
-          <h3 className='px-3 mb-1 text-xs font-medium text-muted-foreground'>
-            인증
-          </h3>
-          <div className='space-y-1'>
-            {[
-              {
-                title: "러닝 기록 인증",
-                path: "/certification",
-              },
-              {
-                title: "크루 인증",
-                path: "/certification/crew",
-              },
-            ].map((menu) => (
-              <button
-                key={menu.path}
-                onClick={() => router.push(menu.path)}
-                className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
-              >
-                <Medal className='w-4 h-4' />
-                <span className='text-sm'>{menu.title}</span>
-              </button>
-            ))}
-          </div>
-        </div> */}
-
-        {/* 러너 계산기 카테고리 */}
-        <div className='pt-2'>
-          <h3 className='px-3 mb-1 text-xs font-medium text-muted-foreground'>
-            러너 계산기
-          </h3>
-          <div className='space-y-1'>
-            {[
-              {
-                title: "스플릿 타임 계산기",
-                path: "/calculator/split-time",
-              },
-              {
-                title: "완주 시간 예측기",
-                path: "/calculator/prediction",
-              },
-              {
-                title: "심박수 존 계산기",
-                path: "/calculator/heart-rate",
-              },
-              {
-                title: "페이스 계산기",
-                path: "/calculator/pace",
-              },
-            ].map((menu) => (
-              <button
-                key={menu.path}
-                onClick={() => router.push(menu.path)}
-                className='flex items-center w-full gap-2 px-3 py-2.5 transition-colors rounded-lg hover:bg-accent'
-              >
-                <Calculator className='w-4 h-4' />
-                <span className='text-sm'>{menu.title}</span>
-              </button>
-            ))}
-          </div>
+      {/* Calculators */}
+      <section className="px-[22px] mt-7">
+        <KickerLabel tone="lime" className="py-2 tracking-[0.22em]">
+          · 러닝 계산기 · CALCULATORS
+        </KickerLabel>
+        <div>
+          {CALCULATOR_LINKS.map((item, idx) => (
+            <button
+              key={item.path}
+              onClick={() => handleClick(item)}
+              className={`flex items-center gap-3 w-full py-3.5 text-left transition-transform active:scale-[0.99] ${
+                idx === 0 ? "" : "border-t border-cart-rule"
+              }`}
+            >
+              <div className="w-8 font-mono text-[10px] tracking-[0.05em] text-cart-ink-60 tabular-nums">
+                {String(idx + 1).padStart(2, "0")}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-semibold text-cart-ink">
+                  {item.title}
+                </div>
+              </div>
+              <span className="font-mono text-[9px] tracking-[0.18em] text-[hsl(var(--lime))] font-semibold">
+                {item.en}
+              </span>
+              <ChevronRight className="w-4 h-4 text-cart-ink-40" />
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

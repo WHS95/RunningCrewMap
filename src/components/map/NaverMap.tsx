@@ -12,12 +12,18 @@ import { crewService } from "@/lib/services/crew.service";
 // ======================================
 // 마커 클러스터링 설정 (수정 가능한 기준들)
 // ======================================
-// Cartographic Dark cluster + pin colors
-const CART_LIME = "#C7FF00";
+// Cartographic Dark cluster + pin colors.
+// Marker background is white (#FFFFFF) per request — works with any
+// logo color without clashing with the lime brand accent. The dark
+// stroke keeps the pin visible on the inverted-dark map tiles.
+const CART_LIME = "#C7FF00"; // kept for reference; no longer used in marker fill
 const CART_INK = "#0B0C0A";
+const MARKER_BG = "#FFFFFF";
 // Counter-filter to cancel the map container's dark inversion on marker HTML.
 const MARKER_COUNTER_FILTER =
   "invert(1) hue-rotate(180deg) saturate(1.8) brightness(1.05) contrast(1.05)";
+
+void CART_LIME; // suppress "declared but never read" — retained for future tweaks
 
 const CLUSTERING_CONFIG = {
   // 클러스터링을 시작할 최대 줌 레벨 (이 값보다 낮으면 클러스터링 적용)
@@ -29,11 +35,12 @@ const CLUSTERING_CONFIG = {
   // 클러스터를 형성하기 위한 최소 마커 개수
   MIN_CLUSTER_SIZE: 3,
 
-  // 클러스터 마커 크기
-  CLUSTER_SIZE: 36,
+  // 클러스터 마커 크기 — bumped from 36 to 42 alongside individual-pin size
+  // increase so crew leaders can spot their crew at a glance.
+  CLUSTER_SIZE: 42,
 
   CLUSTER_STYLES: {
-    backgroundColor: CART_LIME,
+    backgroundColor: MARKER_BG,
     textColor: CART_INK,
     borderColor: CART_INK,
     borderWidth: 1,
@@ -429,13 +436,16 @@ export default function NaverMap({
     setIsDetailOpen(true);
   }, []);
 
-  // 마커 생성 함수 - 로고 이미지 포함하되 최적화 (기존 디자인 유지)
   // Cartographic Dark crew pin — lime teardrop with dark stroke + center logo.
-  // Wrapped in a counter-filter div so it renders correctly atop the inverted map.
+  // Bumped from 36×42 → 48×58 (≈33% larger) per crew-leader feedback: the pin
+  // is the proudest moment for a crew so it should be visible without
+  // squinting. The teardrop path keeps its original 36×42 viewBox and just
+  // scales up — design proportions remain identical to the prototype.
   const createMarkerContent = useCallback((crew: Crew) => {
-    const width = 36;
-    const height = 42;
-    const logoSize = 24;
+    const width = 48;
+    const height = 58;
+    const logoSize = 32; // inner logo edge length
+    const wellSize = logoSize + 2; // lime circular well around the logo
 
     // Logo or initial inside the teardrop head
     let innerContent = "";
@@ -452,11 +462,11 @@ export default function NaverMap({
           style="object-fit: cover; width: ${logoSize}px; height: ${logoSize}px; border-radius: 50%; display:block;"
           loading="lazy"
           decoding="async"
-          onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;font-family:Inter,sans-serif;font-weight:700;font-size:15px;color:${CART_INK}&quot;>${crew.name.charAt(0)}</span>'"
+          onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;font-family:Inter,sans-serif;font-weight:700;font-size:18px;color:${CART_INK}&quot;>${crew.name.charAt(0)}</span>'"
         />
       `;
     } else {
-      innerContent = `<span style="font-family:Inter,sans-serif;font-weight:700;font-size:16px;color:${CART_INK};line-height:1;">${crew.name.charAt(0)}</span>`;
+      innerContent = `<span style="font-family:Inter,sans-serif;font-weight:700;font-size:18px;color:${CART_INK};line-height:1;">${crew.name.charAt(0)}</span>`;
     }
 
     return `<div style="
@@ -469,7 +479,7 @@ export default function NaverMap({
       <svg width="${width}" height="${height}" viewBox="0 0 36 42" style="position:absolute;inset:0;display:block;">
         <path
           d="M18 41 C 18 28, 35 28, 35 16 a 17 17 0 1 0 -34 0 c 0 12, 17 12, 17 25 z"
-          fill="${CART_LIME}"
+          fill="${MARKER_BG}"
           stroke="${CART_INK}"
           stroke-width="1.4"
           stroke-linejoin="round"
@@ -477,12 +487,12 @@ export default function NaverMap({
       </svg>
       <div style="
         position: absolute;
-        top: 4px;
+        top: 5px;
         left: 50%;
         transform: translateX(-50%);
-        width: ${logoSize + 2}px;
-        height: ${logoSize + 2}px;
-        background: ${CART_LIME};
+        width: ${wellSize}px;
+        height: ${wellSize}px;
+        background: ${MARKER_BG};
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -547,13 +557,13 @@ export default function NaverMap({
                   ? createClusterContent(data)
                   : createMarkerContent(data.crew),
                 size: new window.naver.maps.Size(
-                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 36,
-                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 42
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 48,
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 58
                 ),
                 // Teardrop pin: anchor at the tip (bottom center) so pin points to the location.
                 anchor: new window.naver.maps.Point(
-                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 18,
-                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 42
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 24,
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 58
                 ),
               },
             });

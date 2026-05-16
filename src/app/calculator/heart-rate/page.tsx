@@ -76,7 +76,7 @@ export default function HeartRateCalculatorPage() {
               <h2 className='text-lg font-medium'>트레이닝 존</h2>
               <div className='relative group'>
                 <div className='cursor-help text-muted-foreground'>ⓘ</div>
-                <div className='absolute bottom-full mb-2 p-3 text-sm bg-popover text-popover-foreground rounded-lg shadow-lg invisible group-hover:visible w-[280px] left-1/2 -translate-x-1/2'>
+                <div className='absolute bottom-full mb-2 p-3 text-sm bg-popover text-popover-foreground rounded-[4px] border border-cart-rule invisible group-hover:visible w-[280px] left-1/2 -translate-x-1/2'>
                   <p>최대 심박수 계산 공식:</p>
                   <p className='mt-1 font-mono text-xs'>220 - 나이</p>
                   <p className='mt-2 text-xs text-muted-foreground'>
@@ -88,7 +88,7 @@ export default function HeartRateCalculatorPage() {
               </div>
             </div>
 
-            <div className='p-3 mb-4 rounded-lg bg-gradient-to-r from-primary/20 to-primary/30'>
+            <div className='p-3 mb-4 rounded-[4px] bg-gradient-to-r from-primary/20 to-primary/30'>
               <div className='font-medium'>예상 최대 심박수</div>
               <div className='mt-1 text-2xl'>
                 {maxHR}{" "}
@@ -101,7 +101,7 @@ export default function HeartRateCalculatorPage() {
                 <div
                   key={zone.zone}
                   className={cn(
-                    "relative p-3 rounded-lg bg-gradient-to-r transition-all duration-200 group/zone",
+                    "relative p-3 rounded-[4px] bg-gradient-to-r transition-all duration-200 group/zone",
                     ZONE_COLORS[zone.zone as keyof typeof ZONE_COLORS]
                   )}
                 >

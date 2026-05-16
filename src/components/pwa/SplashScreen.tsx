@@ -49,13 +49,13 @@ export function SplashScreen() {
         <span className="text-2xl font-bold tracking-[0.2em] text-white uppercase" style={{ fontFamily: 'var(--font-outfit)' }}>
           Run House
         </span>
-        <span className="px-2 py-1 text-[10px] font-bold tracking-wider uppercase bg-[hsl(72,100%,50%)] text-black rounded">
+        <span className="px-2 py-1 text-[10px] font-bold tracking-wider uppercase bg-[hsl(72,100%,50%)] text-cart-ink rounded">
           Club
         </span>
       </div>
 
       {/* Tagline */}
-      <p className="text-sm text-gray-500 mb-8">전국 러닝크루 지도</p>
+      <p className="text-sm text-cart-ink-60 mb-8">전국 러닝크루 지도</p>
 
       {/* Loading indicator */}
       <div className="flex gap-1">

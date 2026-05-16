@@ -1,31 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+// Session lengths.
+// Default (no "remember me"): 2 hours — safe for shared computers.
+// Remember-me: 30 days — auto-login on the same device.
+const SHORT_SESSION_SECS = 60 * 60 * 2;
+const LONG_SESSION_SECS = 60 * 60 * 24 * 30;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { username, password, remember } = body as {
+      username?: string;
+      password?: string;
+      remember?: boolean;
+    };
 
     // 하드코딩된 인증 정보 검증 (실제 환경에서는 이런 방식은 권장되지 않습니다)
     if (
       username === process.env.ADMIN_USERNAME &&
       password === process.env.ADMIN_PASSWORD
     ) {
-      // 성공 시 쿠키 설정 (Next.js 15: cookies()는 비동기)
       const cookieStore = await cookies();
 
-      // HTTP only 쿠키 설정 (JavaScript에서 접근 불가능)
+      const maxAge = remember ? LONG_SESSION_SECS : SHORT_SESSION_SECS;
+
+      // HTTP-only auth cookie. `remember=true` extends the session to 30 days
+      // so the admin doesn't have to re-enter credentials on the same device.
       cookieStore.set("auth", "true", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 2, // 2시간
+        maxAge,
         path: "/",
+        sameSite: "lax",
       });
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({
+        success: true,
+        remember: !!remember,
+        expiresInSecs: maxAge,
+      });
     }
 
-    // 인증 실패
     return NextResponse.json(
       { success: false, error: "아이디 또는 비밀번호가 올바르지 않습니다." },
       { status: 401 }

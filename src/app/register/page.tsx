@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { crewService } from "@/lib/services/crew.service";
 import { AppError, ErrorCode } from "@/lib/types/error";
 import { ResultDialog } from "@/components/dialog/ResultDialog";
 import { X, Upload } from "lucide-react";
 import MImage from "next/image";
+import { notifyCrewRegistration } from "@/app/actions/crew";
+import { KickerLabel } from "@/components/design/cartographic";
+import { LogoCropDialog } from "@/components/dialog/LogoCropDialog";
+
+const CrewLocationPickerMap = dynamic(
+  () => import("@/components/map/CrewLocationPickerMap"),
+  { ssr: false }
+);
 
 // Import types
 import {
@@ -115,7 +124,7 @@ const DatePicker = ({
           onChange={(e) =>
             setSelectedDate({ ...selectedDate, year: parseInt(e.target.value) })
           }
-          className='px-3 py-2 w-full bg-white rounded-lg border appearance-none'
+          className='px-3 py-2 w-full bg-cart-paper border border-cart-rule rounded-[4px] text-cart-ink focus:outline-none focus:border-[hsl(var(--lime))] transition-colors appearance-none'
           disabled={disabled}
         >
           {years.map((year) => (
@@ -136,7 +145,7 @@ const DatePicker = ({
               month: parseInt(e.target.value),
             })
           }
-          className='px-3 py-2 w-full bg-white rounded-lg border appearance-none'
+          className='px-3 py-2 w-full bg-cart-paper border border-cart-rule rounded-[4px] text-cart-ink focus:outline-none focus:border-[hsl(var(--lime))] transition-colors appearance-none'
           disabled={disabled}
         >
           {months.map((month) => (
@@ -158,7 +167,7 @@ const DatePicker = ({
           onChange={(e) =>
             setSelectedDate({ ...selectedDate, day: parseInt(e.target.value) })
           }
-          className='px-3 py-2 w-full bg-white rounded-lg border appearance-none'
+          className='px-3 py-2 w-full bg-cart-paper border border-cart-rule rounded-[4px] text-cart-ink focus:outline-none focus:border-[hsl(var(--lime))] transition-colors appearance-none'
           disabled={disabled}
         >
           {days.map((day) => (
@@ -215,10 +224,59 @@ export default function RegisterPage() {
   const [instagram, setInstagram] = useState("");
   const [foundedDate, setFoundedDate] = useState(todayDate);
   const [mainAddress, setMainAddress] = useState("");
+
+  // Picked location from interactive map. Null until the user places a pin.
+  const [pickedLocation, setPickedLocation] = useState<
+    { lat: number; lng: number; address?: string } | null
+  >(null);
+
+  // Existing crews shown as context dots so the user can avoid collisions.
+  const [contextCrews, setContextCrews] = useState<
+    Array<{ id: string; lat: number; lng: number; name?: string }>
+  >([]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/crews")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => {
+        if (!mounted || !Array.isArray(list)) return;
+        const ctx: Array<{ id: string; lat: number; lng: number; name?: string }> = [];
+        for (const c of list as Array<{
+          id?: string;
+          name?: string;
+          location?: {
+            lat?: number;
+            lng?: number;
+            latitude?: number;
+            longitude?: number;
+          };
+        }>) {
+          const loc = c.location;
+          const lat = loc?.lat ?? loc?.latitude;
+          const lng = loc?.lng ?? loc?.longitude;
+          if (!c.id || typeof lat !== "number" || typeof lng !== "number") continue;
+          ctx.push({ id: c.id, lat, lng, name: c.name });
+        }
+        setContextCrews(ctx);
+      })
+      .catch(() => {
+        // Non-fatal — picker still works without context dots.
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [activityDays, setActivityDays] = useState<ActivityDay[]>([]);
   const [minAge, setMinAge] = useState(20);
   const [maxAge, setMaxAge] = useState(60);
   const [logoImage, setLogoImage] = useState<File | undefined>(undefined);
+  // Object URL for previewing the cropped logo. Revoked when replaced.
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  // The raw file the user just picked, sitting in the crop dialog until they
+  // confirm or cancel.
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   // 가입 방식 상태
   const [useInstagramDm, setUseInstagramDm] = useState(true);
@@ -281,8 +339,10 @@ export default function RegisterPage() {
       location: {
         main_address: mainAddress,
         detail_address: "",
-        latitude: 37.5665,
-        longitude: 126.978,
+        // Use map-picked coordinates; fallback to Seoul City Hall only if the
+        // user somehow didn't pick (the submit validation below blocks this).
+        latitude: pickedLocation?.lat ?? 37.5665,
+        longitude: pickedLocation?.lng ?? 126.978,
       },
       activity_days: activityDays,
       age_range: {
@@ -338,12 +398,37 @@ export default function RegisterPage() {
     );
   };
 
-  // 파일 변경 핸들러
+  // 파일 변경 핸들러 — 선택된 파일을 즉시 저장하지 않고 크롭 다이얼로그로 넘김.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset the input so picking the same file twice still re-triggers onChange.
+    if (e.target) e.target.value = "";
     if (file) {
-      setLogoImage(file);
+      setPendingLogoFile(file);
     }
+  };
+
+  // After the user adjusts + confirms the crop, swap in the cropped file and
+  // refresh the preview URL.
+  const handleLogoCropConfirm = (cropped: File) => {
+    setLogoImage(cropped);
+    if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+    setLogoPreviewUrl(URL.createObjectURL(cropped));
+    setPendingLogoFile(null);
+  };
+
+  // Clean up preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleClearLogo = () => {
+    if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+    setLogoPreviewUrl(null);
+    setLogoImage(undefined);
   };
 
   // 크루 사진 추가 핸들러
@@ -438,15 +523,43 @@ export default function RegisterPage() {
         return;
       }
 
-      // main_address NULL 체크 수정
+      // main_address (지도 표시 위치 텍스트 입력) — 비어 있으면 차단
       if (
         !formData.location.main_address ||
         !formData.location.main_address.trim()
       ) {
         setDialogState({
           isOpen: true,
+          title: "지도 표시 위치 입력 필요",
+          description:
+            "지도에 표시될 대표 위치(주소)를 입력해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      // Require an actual map pick — block submission if the user never placed
+      // the pin (otherwise we'd save the default Seoul City Hall fallback).
+      if (!pickedLocation) {
+        setDialogState({
+          isOpen: true,
+          title: "지도 위치 선택 필요",
+          description: "지도에서 크루의 정확한 위치를 핀으로 표시해주세요.",
+          isSuccess: false,
+        });
+        return;
+      }
+
+      // 활동 장소(여러 개) — 별도 chips 배열, 최소 1개 필수
+      if (
+        !formData.activity_locations ||
+        formData.activity_locations.length === 0
+      ) {
+        setDialogState({
+          isOpen: true,
           title: "활동 장소 입력 필요",
-          description: "지도에 표시될 대표 위치를 입력해주세요.",
+          description:
+            "정기 모임이 이루어지는 활동 장소를 한 개 이상 추가해주세요. (예: 반포 한강공원)",
           isSuccess: false,
         });
         return;
@@ -573,7 +686,22 @@ export default function RegisterPage() {
         },
       };
 
-      await crewService.createCrew(typeSafeInput);
+      const createdCrew = await crewService.createCrew(typeSafeInput);
+
+      // Fire Discord webhook notification — non-blocking; if it fails we still
+      // surface success to the user (the crew row is already persisted).
+      notifyCrewRegistration({
+        id: createdCrew.id,
+        name: typeSafeInput.name,
+        instagram: typeSafeInput.instagram || null,
+        mainAddress: typeSafeInput.location.main_address,
+        lat: typeSafeInput.location.latitude,
+        lng: typeSafeInput.location.longitude,
+        description: typeSafeInput.description || null,
+      }).catch((err) => {
+        // Log but don't break the user flow.
+        console.error("Discord notify failed:", err);
+      });
 
       // 성공 팝업 표시
       setDialogState({
@@ -590,15 +718,28 @@ export default function RegisterPage() {
       }, 2000);
     } catch (error) {
       const appError = error as AppError;
-      console.error("크루 등록 실패:", {
-        code: appError.code,
-        message: appError.message,
-        details: appError.details,
+      // Log the raw error first so we can see whatever shape it really has,
+      // *then* the typed view. AppError fields are often undefined when the
+      // throwable is a plain Error / Supabase error / DOMException etc., which
+      // is how this used to print as `{}` in the console.
+      console.error("크루 등록 실패 (raw):", error);
+      console.error("크루 등록 실패 (parsed):", {
+        code: appError?.code,
+        message: appError?.message,
+        details: appError?.details,
+        name: (error as Error)?.name,
+        rawMessage: (error as Error)?.message,
+        stack: (error as Error)?.stack,
+        // Supabase errors put SQL info on `.hint` / `.details`
+        hint: (error as { hint?: string })?.hint,
+        pgCode: (error as { code?: string })?.code,
       });
 
       // 에러 코드별 사용자 피드백
       let errorTitle = "크루 등록 실패";
-      let errorDescription = "알 수 없는 오류가 발생했습니다.";
+      let errorDescription =
+        (error as Error)?.message ||
+        "알 수 없는 오류가 발생했습니다. 콘솔의 raw 로그를 확인해주세요.";
 
       // 이미지 관련 에러 처리 추가
       if (appError.code === ErrorCode.FILE_TOO_LARGE) {
@@ -631,8 +772,9 @@ export default function RegisterPage() {
         errorTitle = "크루 소개 오류";
         errorDescription = "크루 소개를 입력해주세요.";
       } else if (appError.code === ErrorCode.INVALID_LOCATION) {
-        errorTitle = "활동 장소 오류";
-        errorDescription = "활동 장소를 입력해주세요.";
+        errorTitle = "지도 표시 위치 오류";
+        errorDescription =
+          "지도에 표시될 주소 또는 좌표가 올바르지 않습니다. 주소 입력 + 지도 핀 위치를 확인해주세요.";
       } else if (appError.code === ErrorCode.INVALID_ACTIVITY_DAYS) {
         errorTitle = "활동 요일 오류";
         errorDescription = "활동 요일을 선택해주세요.";
@@ -666,47 +808,62 @@ export default function RegisterPage() {
           open={showPreCheckModal}
           onOpenChange={setShowPreCheckModal}
         >
-          <AlertDialogContent className='w-[320px] max-w-[90vw] rounded-3xl'>
-            <AlertDialogHeader>
-              <AlertDialogTitle className='text-lg font-semibold text-center'>
+          <AlertDialogContent className='w-[340px] max-w-[90vw] rounded-[4px] bg-cart-paper border border-cart-rule p-0 overflow-hidden'>
+            <AlertDialogHeader className='px-6 pt-6 pb-2 space-y-1.5'>
+              <div className='font-mono text-[9px] tracking-[0.22em] font-semibold text-[hsl(var(--lime))] text-center'>
+                · CREW · REGISTRATION
+              </div>
+              <AlertDialogTitle className='font-display text-[22px] font-bold tracking-[-0.025em] text-cart-ink text-center'>
                 크루 등록 조건
               </AlertDialogTitle>
-              <AlertDialogDescription className='text-sm text-center text-gray-500'>
+              <AlertDialogDescription className='text-[12px] text-center text-cart-ink-60'>
                 아래 조건을 확인해주세요
               </AlertDialogDescription>
             </AlertDialogHeader>
 
-            <div className='py-4 space-y-3'>
-              <div className='space-y-2'>
-                <div className='text-sm text-gray-700'>
-                  - 크루 인원이 5명 이상
-                </div>
-                <div className='text-sm text-gray-700'>
-                  - 크루 전용 인스타그램 계정 운영
-                </div>
-                <div className='text-sm text-gray-700'>
-                  - 크루 인스타에 단체 활동 사진 업로드
-                </div>
+            <div className='px-6 py-4'>
+              <div className='border-y border-cart-rule'>
+                {[
+                  "크루 인원이 5명 이상",
+                  "크루 전용 인스타그램 계정 운영",
+                  "크루 인스타에 단체 활동 사진 업로드",
+                ].map((item, idx, arr) => (
+                  <div
+                    key={item}
+                    className={`flex items-start gap-3 py-2.5 ${
+                      idx < arr.length - 1 ? "border-b border-cart-rule" : ""
+                    }`}
+                  >
+                    <span className='font-mono text-[10px] tracking-[0.05em] text-cart-ink-60 tabular-nums w-5 mt-0.5'>
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <span className='text-[13px] text-cart-ink flex-1'>
+                      {item}
+                    </span>
+                  </div>
+                ))}
               </div>
 
-              <div className='mt-4 text-xs text-gray-500'>
-                * 해당 조건이 안되면 크루등록이 어려울수있습니다
+              <div className='mt-3 text-[11px] text-cart-ink-60 leading-relaxed'>
+                * 해당 조건이 안되면 크루 등록이 어려울 수 있습니다
               </div>
             </div>
 
-            <AlertDialogFooter className='flex-col space-y-2 sm:flex-col sm:space-x-0'>
-              <AlertDialogAction
-                onClick={() => setShowPreCheckModal(false)}
-                className='w-full bg-gray-900 rounded-full hover:bg-gray-800'
-              >
-                확인
-              </AlertDialogAction>
+            <AlertDialogFooter className='flex-col-reverse sm:flex-col-reverse gap-2 sm:space-x-0 px-6 pb-6 pt-2'>
+              {/* Cancel — secondary ghost button */}
               <AlertDialogCancel
                 onClick={() => router.back()}
-                className='w-full text-white rounded-full border-0 bg-slate-500 hover:text-gray-700 hover:bg-transparent'
+                className='w-full py-3 rounded-[4px] bg-background border border-cart-rule text-cart-ink-60 hover:text-cart-ink hover:border-[hsl(var(--lime))]/40 font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all m-0'
               >
-                취소
+                취소 · CANCEL
               </AlertDialogCancel>
+              {/* Confirm — primary lime CTA */}
+              <AlertDialogAction
+                onClick={() => setShowPreCheckModal(false)}
+                className='w-full py-3 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-display text-[15px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90'
+              >
+                확인하고 진행하기 →
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -722,15 +879,15 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* 크루명 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               크루 이름
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
             <input
               type='text'
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className='px-3 py-2 w-full rounded-lg border'
+              className='px-3 py-2 w-full rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50'
               required
               placeholder='크루 이름을 입력해주세요'
               disabled={isLoading}
@@ -739,8 +896,8 @@ export default function RegisterPage() {
 
           {/* 인스타그램 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>Instagram</label>
-            <span className='ml-1 text-red-500'>*</span>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">Instagram</label>
+            <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             <div className='relative'>
               <span className='absolute top-2 left-3 text-muted-foreground'>
                 @
@@ -749,7 +906,7 @@ export default function RegisterPage() {
                 type='text'
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
-                className='px-3 py-2 pl-7 w-full rounded-lg border'
+                className='px-3 py-2 pl-7 w-full rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50'
                 required
                 placeholder='인스타그램 아이디'
                 disabled={isLoading}
@@ -759,9 +916,9 @@ export default function RegisterPage() {
 
           {/* 크루 개설일 - 커스텀 날짜 선택기로 변경 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               크루 개설일
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
             <DatePicker
               value={foundedDate}
@@ -773,11 +930,11 @@ export default function RegisterPage() {
 
           {/* 활동 장소들 - 여러 개 추가 가능 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               활동 장소
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
-            <p className='mb-3 text-xs text-muted-foreground'>
+            <p className='mb-3 text-[11px] text-cart-ink-60'>
               최대 3개 입력 가능
             </p>
 
@@ -787,14 +944,14 @@ export default function RegisterPage() {
                 value={newLocation}
                 onChange={(e) => setNewLocation(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className='px-3 py-2 pr-20 w-full rounded-lg border'
+                className='px-3 py-2 pr-20 w-full rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50'
                 placeholder='반포 한강공원'
                 disabled={isLoading}
               />
               <button
                 type='button'
                 onClick={addActivityLocation}
-                className='absolute top-1 right-1 px-3 py-1 text-sm bg-gray-100 rounded-lg border transition-colors hover:bg-gray-200'
+                className='absolute top-1 right-1 px-3 py-1.5 text-[11px] font-mono tracking-[0.12em] uppercase font-semibold bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] active:scale-95 transition-transform disabled:opacity-50'
                 disabled={isLoading || !newLocation.trim()}
               >
                 추가
@@ -804,18 +961,18 @@ export default function RegisterPage() {
             {/* 추가된 활동 장소 목록 */}
             {activityLocations.length > 0 && (
               <div className='mt-2 space-y-2'>
-                <p className='text-xs text-gray-500'>활동 장소:</p>
+                <p className='text-xs text-cart-ink-60'>활동 장소:</p>
                 <div className='flex flex-wrap gap-2'>
                   {activityLocations.map((location, index) => (
                     <div
                       key={index}
-                      className='flex items-center bg-gray-100 px-3 py-1.5 rounded-full text-sm'
+                      className='flex items-center bg-cart-paper border border-cart-rule px-3 py-1.5 rounded-[4px] text-[12px] text-cart-ink'
                     >
                       <span>{location}</span>
                       <button
                         type='button'
                         onClick={() => removeActivityLocation(index)}
-                        className='ml-2 text-gray-500 hover:text-red-500'
+                        className='ml-2 text-cart-ink-60 hover:text-red-500'
                         disabled={isLoading}
                       >
                         ×
@@ -827,35 +984,56 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* 지도 표시 위치 - 하나만 입력 가능 */}
-          <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+          {/* 지도 표시 위치 - 지도 핀 + 주소 자동 채움 */}
+          <div className='space-y-3'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               지도 표시 위치
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
-            <p className='mb-3 text-xs text-muted-foreground'>
-              네이버 지도에서 검색이 되는 장소 적어주세요.
+            <p className='text-[11px] text-cart-ink-60'>
+              지도를 탭하거나 핀을 끌어서 정기 모임 장소를 정확히 지정해주세요.
+              다른 크루의 위치(연한 lime 점)와 너무 겹치지 않도록 살짝 조정하면 좋아요.
             </p>
-            <p className='mb-3 text-xs text-muted-foreground'>
-              해당 정보를 기반으로 지도에 크루 표시 위치가 됩니다
-            </p>
+
+            <CrewLocationPickerMap
+              value={pickedLocation}
+              onChange={(picked) => {
+                setPickedLocation(picked);
+                // Auto-fill the address field if it's still empty (don't clobber
+                // anything the user typed manually).
+                if (picked.address && !mainAddress.trim()) {
+                  setMainAddress(picked.address);
+                }
+              }}
+              otherCrews={contextCrews}
+            />
 
             <input
               type='text'
               value={mainAddress}
               onChange={(e) => setMainAddress(e.target.value)}
-              className='px-3 py-2 w-full rounded-lg border'
+              className='px-3 py-2 w-full rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50'
               required
               placeholder='서울특별시 용산구 동자동 43-205'
               disabled={isLoading}
             />
+            {pickedLocation ? (
+              <KickerLabel tone="lime" className="tracking-[0.18em]">
+                ● PICKED · LAT {pickedLocation.lat.toFixed(5)} / LNG{" "}
+                {pickedLocation.lng.toFixed(5)}
+              </KickerLabel>
+            ) : (
+              <KickerLabel tone="muted" className="tracking-[0.18em]">
+                · 지도에서 위치를 선택해주세요
+              </KickerLabel>
+            )}
           </div>
 
           {/* 활동 요일 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               정기 러닝 요일
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
             <div className='flex flex-wrap gap-2'>
               {ACTIVITY_DAYS.map((day) => (
@@ -863,10 +1041,10 @@ export default function RegisterPage() {
                   key={day}
                   type='button'
                   onClick={() => toggleActivityDay(day)}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                  className={`px-3 py-1.5 rounded-[4px] text-[12px] font-semibold border transition-colors ${
                     activityDays.includes(day)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-input hover:bg-accent"
+                      ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                      : "border-cart-rule text-cart-ink-60 hover:border-[hsl(var(--lime))]/40"
                   } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                   disabled={isLoading}
                 >
@@ -878,15 +1056,15 @@ export default function RegisterPage() {
 
           {/* 연령대 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               모집 연령대
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
             <div className='flex items-center space-x-2'>
               <select
                 value={minAge}
                 onChange={handleMinAgeChange}
-                className='px-3 py-2 w-24 text-center bg-white rounded-lg border appearance-none'
+                className='px-3 py-2 w-24 text-center bg-cart-paper border border-cart-rule rounded-[4px] text-cart-ink focus:outline-none focus:border-[hsl(var(--lime))] transition-colors appearance-none'
                 disabled={isLoading}
               >
                 {Array.from({ length: 101 }, (_, i) => (
@@ -895,11 +1073,11 @@ export default function RegisterPage() {
                   </option>
                 ))}
               </select>
-              <span className='text-gray-500'>~</span>
+              <span className='text-cart-ink-60'>~</span>
               <select
                 value={maxAge}
                 onChange={handleMaxAgeChange}
-                className='px-3 py-2 w-24 text-center bg-white rounded-lg border appearance-none'
+                className='px-3 py-2 w-24 text-center bg-cart-paper border border-cart-rule rounded-[4px] text-cart-ink focus:outline-none focus:border-[hsl(var(--lime))] transition-colors appearance-none'
                 disabled={isLoading}
               >
                 {Array.from({ length: 101 }, (_, i) => (
@@ -908,51 +1086,118 @@ export default function RegisterPage() {
                   </option>
                 ))}
               </select>
-              <span className='ml-2 text-sm text-gray-500'>세</span>
+              <span className='ml-2 text-sm text-cart-ink-60'>세</span>
             </div>
           </div>
 
           {/* 크루 소개 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               크루 소개글
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className='w-full px-3 py-2 border rounded-lg min-h-[120px]'
+              className='w-full px-3 py-2 border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 rounded-[4px] min-h-[120px] focus:outline-none focus:border-[hsl(var(--lime))] transition-colors'
               required
               placeholder='크루를 소개해주세요. 상세히 적으실수록 좋아요!'
               disabled={isLoading}
             />
           </div>
 
-          {/* 로고 이미지 */}
+          {/* 로고 이미지 — 업로드 후 1:1 크롭 다이얼로그 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               크루 로고
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
+            <KickerLabel tone='muted' className='tracking-[0.18em]'>
+              · 지도 핀의 원형 영역과 동일하게 잘립니다 · 1:1 SQUARE
+            </KickerLabel>
+
             <input
+              ref={logoInputRef}
               type='file'
               accept='image/jpeg, image/png, image/webp'
               onChange={handleFileChange}
-              className='w-full'
+              className='hidden'
               disabled={isLoading}
             />
-            <p className='text-xs text-gray-500'>
-              * JPG, PNG, WebP 형식 (최대 5MB)
-            </p>
+
+            <div className='flex items-center gap-4'>
+              {/* Circular preview — mirrors the map pin's logo well */}
+              <button
+                type='button'
+                onClick={() => logoInputRef.current?.click()}
+                disabled={isLoading}
+                className='relative w-20 h-20 rounded-full border border-cart-rule bg-cart-paper flex items-center justify-center overflow-hidden active:scale-95 transition-transform disabled:opacity-50'
+                aria-label='로고 업로드'
+              >
+                {logoPreviewUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={logoPreviewUrl}
+                    alt='크루 로고 미리보기'
+                    className='w-full h-full object-cover'
+                  />
+                ) : (
+                  <Upload className='w-5 h-5 text-[hsl(var(--lime))]' />
+                )}
+                {/* Lime ring on hover/focus to mimic the pin chrome */}
+                <span
+                  aria-hidden
+                  className='absolute inset-0 rounded-full ring-1 ring-inset ring-[hsl(var(--lime))]/0 transition-shadow'
+                />
+              </button>
+
+              <div className='flex-1 min-w-0'>
+                <div className='flex flex-wrap gap-1.5'>
+                  <button
+                    type='button'
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isLoading}
+                    className='px-3 py-1.5 rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform disabled:opacity-50'
+                  >
+                    {logoImage ? "다시 선택" : "파일 선택"}
+                  </button>
+                  {logoImage && (
+                    <button
+                      type='button'
+                      onClick={handleClearLogo}
+                      disabled={isLoading}
+                      className='px-3 py-1.5 rounded-[4px] border border-cart-rule text-cart-ink-60 font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform disabled:opacity-50'
+                    >
+                      제거
+                    </button>
+                  )}
+                </div>
+                <p className='text-[11px] text-cart-ink-60 mt-1.5'>
+                  JPG · PNG · WebP / 최대 5MB
+                </p>
+                {logoImage && (
+                  <KickerLabel tone='lime' className='tracking-[0.18em] mt-1.5'>
+                    ● {(logoImage.size / 1024).toFixed(0)} KB · 크롭 완료
+                  </KickerLabel>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* Crop dialog — opens when a file is picked, before it becomes logoImage. */}
+          <LogoCropDialog
+            file={pendingLogoFile}
+            onCancel={() => setPendingLogoFile(null)}
+            onConfirm={handleLogoCropConfirm}
+          />
 
           {/* 가입 방식 설정 섹션 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               가입 방식 설정
-              <span className='ml-1 text-red-500'>*</span>
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
-            <p className='mb-3 text-sm text-gray-500'>
+            <p className='mb-3 text-sm text-cart-ink-60'>
               크루에 가입하기 위한 방법을 설정해주세요. 최소 하나 이상의 방법이
               필요합니다.
             </p>
@@ -963,8 +1208,8 @@ export default function RegisterPage() {
                 type='button'
                 className={`px-3 py-1.5 text-sm rounded-full ${
                   useInstagramDm
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))]"
+                    : "bg-cart-paper text-cart-ink hover:bg-cart-paper"
                 }`}
                 onClick={() => setUseInstagramDm(!useInstagramDm)}
               >
@@ -974,8 +1219,8 @@ export default function RegisterPage() {
                 type='button'
                 className={`px-3 py-1.5 text-sm rounded-full ${
                   useOtherJoinMethod
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))]"
+                    : "bg-cart-paper text-cart-ink hover:bg-cart-paper"
                 }`}
                 onClick={() => setUseOtherJoinMethod(!useOtherJoinMethod)}
               >
@@ -1006,10 +1251,10 @@ export default function RegisterPage() {
 
           {/* 크루 대표 활동 사진 업로드 섹션 */}
           <div className='space-y-2'>
-            <label className='text-sm font-bold'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
               크루 대표 활동 사진 업로드
             </label>
-            <p className='mb-3 text-sm text-gray-500'>
+            <p className='mb-3 text-sm text-cart-ink-60'>
               크루 대표 활동 사진을 업로드해주세요. 최대{" "}
               {photoUploadStrategy.getMaxPhotoCount()}개까지 업로드 가능합니다.
             </p>
@@ -1019,7 +1264,7 @@ export default function RegisterPage() {
                 <div className='grid grid-cols-3 gap-4'>
                   {crewPhotos.map((photo, index) => (
                     <div key={index} className='relative'>
-                      <div className='flex overflow-hidden justify-center items-center bg-gray-100 rounded-md aspect-square'>
+                      <div className='flex overflow-hidden justify-center items-center bg-cart-paper rounded-md aspect-square'>
                         <MImage
                           src={URL.createObjectURL(photo)}
                           alt={`크루 사진 ${index + 1}`}
@@ -1047,9 +1292,9 @@ export default function RegisterPage() {
                   }).map((_, index) => (
                     <div
                       key={`empty-${index}`}
-                      className='flex justify-center items-center bg-gray-100 rounded-md border-2 border-gray-300 border-dashed aspect-square'
+                      className='flex justify-center items-center bg-cart-paper rounded-md border-2 border-cart-rule border-dashed aspect-square'
                     >
-                      <span className='text-xs text-gray-400'>빈 슬롯</span>
+                      <span className='text-xs text-cart-ink-40'>빈 슬롯</span>
                     </div>
                   ))}
                 </div>
@@ -1059,15 +1304,15 @@ export default function RegisterPage() {
               {crewPhotos.length < photoUploadStrategy.getMaxPhotoCount() && (
                 <Label
                   htmlFor='crew-photos'
-                  className='flex justify-center items-center px-4 w-full h-32 bg-white rounded-md border-2 border-gray-300 border-dashed transition appearance-none cursor-pointer hover:border-gray-400 focus:outline-none'
+                  className='flex justify-center items-center px-4 w-full h-32 bg-cart-paper rounded-md border-2 border-cart-rule border-dashed transition appearance-none cursor-pointer hover:border-cart-rule focus:outline-none'
                 >
                   <span className='flex flex-col items-center space-y-2'>
-                    <Upload className='w-6 h-6 text-gray-600' />
-                    <span className='font-medium text-gray-600'>
+                    <Upload className='w-6 h-6 text-cart-ink-60' />
+                    <span className='font-medium text-cart-ink-60'>
                       사진 추가하기 ({crewPhotos.length}/
                       {photoUploadStrategy.getMaxPhotoCount()})
                     </span>
-                    <span className='text-xs text-gray-500'>
+                    <span className='text-xs text-cart-ink-60'>
                       최대 5MB, JPG, PNG, WebP 파일 지원 (자동 WebP 변환)
                     </span>
                   </span>
@@ -1084,7 +1329,7 @@ export default function RegisterPage() {
           </div>
 
           {/* 안내 문구 */}
-          <div className='py-2 text-sm text-center text-gray-600'>
+          <div className='py-2 text-sm text-center text-cart-ink-60'>
             <p>크루 로고 및 작성 내용 수정을 원하시면</p>
             <p>메뉴-문의 버튼(카카오채널)로 연락 언제든 주세요</p>
           </div>
@@ -1094,14 +1339,14 @@ export default function RegisterPage() {
             <button
               type='button'
               onClick={() => router.back()}
-              className='flex-1 px-4 py-2.5 border rounded-lg hover:bg-accent transition-colors disabled:opacity-50'
+              className='flex-1 px-4 py-2.5 border border-cart-rule rounded-[4px] bg-cart-paper text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-transform disabled:opacity-50'
               disabled={isLoading}
             >
               취소
             </button>
             <button
               type='submit'
-              className='flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50'
+              className='flex-1 px-4 py-2.5 bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] font-display text-[14px] font-bold active:scale-[0.98] transition-transform disabled:opacity-50'
               disabled={isLoading}
             >
               {isLoading ? "등록 중..." : "등록하기"}

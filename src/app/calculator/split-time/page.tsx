@@ -131,7 +131,7 @@ export default function SplitTimeCalculatorPage() {
         {results.length > 0 && (
           <div className='mt-6'>
             {/* <h2 className='mb-4 text-lg font-medium'>예상 구간 기록</h2> */}
-            <div className='overflow-hidden border rounded-lg'>
+            <div className='overflow-hidden border rounded-[4px]'>
               <table className='w-full'>
                 <thead className='bg-muted'>
                   <tr>

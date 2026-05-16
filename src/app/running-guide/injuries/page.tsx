@@ -86,10 +86,10 @@ export default function RunningInjuriesPage() {
             &larr; 가이드북 메인으로 돌아가기
           </Link>
         </nav>
-        <h1 className='text-4xl font-bold text-gray-900 mb-4'>
+        <h1 className='text-4xl font-bold text-cart-ink mb-4'>
           러닝 관련 부상 용어
         </h1>
-        <p className='text-xl text-gray-600 mb-6'>
+        <p className='text-xl text-cart-ink-60 mb-6'>
           러닝 중 발생할 수 있는 부상에 대해 미리 알아두세요.
         </p>
         <div className='bg-amber-50 border-l-4 border-amber-500 p-4'>
@@ -104,35 +104,35 @@ export default function RunningInjuriesPage() {
         {runningInjuries.map((injury, index) => (
           <div
             key={index}
-            className='bg-white rounded-lg shadow-md overflow-hidden'
+            className='bg-cart-paper rounded-[4px] border border-cart-rule overflow-hidden'
           >
             <div className='bg-red-500 h-2'></div>
             <div className='p-6'>
-              <h2 className='text-xl font-bold text-gray-900 mb-3'>
+              <h2 className='text-xl font-bold text-cart-ink mb-3'>
                 {injury.term}
               </h2>
-              <p className='text-gray-700 mb-4'>{injury.description}</p>
+              <p className='text-cart-ink mb-4'>{injury.description}</p>
 
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-4'>
-                <div className='bg-gray-50 p-4 rounded'>
-                  <h3 className='font-semibold text-gray-900 mb-2 flex items-center'>
+                <div className='bg-background p-4 rounded'>
+                  <h3 className='font-semibold text-cart-ink mb-2 flex items-center'>
                     <span className='mr-2'>⚠️</span> 원인
                   </h3>
-                  <p className='text-gray-700'>{injury.causes}</p>
+                  <p className='text-cart-ink'>{injury.causes}</p>
                 </div>
 
-                <div className='bg-gray-50 p-4 rounded'>
-                  <h3 className='font-semibold text-gray-900 mb-2 flex items-center'>
+                <div className='bg-background p-4 rounded'>
+                  <h3 className='font-semibold text-cart-ink mb-2 flex items-center'>
                     <span className='mr-2'>🔍</span> 증상
                   </h3>
-                  <p className='text-gray-700'>{injury.symptoms}</p>
+                  <p className='text-cart-ink'>{injury.symptoms}</p>
                 </div>
 
-                <div className='bg-gray-50 p-4 rounded'>
-                  <h3 className='font-semibold text-gray-900 mb-2 flex items-center'>
+                <div className='bg-background p-4 rounded'>
+                  <h3 className='font-semibold text-cart-ink mb-2 flex items-center'>
                     <span className='mr-2'>🛡️</span> 예방
                   </h3>
-                  <p className='text-gray-700'>{injury.prevention}</p>
+                  <p className='text-cart-ink'>{injury.prevention}</p>
                 </div>
               </div>
             </div>
@@ -140,11 +140,11 @@ export default function RunningInjuriesPage() {
         ))}
       </div>
 
-      <div className='mt-12 bg-gray-50 rounded-xl p-8'>
-        <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+      <div className='mt-12 bg-background rounded-[4px] p-8'>
+        <h2 className='text-2xl font-bold text-cart-ink mb-4'>
           부상 예방을 위한 일반적인 팁
         </h2>
-        <ul className='space-y-3 text-gray-700'>
+        <ul className='space-y-3 text-cart-ink'>
           <li className='flex items-start'>
             <span className='text-green-500 mr-2'>✓</span>
             <span>

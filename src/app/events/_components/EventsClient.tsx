@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import {
   MapPin,
-  Calendar,
   ExternalLink,
   Award,
   Gift,
@@ -20,6 +18,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  CartographicHeader,
+  KickerLabel,
+  TagPill,
+} from "@/components/design/cartographic";
+import { cn } from "@/lib/utils";
 
 // 월 이름 상수
 const MONTHS = [
@@ -105,90 +109,129 @@ export default function EventsClient({
     return () => clearTimeout(timeoutId);
   }, [selectedMonth]);
 
+  // Group events by month for cartographic layout
+  const eventsByMonth = useMemo(() => {
+    const grouped: Record<number, MarathonEvent[]> = {};
+    groupedEvents.forEach((event) => {
+      const dateString = event.date.split(" ")[0];
+      const month = parseInt(dateString.split("/")[0]);
+      if (!grouped[month]) grouped[month] = [];
+      grouped[month].push(event);
+    });
+    return grouped;
+  }, [groupedEvents]);
+
   return (
     <div
-      className='flex flex-col min-h-screen'
+      className='flex flex-col min-h-screen bg-background'
       style={{
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
-      {/* 필터 */}
+      <CartographicHeader
+        kicker={`2026 SEASON · ${allEvents.length} EVENTS`}
+        title="대회 일정"
+      />
+
+      {/* Month filter chips */}
       <div
-        className='sticky backdrop-blur-md'
+        className='sticky backdrop-blur-md bg-background/85 z-20'
         style={{ top: LAYOUT.HEADER_HEIGHT }}
       >
         <div
-          className='flex gap-2 p-4 pb-2 overflow-x-auto scrollbar-hide'
+          className='flex gap-1.5 px-[18px] pb-3 overflow-x-auto scrollbar-hide border-b border-cart-rule'
           data-month-filter
         >
-          {MONTHS.map((month) => (
-            <Button
-              key={month}
-              variant={selectedMonth === month ? "default" : "outline"}
-              size='sm'
-              onClick={() => setSelectedMonth(month)}
-              data-month={month}
-              className='whitespace-nowrap'
-            >
-              {month}
-            </Button>
-          ))}
+          {MONTHS.map((month) => {
+            const active = selectedMonth === month;
+            const label = month === "전체" ? "ALL" : month.replace("월", "").padStart(2, "0");
+            return (
+              <button
+                key={month}
+                onClick={() => setSelectedMonth(month)}
+                data-month={month}
+                className={cn(
+                  "whitespace-nowrap px-3 py-1.5 rounded-[4px] border",
+                  "font-mono text-[10px] font-semibold tracking-[0.12em] uppercase",
+                  "transition-all active:scale-95",
+                  active
+                    ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                    : "text-cart-ink-60 border-cart-rule"
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* 이벤트 목록 */}
-      <div className='flex-1'>
-        <div className=''>
-          {groupedEvents.length > 0 ? (
-            groupedEvents.map((event) => (
-              <div
-                key={`${event.eventName}-${event.date}`}
-                className='p-4 transition-colors cursor-pointer hover:bg-accent/50'
-                onClick={() => handleEventClick(event)}
-              >
-                <div className='flex items-center justify-between gap-4'>
-                  <h3 className='font-medium'>{event.eventName}</h3>
-                  <div className='flex items-center gap-1 px-2 py-1 text-sm font-medium rounded-md cursor-pointer text-primary hover:bg-primary/10'>
-                    <span>상세보기</span>
-                    <Info className='w-4 h-4' />
-                  </div>
+      {/* Events list grouped by month */}
+      <div className='flex-1 px-[22px] pb-24'>
+        {groupedEvents.length > 0 ? (
+          Object.entries(eventsByMonth).map(([month, events]) => {
+            const monthEn = ["", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][parseInt(month)];
+            return (
+              <div key={month} className='mb-7'>
+                <div className='flex items-baseline gap-3 mb-3 mt-5'>
+                  <span className='font-display text-[40px] font-bold text-[hsl(var(--lime))] tracking-[-0.04em] leading-[0.85]'>
+                    {month.padStart(2, "0")}
+                  </span>
+                  <KickerLabel tone="muted" className='tracking-[0.2em]'>
+                    {monthEn} · 2026
+                  </KickerLabel>
+                  <div className='flex-1 h-px bg-cart-rule mb-2' />
                 </div>
-                <div className='mt-2 space-y-1'>
-                  <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                    <Calendar className='w-4 h-4' />
-                    <span>{event.date}</span>
-                  </div>
-                  <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                    <MapPin className='w-4 h-4' />
-                    <span>{event.location}</span>
-                  </div>
-                  <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                    <Award className='w-4 h-4' />
-                    <span>{event.courses}</span>
-                  </div>
-                  {event.eventHomepage && (
-                    <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                      <ExternalLink className='w-4 h-4' />
-                      <a
-                        href={event.eventHomepage}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='text-primary hover:underline'
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        대회 홈페이지
-                      </a>
+                {events.map((event, idx) => {
+                  // Estimate D-day
+                  const dateStr = event.date.split(" ")[0];
+                  const [m, d] = dateStr.split("/").map((n) => parseInt(n));
+                  const now = new Date();
+                  const target = new Date(now.getFullYear(), m - 1, d);
+                  if (target < now) target.setFullYear(target.getFullYear() + 1);
+                  const diffDays = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                  const hot = diffDays <= 14 && diffDays > 0;
+                  return (
+                    <div
+                      key={`${event.eventName}-${event.date}`}
+                      onClick={() => handleEventClick(event)}
+                      className={cn(
+                        "flex items-center gap-3 py-3 cursor-pointer active:bg-white/[0.02]",
+                        idx === 0 ? "" : "border-t border-cart-rule"
+                      )}
+                    >
+                      <div className='w-14 flex-shrink-0'>
+                        <span className='font-mono text-[11px] tracking-[0.08em] text-cart-ink tabular-nums'>
+                          {String(d).padStart(2, "0")} {monthEn}
+                        </span>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-center gap-1.5 mb-1'>
+                          <span className='text-[14px] font-semibold text-cart-ink truncate'>
+                            {event.eventName}
+                          </span>
+                          {hot && (
+                            <span className='size-1.5 rounded-full bg-[hsl(var(--lime))] shadow-[0_0_0_3px_hsl(var(--lime)/0.25)] flex-shrink-0' />
+                          )}
+                        </div>
+                        <div className='font-mono text-[9px] tracking-[0.08em] text-cart-ink-60 truncate'>
+                          {event.location} · {event.courses}
+                        </div>
+                      </div>
+                      <TagPill variant={hot ? "solid" : "ghost"}>
+                        D-{diffDays}
+                      </TagPill>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
               </div>
-            ))
-          ) : (
-            <div className='p-8 text-center text-muted-foreground'>
-              해당 월에 예정된 대회가 없습니다.
-            </div>
-          )}
-        </div>
+            );
+          })
+        ) : (
+          <KickerLabel tone="muted" className='text-center py-12 tracking-[0.18em]'>
+            · NO EVENTS THIS MONTH ·
+          </KickerLabel>
+        )}
       </div>
 
       {/* 이벤트 상세 정보 다이얼로그 */}

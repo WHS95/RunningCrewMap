@@ -129,17 +129,17 @@ const DatePicker = ({
   return (
     <div className='relative w-full'>
       <div
-        className={`flex items-center border rounded-lg p-3.5 cursor-pointer ${
-          disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+        className={`flex items-center border rounded-[4px] p-3.5 cursor-pointer ${
+          disabled ? "bg-cart-paper cursor-not-allowed" : "bg-cart-paper"
         }`}
         onClick={togglePicker}
       >
-        <span className={`flex-grow ${!value ? "text-gray-400" : ""}`}>
+        <span className={`flex-grow ${!value ? "text-cart-ink-40" : ""}`}>
           {value || "날짜 선택"}
         </span>
         <svg
           xmlns='http://www.w3.org/2000/svg'
-          className='w-5 h-5 text-gray-400'
+          className='w-5 h-5 text-cart-ink-40'
           fill='none'
           viewBox='0 0 24 24'
           stroke='currentColor'
@@ -154,10 +154,10 @@ const DatePicker = ({
       </div>
 
       {showPicker && (
-        <div className='absolute z-10 w-full p-4 mt-1 bg-white border rounded-lg shadow-xl'>
+        <div className='absolute z-10 w-full p-4 mt-1 bg-cart-paper border rounded-[4px] shadow-xl'>
           <div className='grid grid-cols-3 gap-2 mb-4'>
             <select
-              className='p-3 text-base border rounded-lg'
+              className='p-3 text-base border rounded-[4px]'
               value={currentDate.year}
               onChange={(e) => handleYearChange(Number(e.target.value))}
             >
@@ -168,7 +168,7 @@ const DatePicker = ({
               ))}
             </select>
             <select
-              className='p-3 text-base border rounded-lg'
+              className='p-3 text-base border rounded-[4px]'
               value={currentDate.month}
               onChange={(e) => handleMonthChange(Number(e.target.value))}
             >
@@ -179,7 +179,7 @@ const DatePicker = ({
               ))}
             </select>
             <select
-              className='p-3 text-base border rounded-lg'
+              className='p-3 text-base border rounded-[4px]'
               value={currentDate.day}
               onChange={(e) => handleDayChange(Number(e.target.value))}
             >
@@ -200,7 +200,7 @@ const DatePicker = ({
           </div>
           <div className='flex justify-end'>
             <button
-              className='px-4 py-2.5 bg-indigo-600 text-white rounded-lg'
+              className='px-4 py-2.5 bg-indigo-600 text-white rounded-[4px]'
               onClick={handleDateSelect}
             >
               선택
@@ -467,7 +467,7 @@ export default function RecordPage() {
                   name='runnerName'
                   value={formData.runnerName}
                   onChange={handleInputChange}
-                  className='w-full px-3 py-2 border rounded-lg'
+                  className='w-full px-3 py-2 border rounded-[4px]'
                   placeholder='실명을 입력해주세요'
                   required
                   disabled={isSubmitting}
@@ -487,7 +487,7 @@ export default function RecordPage() {
                   name='birthYear'
                   value={formData.birthYear}
                   onChange={handleInputChange}
-                  className='w-full px-3 py-2 border rounded-lg appearance-none'
+                  className='w-full px-3 py-2 border rounded-[4px] appearance-none'
                   required
                   disabled={isSubmitting}
                 >
@@ -513,7 +513,7 @@ export default function RecordPage() {
                   name='crewName'
                   value={formData.crewName}
                   onChange={handleInputChange}
-                  className='w-full px-3 py-2 border rounded-lg'
+                  className='w-full px-3 py-2 border rounded-[4px]'
                   placeholder='소속 러닝크루가 있다면 입력해주세요'
                   disabled={isSubmitting}
                 />
@@ -537,7 +537,7 @@ export default function RecordPage() {
                     name='crewInstagram'
                     value={formData.crewInstagram}
                     onChange={handleInputChange}
-                    className='w-full px-3 py-2 border rounded-lg pl-7'
+                    className='w-full px-3 py-2 border rounded-[4px] pl-7'
                     placeholder='크루 인스타그램 아이디'
                     disabled={isSubmitting}
                   />
@@ -550,7 +550,7 @@ export default function RecordPage() {
                   프로필 이미지 (선택사항)
                 </label>
                 <div className='flex flex-col items-center gap-4 mt-2 sm:flex-row'>
-                  <div className='flex items-center justify-center w-24 h-24 overflow-hidden bg-gray-100 border rounded-full'>
+                  <div className='flex items-center justify-center w-24 h-24 overflow-hidden bg-cart-paper border rounded-full'>
                     {profilePreview ? (
                       <Image
                         src={profilePreview}
@@ -563,7 +563,7 @@ export default function RecordPage() {
                     ) : (
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
-                        className='w-10 h-10 text-gray-400'
+                        className='w-10 h-10 text-cart-ink-40'
                         fill='none'
                         viewBox='0 0 24 24'
                         stroke='currentColor'
@@ -581,12 +581,12 @@ export default function RecordPage() {
                     <button
                       type='button'
                       onClick={() => profileInputRef.current?.click()}
-                      className='w-full px-4 py-2 text-gray-700 transition-colors border rounded-lg hover:bg-accent'
+                      className='w-full px-4 py-2 text-cart-ink transition-colors border rounded-[4px] hover:bg-accent'
                       disabled={isSubmitting}
                     >
                       사진 선택
                     </button>
-                    <p className='mt-1 text-xs text-center text-gray-500 sm:text-left'>
+                    <p className='mt-1 text-xs text-center text-cart-ink-60 sm:text-left'>
                       JPG, PNG, WebP 형식 (최대 2MB)
                     </p>
                     <input
@@ -621,7 +621,7 @@ export default function RecordPage() {
                   name='raceName'
                   value={formData.raceName}
                   onChange={handleInputChange}
-                  className='w-full px-3 py-2 border rounded-lg'
+                  className='w-full px-3 py-2 border rounded-[4px]'
                   placeholder='예) 2023 서울마라톤'
                   required
                   disabled={isSubmitting}
@@ -655,7 +655,7 @@ export default function RecordPage() {
                   <select
                     value={formData.raceTime.hours}
                     onChange={(e) => handleTimeChange(e, "hours")}
-                    className='flex-1 px-3 py-2 text-center border rounded-lg appearance-none'
+                    className='flex-1 px-3 py-2 text-center border rounded-[4px] appearance-none'
                     disabled={isSubmitting}
                   >
                     {Array.from({ length: 3 }, (_, i) => i).map((hour) => (
@@ -668,7 +668,7 @@ export default function RecordPage() {
                   <select
                     value={formData.raceTime.minutes}
                     onChange={(e) => handleTimeChange(e, "minutes")}
-                    className='flex-1 px-3 py-2 text-center border rounded-lg appearance-none'
+                    className='flex-1 px-3 py-2 text-center border rounded-[4px] appearance-none'
                     disabled={isSubmitting}
                   >
                     {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
@@ -684,7 +684,7 @@ export default function RecordPage() {
                   <select
                     value={formData.raceTime.seconds}
                     onChange={(e) => handleTimeChange(e, "seconds")}
-                    className='flex-1 px-3 py-2 text-center border rounded-lg appearance-none'
+                    className='flex-1 px-3 py-2 text-center border rounded-[4px] appearance-none'
                     disabled={isSubmitting}
                   >
                     {Array.from({ length: 60 }, (_, i) => i).map((second) => (
@@ -697,7 +697,7 @@ export default function RecordPage() {
                     ))}
                   </select>
                 </div>
-                <p className='mt-1 text-xs text-center text-gray-500'>
+                <p className='mt-1 text-xs text-center text-cart-ink-60'>
                   3시간 미만(서브3) 기록만 등록 가능합니다
                 </p>
               </div>
@@ -708,7 +708,7 @@ export default function RecordPage() {
                   대회 기록증 이미지 <span className='text-red-500'>*</span>
                 </label>
                 {raceCertPreview ? (
-                  <div className='relative w-full h-48 mb-3 overflow-hidden border rounded-lg'>
+                  <div className='relative w-full h-48 mb-3 overflow-hidden border rounded-[4px]'>
                     <Image
                       src={raceCertPreview}
                       alt='기록증 미리보기'
@@ -718,12 +718,12 @@ export default function RecordPage() {
                     <button
                       type='button'
                       onClick={() => setRaceCertPreview(null)}
-                      className='absolute p-1 bg-white rounded-full top-2 right-2 bg-opacity-70'
+                      className='absolute p-1 bg-cart-paper rounded-full top-2 right-2 bg-opacity-70'
                       disabled={isSubmitting}
                     >
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
-                        className='w-5 h-5 text-gray-700'
+                        className='w-5 h-5 text-cart-ink'
                         fill='none'
                         viewBox='0 0 24 24'
                         stroke='currentColor'
@@ -739,13 +739,13 @@ export default function RecordPage() {
                   </div>
                 ) : (
                   <div
-                    className='flex items-center justify-center w-full h-48 mb-3 transition-colors border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent'
+                    className='flex items-center justify-center w-full h-48 mb-3 transition-colors border-2 border-dashed rounded-[4px] cursor-pointer hover:bg-accent'
                     onClick={() => raceCertInputRef.current?.click()}
                   >
                     <div className='p-4 text-center'>
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
-                        className='w-10 h-10 mx-auto mb-1 text-gray-400'
+                        className='w-10 h-10 mx-auto mb-1 text-cart-ink-40'
                         fill='none'
                         viewBox='0 0 24 24'
                         stroke='currentColor'
@@ -757,7 +757,7 @@ export default function RecordPage() {
                           d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
                         />
                       </svg>
-                      <p className='text-gray-500'>
+                      <p className='text-cart-ink-60'>
                         대회 기록증 이미지를 탭하여 업로드하세요
                       </p>
                     </div>
@@ -766,7 +766,7 @@ export default function RecordPage() {
                 <button
                   type='button'
                   onClick={() => raceCertInputRef.current?.click()}
-                  className='w-full px-4 py-2 transition-colors border rounded-lg hover:bg-accent'
+                  className='w-full px-4 py-2 transition-colors border rounded-[4px] hover:bg-accent'
                   disabled={isSubmitting}
                 >
                   {raceCertPreview
@@ -781,7 +781,7 @@ export default function RecordPage() {
                   accept='image/jpeg, image/png, image/webp'
                   required
                 />
-                <p className='mt-1 text-xs text-center text-gray-500'>
+                <p className='mt-1 text-xs text-center text-cart-ink-60'>
                   JPG, PNG, WebP 형식 (최대 5MB)
                 </p>
               </div>
@@ -807,7 +807,7 @@ export default function RecordPage() {
                   name='shoeModel'
                   value={formData.shoeModel}
                   onChange={handleInputChange}
-                  className='w-full px-3 py-2 border rounded-lg'
+                  className='w-full px-3 py-2 border rounded-[4px]'
                   placeholder='예) Nike Alphafly Next% 2'
                   disabled={isSubmitting}
                 />
@@ -826,7 +826,7 @@ export default function RecordPage() {
                   name='review'
                   value={formData.review}
                   onChange={handleInputChange}
-                  className='w-full h-24 px-3 py-2 border rounded-lg'
+                  className='w-full h-24 px-3 py-2 border rounded-[4px]'
                   placeholder='당신의 서브3 달성 스토리를 공유해주세요'
                   disabled={isSubmitting}
                 />
@@ -839,14 +839,14 @@ export default function RecordPage() {
             <button
               type='button'
               onClick={() => router.back()}
-              className='flex-1 px-4 py-2.5 border rounded-lg hover:bg-accent transition-colors disabled:opacity-50'
+              className='flex-1 px-4 py-2.5 border rounded-[4px] hover:bg-accent transition-colors disabled:opacity-50'
               disabled={isSubmitting}
             >
               취소
             </button>
             <button
               type='submit'
-              className='flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50'
+              className='flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-[4px] hover:bg-primary/90 transition-colors disabled:opacity-50'
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -884,7 +884,7 @@ export default function RecordPage() {
       {/* 알림 다이얼로그 */}
       {dialogState.isOpen && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60'>
-          <div className='w-full max-w-xs p-6 mx-4 bg-white shadow-2xl rounded-2xl'>
+          <div className='w-full max-w-xs p-6 mx-4 bg-cart-paper shadow-2xl rounded-[4px]'>
             <div
               className={`text-center mb-4 ${
                 dialogState.isSuccess ? "text-green-500" : "text-red-500"
@@ -925,12 +925,12 @@ export default function RecordPage() {
             <h3 className='mb-2 text-xl font-bold text-center'>
               {dialogState.title}
             </h3>
-            <p className='mb-6 text-center text-gray-600'>
+            <p className='mb-6 text-center text-cart-ink-60'>
               {dialogState.description}
             </p>
             <div className='flex justify-center'>
               <button
-                className={`w-full py-3 rounded-xl ${
+                className={`w-full py-3 rounded-[4px] ${
                   dialogState.isSuccess
                     ? "bg-primary hover:bg-primary/90"
                     : "bg-primary hover:bg-primary/90"

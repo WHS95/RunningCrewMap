@@ -412,7 +412,7 @@ export default function CrewCertificationPage() {
 
             {/* 검색 결과 */}
             {searchQuery && filteredCrews.length > 0 && (
-              <div className='absolute left-0 right-0 z-10 mt-1 overflow-auto border rounded-md shadow-lg bg-background max-h-48'>
+              <div className='absolute left-0 right-0 z-10 mt-1 overflow-auto border rounded-md border border-cart-rule bg-background max-h-48'>
                 {filteredCrews.map((crew) => (
                   <button
                     key={crew.id}
@@ -490,7 +490,7 @@ export default function CrewCertificationPage() {
             ) : (
               <label
                 htmlFor='image-upload'
-                className='flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer aspect-square hover:bg-accent/50'
+                className='flex flex-col items-center justify-center w-full border-2 border-dashed rounded-[4px] cursor-pointer aspect-square hover:bg-accent/50'
               >
                 <div className='flex flex-col items-center'>
                   <ImagePlus className='w-8 h-8 mb-2 text-muted-foreground' />

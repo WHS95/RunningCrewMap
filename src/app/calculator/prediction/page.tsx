@@ -76,7 +76,7 @@ export default function PredictionCalculatorPage() {
     <FormLayout title='완주 시간 예측기'>
       <div className='space-y-6'>
         {/* 설명 */}
-        <div className='p-4 text-sm rounded-lg bg-accent/50'>
+        <div className='p-4 text-sm rounded-[4px] bg-accent/50'>
           <p className='text-muted-foreground'>
             이전에 달린 기록을 바탕으로 다른 거리의 예상 완주 시간을 계산합니다.
             <br />
@@ -201,7 +201,7 @@ export default function PredictionCalculatorPage() {
               </h2>
               <div className='relative group'>
                 <div className='cursor-help text-muted-foreground'>ⓘ</div>
-                <div className='absolute bottom-full mb-2 p-3 text-sm bg-popover text-popover-foreground rounded-lg shadow-lg invisible group-hover:visible w-[280px] left-1/2 -translate-x-1/2'>
+                <div className='absolute bottom-full mb-2 p-3 text-sm bg-popover text-popover-foreground rounded-[4px] border border-cart-rule invisible group-hover:visible w-[280px] left-1/2 -translate-x-1/2'>
                   <p>Riegel의 레이스 타임 공식을 사용</p>
                   <p className='mt-1 font-mono text-xs'>
                     T2 = T1 × (D2/D1)^1.06
@@ -214,7 +214,7 @@ export default function PredictionCalculatorPage() {
                 </div>
               </div>
             </div>
-            <div className='overflow-hidden border rounded-lg'>
+            <div className='overflow-hidden border rounded-[4px]'>
               <table className='w-full'>
                 <tbody className='divide-y'>
                   <tr>

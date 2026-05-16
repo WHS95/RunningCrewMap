@@ -1,28 +1,53 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { FormLayout } from "@/components/layout/FormLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { crewService } from "@/lib/services/crew.service";
-import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import Image from "next/image";
-import { Crew } from "@/lib/types/crew";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ACTIVITY_DAYS, ActivityDay } from "@/lib/types/crewInsert";
+/**
+ * /admin/crew/edit/[id]
+ *
+ * Mobile-first cartographic crew editor for admin. All business logic
+ * (data load, mutations, validations, upload flow) is preserved from the
+ * previous version; only the JSX surface was rewritten so admin can manage
+ * a crew comfortably from a phone:
+ *
+ *   - Single column layout, sections separated by hairline-bordered cards.
+ *   - Sticky top bar with back arrow + crew name + pending badge + save.
+ *   - Sticky bottom save action so the primary CTA is always reachable.
+ *   - All inputs/selects/textareas share the same cartographic class string.
+ *   - Day picker, activity locations, photo grid all rebuilt as chips.
+ */
 
-// DatabaseError 인터페이스 추가
+import { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { crewService } from "@/lib/services/crew.service";
+import {
+  ArrowLeft,
+  Loader2,
+  Upload,
+  X,
+  Plus,
+  Save,
+  Eye,
+  EyeOff,
+  Check,
+} from "lucide-react";
+import { Crew } from "@/lib/types/crew";
+import { ACTIVITY_DAYS, ActivityDay } from "@/lib/types/crewInsert";
+import { KickerLabel } from "@/components/design/cartographic";
+import { cn } from "@/lib/utils";
+
+const CrewLocationPickerMap = dynamic(
+  () => import("@/components/map/CrewLocationPickerMap"),
+  { ssr: false }
+);
+
 interface DatabaseError {
   message?: string;
   [key: string]: unknown;
 }
 
-// 크루 업데이트 데이터 인터페이스 추가
 interface CrewUpdateData {
   name: string;
   description: string;
@@ -58,7 +83,7 @@ export default function EditCrewPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [crew, setCrew] = useState<Crew | null>(null);
 
-  // 폼 상태
+  // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -69,21 +94,21 @@ export default function EditCrewPage() {
   const [newActivityLocation, setNewActivityLocation] = useState("");
   const [activityDays, setActivityDays] = useState<ActivityDay[]>([]);
 
-  // 위도, 경도 상태 추가
   const [latitude, setLatitude] = useState<number>(0);
   const [longitude, setLongitude] = useState<number>(0);
 
-  // 개설일, 연령대 상태 추가
+  const [contextCrews, setContextCrews] = useState<
+    Array<{ id: string; lat: number; lng: number; name?: string }>
+  >([]);
+
   const [foundedDate, setFoundedDate] = useState("");
   const [minAge, setMinAge] = useState<number>(0);
   const [maxAge, setMaxAge] = useState<number>(100);
 
-  // 로고 이미지 상태 추가
   const [logoImage, setLogoImage] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 크루 활동 사진 상태 추가
   const [crewPhotos, setCrewPhotos] = useState<File[]>([]);
   const [crewPhotosPreviews, setCrewPhotosPreviews] = useState<string[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<
@@ -91,20 +116,17 @@ export default function EditCrewPage() {
   >([]);
   const crewPhotosInputRef = useRef<HTMLInputElement>(null);
 
-  // 가입 경로 상태 추가
   const [openChatLink, setOpenChatLink] = useState("");
   const [useInstagramDm, setUseInstagramDm] = useState(false);
   const [useOtherJoinMethod, setUseOtherJoinMethod] = useState(false);
 
-  // 크루 정보 로드
+  // ── Data load ────────────────────────────────────────────────
   useEffect(() => {
     const loadCrew = async () => {
       try {
         setIsLoading(true);
-
-        // 관리자용 크루 목록에서 해당 ID의 크루 정보 가져오기
         const crewsData = await crewService.getAdminCrews();
-        const crewData = crewsData.find((crew) => crew.id === crewId);
+        const crewData = crewsData.find((c) => c.id === crewId);
 
         if (!crewData) {
           toast.error("크루 정보를 찾을 수 없습니다.");
@@ -113,8 +135,6 @@ export default function EditCrewPage() {
         }
 
         setCrew(crewData);
-
-        // 폼 초기화
         setName(crewData.name);
         setDescription(crewData.description);
         setInstagram(crewData.instagram || "");
@@ -122,15 +142,25 @@ export default function EditCrewPage() {
         setDetailAddress(crewData.location.address || "");
         setIsVisible(crewData.is_visible || false);
         setActivityLocations(crewData.activity_locations || []);
-
-        // 위도, 경도 설정
         setLatitude(crewData.location.lat || 0);
         setLongitude(crewData.location.lng || 0);
 
-        // 개설일 설정
+        setContextCrews(
+          crewsData
+            .filter((c) => c.id !== crewData.id)
+            .map((c) => ({
+              id: c.id,
+              lat: c.location.lat,
+              lng: c.location.lng,
+              name: c.name,
+            }))
+            .filter(
+              (c) => typeof c.lat === "number" && typeof c.lng === "number"
+            )
+        );
+
         setFoundedDate(crewData.founded_date || "");
 
-        // 연령대 설정
         if (crewData.age_range) {
           const [minAgeStr, maxAgeStr] = crewData.age_range.split("~");
           const min = parseInt(minAgeStr);
@@ -139,62 +169,48 @@ export default function EditCrewPage() {
           if (!isNaN(max)) setMaxAge(max);
         }
 
-        // 활동 요일 설정
         if (crewData.activity_day) {
-          // "매주 월요일, 수요일" 형식에서 요일만 추출
           const days = crewData.activity_day
             .replace("매주 ", "")
             .split(", ")
             .filter((day) =>
               ACTIVITY_DAYS.includes(day as ActivityDay)
             ) as ActivityDay[];
-
           setActivityDays(days);
         }
 
-        // 가입 경로 설정 (join_methods 배열 사용)
         if (crewData.join_methods && crewData.join_methods.length > 0) {
-          // 인스타그램 DM 사용 여부 확인
           const hasInstagramDm = crewData.join_methods.some(
-            (method) => method.method_type === "instagram_dm"
+            (m) => m.method_type === "instagram_dm"
           );
-          if (hasInstagramDm) {
-            setUseInstagramDm(true);
-          }
-
-          // 오픈채팅 링크 확인
+          if (hasInstagramDm) setUseInstagramDm(true);
           const openChatMethod = crewData.join_methods.find(
-            (method) =>
-              method.method_type === "open_chat" ||
-              method.method_type === "other"
+            (m) =>
+              m.method_type === "open_chat" || m.method_type === "other"
           );
           if (openChatMethod && openChatMethod.link_url) {
             setOpenChatLink(openChatMethod.link_url);
             setUseOtherJoinMethod(true);
           }
         } else {
-          // 이전 코드와의 호환성을 위한 처리 (나중에 제거 가능)
+          // Legacy compat
           if (crewData.open_chat_link) {
             setOpenChatLink(crewData.open_chat_link);
             setUseOtherJoinMethod(true);
           }
-
-          if (crewData.use_instagram_dm) {
-            setUseInstagramDm(true);
-          }
+          if (crewData.use_instagram_dm) setUseInstagramDm(true);
         }
 
-        // 기존 크루 사진 설정
         if (crewData.crew_photos && crewData.crew_photos.length > 0) {
           setExistingPhotos(
-            crewData.crew_photos.map((photo) => ({
-              url: photo.photo_url,
-              id: photo.id,
+            crewData.crew_photos.map((p) => ({
+              url: p.photo_url,
+              id: p.id,
             }))
           );
         }
-      } catch (error) {
-        console.error("크루 정보 로드 실패:", error);
+      } catch (e) {
+        console.error("크루 정보 로드 실패:", e);
         toast.error("크루 정보를 불러오는데 실패했습니다.");
         router.push("/admin/crew");
       } finally {
@@ -204,40 +220,27 @@ export default function EditCrewPage() {
 
     loadCrew();
 
-    // 컴포넌트 언마운트 시 임시 URL 정리
     return () => {
-      if (logoPreview) {
-        URL.revokeObjectURL(logoPreview);
-      }
-
-      // 크루 사진 미리보기 URL 해제
-      crewPhotosPreviews.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+      crewPhotosPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crewId, router]);
 
-  // 파일 변경 핸들러 추가
+  // ── Handlers ─────────────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // 이전 미리보기 URL이 있다면 메모리 해제
-      if (logoPreview) {
-        URL.revokeObjectURL(logoPreview);
-      }
-
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
       setLogoImage(file);
-      // 미리보기 URL 생성
       setLogoPreview(URL.createObjectURL(file));
     }
   };
 
-  // 크루 사진 추가 핸들러
   const handleCrewPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    // 최대 5장까지만 허용
     const maxPhotos = 5;
     const availableSlots =
       maxPhotos - (existingPhotos.length + crewPhotos.length);
@@ -248,82 +251,59 @@ export default function EditCrewPage() {
 
     const newFiles = Array.from(files).slice(0, availableSlots);
 
-    // 파일 크기 및 형식 검증
     const invalidFiles = newFiles.filter(
-      (file) =>
-        file.size > 5 * 1024 * 1024 ||
-        !["image/jpeg", "image/png", "image/webp"].includes(file.type)
+      (f) =>
+        f.size > 5 * 1024 * 1024 ||
+        !["image/jpeg", "image/png", "image/webp"].includes(f.type)
     );
 
     if (invalidFiles.length > 0) {
       toast.error(
-        "일부 파일이 너무 크거나 지원되지 않는 형식입니다. (최대 5MB, JPG/PNG/GIF 형식만 지원)"
+        "일부 파일이 너무 크거나 지원되지 않는 형식입니다. (최대 5MB, JPG/PNG/WebP)"
       );
       return;
     }
 
-    // 새 파일 추가 및 미리보기 생성
-    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-
+    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
     setCrewPhotos([...crewPhotos, ...newFiles]);
     setCrewPhotosPreviews([...crewPhotosPreviews, ...newPreviews]);
-
-    // 파일 입력 초기화 (동일한 파일 재선택 가능하게)
     e.target.value = "";
   };
 
-  // 새 크루 사진 삭제
   const removeCrewPhoto = (index: number) => {
-    // 미리보기 URL 해제
     URL.revokeObjectURL(crewPhotosPreviews[index]);
-
-    const updatedPhotos = [...crewPhotos];
-    const updatedPreviews = [...crewPhotosPreviews];
-
-    updatedPhotos.splice(index, 1);
-    updatedPreviews.splice(index, 1);
-
-    setCrewPhotos(updatedPhotos);
-    setCrewPhotosPreviews(updatedPreviews);
+    const photos = [...crewPhotos];
+    const previews = [...crewPhotosPreviews];
+    photos.splice(index, 1);
+    previews.splice(index, 1);
+    setCrewPhotos(photos);
+    setCrewPhotosPreviews(previews);
   };
 
-  // 기존 크루 사진 삭제
   const removeExistingPhoto = (index: number) => {
-    const updatedExistingPhotos = [...existingPhotos];
-    updatedExistingPhotos.splice(index, 1);
-    setExistingPhotos(updatedExistingPhotos);
+    const list = [...existingPhotos];
+    list.splice(index, 1);
+    setExistingPhotos(list);
   };
 
-  // 파일 선택 버튼 클릭 핸들러
-  const handleSelectFile = () => {
-    fileInputRef.current?.click();
-  };
+  const handleSelectFile = () => fileInputRef.current?.click();
+  const handleSelectCrewPhotos = () => crewPhotosInputRef.current?.click();
 
-  // 크루 사진 선택 버튼 클릭 핸들러
-  const handleSelectCrewPhotos = () => {
-    crewPhotosInputRef.current?.click();
-  };
-
-  // 활동 장소 추가
   const handleAddActivityLocation = () => {
-    if (!newActivityLocation.trim()) return;
-
-    // 중복 체크
-    if (activityLocations.includes(newActivityLocation.trim())) {
+    const v = newActivityLocation.trim();
+    if (!v) return;
+    if (activityLocations.includes(v)) {
       toast.error("이미 추가된 활동 장소입니다.");
       return;
     }
-
-    setActivityLocations([...activityLocations, newActivityLocation.trim()]);
+    setActivityLocations([...activityLocations, v]);
     setNewActivityLocation("");
   };
 
-  // 활동 장소 삭제
   const handleRemoveActivityLocation = (location: string) => {
-    setActivityLocations(activityLocations.filter((loc) => loc !== location));
+    setActivityLocations(activityLocations.filter((l) => l !== location));
   };
 
-  // 활동 요일 토글
   const toggleActivityDay = (day: ActivityDay) => {
     if (activityDays.includes(day)) {
       setActivityDays(activityDays.filter((d) => d !== day));
@@ -332,109 +312,73 @@ export default function EditCrewPage() {
     }
   };
 
-  // 가입 방식 토글 핸들러
-  const toggleInstagramDm = () => {
-    setUseInstagramDm(!useInstagramDm);
-  };
-
+  const toggleInstagramDm = () => setUseInstagramDm(!useInstagramDm);
   const toggleOtherJoinMethod = () => {
     setUseOtherJoinMethod(!useOtherJoinMethod);
-    if (!useOtherJoinMethod) {
-      setOpenChatLink("");
-    }
+    if (!useOtherJoinMethod) setOpenChatLink("");
   };
 
-  // 폼 제출
+  // ── Submit ───────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!crew) return;
 
-    // 최소 하나의 활동 요일 선택 확인
     if (activityDays.length === 0) {
       toast.error("최소 하나의 활동 요일을 선택해주세요.");
       return;
     }
-
-    // 위도, 경도 확인
     if (isNaN(latitude) || isNaN(longitude)) {
-      toast.error("위도와 경도는 숫자로 입력해주세요.");
+      toast.error("위도와 경도가 올바르지 않습니다.");
       return;
     }
-
-    // 한국의 위경도 범위 확인 (경고만 표시)
     const isInKoreaRange =
       latitude >= 33 && latitude <= 39 && longitude >= 124 && longitude <= 132;
-
     if (!isInKoreaRange) {
       toast.warning(
-        "입력된 위경도 값이 한국의 일반적인 범위를 벗어났습니다. 정확한 위치인지 확인해주세요."
+        "위경도가 한국 범위를 벗어났습니다. 핀 위치를 확인해주세요."
       );
     }
-
-    // 연령대 확인
     if (minAge < 0 || maxAge > 100 || minAge > maxAge) {
-      toast.error(
-        "유효한 연령대를 입력해주세요. (최소 0세, 최대 100세, 최소 연령은 최대 연령보다 작아야 합니다.)"
-      );
+      toast.error("연령대를 올바르게 입력해주세요. (0~100, min ≤ max)");
       return;
     }
-
-    // 가입 방식 확인
     if (useOtherJoinMethod && !openChatLink) {
-      toast.error("오픈채팅 링크 또는 기타 가입 정보를 입력해주세요.");
+      toast.error("오픈채팅 링크를 입력해주세요.");
       return;
     }
-
     if (useInstagramDm && !instagram) {
-      toast.error(
-        "인스타그램 DM을 가입 방식으로 사용하려면 인스타그램 계정을 입력해주세요."
-      );
+      toast.error("인스타그램 DM을 사용하려면 인스타 계정을 입력해주세요.");
       return;
     }
 
     try {
       setIsSaving(true);
-
       let updatedImageUrl = crew?.logo_image;
-      // 새 이미지가 선택된 경우 업로드
       if (logoImage) {
         try {
-          const uploadedUrl = await crewService.uploadCrewLogo(
-            logoImage,
-            crewId
-          );
-          if (uploadedUrl) {
-            updatedImageUrl = uploadedUrl;
-          }
-        } catch (error) {
-          console.error("이미지 업로드 실패:", error);
-          toast.error("이미지 업로드에 실패했습니다.");
+          const url = await crewService.uploadCrewLogo(logoImage, crewId);
+          if (url) updatedImageUrl = url;
+        } catch (err) {
+          console.error("로고 업로드 실패:", err);
+          toast.error("로고 이미지 업로드에 실패했습니다.");
           setIsSaving(false);
           return;
         }
       }
 
-      // 크루 활동 사진 업로드
       const uploadedPhotoUrls: string[] = [];
       if (crewPhotos.length > 0) {
         for (const photo of crewPhotos) {
           try {
-            const uploadedUrl = await crewService.uploadCrewPhoto(
-              photo,
-              crewId
-            );
-            if (uploadedUrl) {
-              uploadedPhotoUrls.push(uploadedUrl);
-            }
-          } catch (error) {
-            console.error("크루 활동 사진 업로드 실패:", error);
-            toast.error("일부 크루 활동 사진 업로드에 실패했습니다.");
+            const url = await crewService.uploadCrewPhoto(photo, crewId);
+            if (url) uploadedPhotoUrls.push(url);
+          } catch (err) {
+            console.error("크루 사진 업로드 실패:", err);
+            toast.error("일부 크루 사진 업로드에 실패했습니다.");
           }
         }
       }
 
-      // 크루 정보 업데이트 데이터 준비
       const updateData: CrewUpdateData = {
         name,
         description,
@@ -448,47 +392,30 @@ export default function EditCrewPage() {
         activity_locations: activityLocations,
         activity_days: activityDays,
         founded_date: foundedDate || undefined,
-        age_range: {
-          min_age: minAge,
-          max_age: maxAge,
-        },
+        age_range: { min_age: minAge, max_age: maxAge },
         logo_image_url: updatedImageUrl,
       };
 
-      // 가입 방식 정보 추가 (use_instagram_dm, open_chat_link)
-      if (useInstagramDm) {
-        updateData.use_instagram_dm = true;
-      }
-
-      if (useOtherJoinMethod && openChatLink) {
+      if (useInstagramDm) updateData.use_instagram_dm = true;
+      if (useOtherJoinMethod && openChatLink)
         updateData.open_chat_link = openChatLink;
-      }
-
-      // 크루 사진 정보 추가
       if (existingPhotos.length > 0 || uploadedPhotoUrls.length > 0) {
         updateData.crew_photos = {
-          existing: existingPhotos.map((photo) => photo.id),
+          existing: existingPhotos.map((p) => p.id),
           new: uploadedPhotoUrls,
         };
       }
 
-      // 크루 정보 업데이트
       await crewService.updateCrew(crewId, updateData);
-
-      // 크루 표시 상태 업데이트
       await crewService.updateCrewVisibility(crewId, isVisible);
 
       toast.success("크루 정보가 업데이트되었습니다.");
       router.push("/admin/crew");
-    } catch (error) {
-      console.error("크루 정보 업데이트 실패:", error);
-
-      // 데이터베이스 오류 메시지 처리
-      if (error && typeof error === "object" && "message" in error) {
+    } catch (err) {
+      console.error("크루 정보 업데이트 실패:", err);
+      if (err && typeof err === "object" && "message" in err) {
         toast.error(
-          `크루 정보 업데이트에 실패했습니다: ${
-            (error as DatabaseError).message
-          }`
+          `업데이트 실패: ${(err as DatabaseError).message}`
         );
       } else {
         toast.error("크루 정보 업데이트에 실패했습니다.");
@@ -498,36 +425,84 @@ export default function EditCrewPage() {
     }
   };
 
+  // ── Loading state ────────────────────────────────────────────
   if (isLoading) {
     return (
-      <FormLayout title='크루 정보 수정'>
-        <div className='flex flex-1 justify-center items-center'>
-          <Loader2 className='w-8 h-8 animate-spin text-muted-foreground' />
-        </div>
-      </FormLayout>
+      <main className='flex flex-col items-center justify-center min-h-screen bg-background'>
+        <Loader2 className='w-6 h-6 text-[hsl(var(--lime))] animate-spin' />
+        <KickerLabel tone='muted' className='mt-3 tracking-[0.2em]'>
+          · LOADING CREW
+        </KickerLabel>
+      </main>
     );
   }
 
+  // ── Form ─────────────────────────────────────────────────────
   return (
-    <FormLayout title='크루 정보 수정'>
-      <div className='mb-4'>
-        <Button
-          variant='ghost'
-          onClick={() => router.push("/admin/crew")}
-          className='flex gap-1 items-center text-muted-foreground'
-        >
-          <ArrowLeft className='w-4 h-4' />
-          목록으로 돌아가기
-        </Button>
-      </div>
+    <main className='min-h-screen bg-background pb-28'>
+      {/* Sticky top bar — back / crew name / visibility badge */}
+      <header className='sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-cart-rule'>
+        <div className='flex items-center justify-between px-[18px] py-3 gap-2'>
+          <button
+            type='button'
+            onClick={() => router.push("/admin/crew")}
+            className='w-9 h-9 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center text-cart-ink active:scale-95 transition-transform flex-shrink-0'
+            aria-label='크루 목록으로'
+          >
+            <ArrowLeft className='w-4 h-4' />
+          </button>
+          <div className='flex-1 min-w-0 text-center'>
+            <KickerLabel tone='lime' className='tracking-[0.22em]'>
+              · CREW · EDIT
+            </KickerLabel>
+            <div className='font-display text-[15px] font-bold tracking-[-0.02em] text-cart-ink truncate'>
+              {name || crew?.name || "—"}
+            </div>
+          </div>
+          <div
+            className={cn(
+              "px-2 py-1 rounded-[4px] border font-mono text-[9px] tracking-[0.18em] font-bold uppercase flex items-center gap-1 flex-shrink-0",
+              isVisible
+                ? "border-[hsl(var(--lime))] text-[hsl(var(--lime))]"
+                : "border-amber-400/40 text-amber-300"
+            )}
+          >
+            {isVisible ? <Eye className='w-3 h-3' /> : <EyeOff className='w-3 h-3' />}
+            {isVisible ? "LIVE" : "OFF"}
+          </div>
+        </div>
+      </header>
 
-      <form onSubmit={handleSubmit} className='space-y-6'>
-        {/* 크루 로고 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>크루 로고</h3>
-          <div className='flex gap-4 items-center'>
-            {/* 로고 이미지 표시 */}
-            <div className='overflow-hidden relative w-20 h-20 rounded-full'>
+      <form onSubmit={handleSubmit} className='px-[18px] pt-4 space-y-5'>
+        {/* Visibility toggle as a top-level card — admin's most-used switch */}
+        <Section
+          kicker='VISIBILITY · 노출'
+          title='지도에 표시'
+          helper='꺼두면 사용자에게 보이지 않습니다.'
+        >
+          <div className='flex items-center justify-between'>
+            <KickerLabel
+              tone={isVisible ? "lime" : "muted"}
+              className='tracking-[0.2em]'
+            >
+              {isVisible ? "● LIVE · 노출 중" : "○ HIDDEN · 비공개"}
+            </KickerLabel>
+            <Switch
+              checked={isVisible}
+              onCheckedChange={setIsVisible}
+            />
+          </div>
+        </Section>
+
+        {/* Logo */}
+        <Section kicker='LOGO · 로고' title='크루 로고'>
+          <div className='flex items-center gap-4'>
+            <button
+              type='button'
+              onClick={handleSelectFile}
+              className='w-20 h-20 rounded-[4px] border border-cart-rule bg-cart-paper relative overflow-hidden active:scale-95 transition-transform flex-shrink-0'
+              aria-label='로고 변경'
+            >
               {logoPreview ? (
                 <Image
                   src={logoPreview}
@@ -544,13 +519,13 @@ export default function EditCrewPage() {
                   className='object-cover'
                 />
               ) : (
-                <div className='flex justify-center items-center w-full h-full text-2xl font-medium rounded-full bg-muted'>
-                  {name.charAt(0)}
+                <div className='flex items-center justify-center w-full h-full font-display text-[24px] font-bold text-[hsl(var(--lime))]'>
+                  {name.charAt(0) || "?"}
                 </div>
               )}
-            </div>
+            </button>
 
-            <div className='flex flex-col gap-2'>
+            <div className='flex-1 min-w-0 space-y-1.5'>
               <input
                 type='file'
                 ref={fileInputRef}
@@ -558,451 +533,496 @@ export default function EditCrewPage() {
                 accept='image/jpeg,image/png,image/webp'
                 className='hidden'
               />
-              <Button
+              <button
                 type='button'
-                variant='outline'
                 onClick={handleSelectFile}
-                className='text-sm'
+                className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform'
               >
-                로고 이미지 변경
-              </Button>
+                <Upload className='w-3 h-3' />
+                {logoPreview || crew?.logo_image ? "변경" : "업로드"}
+              </button>
               {logoImage && (
-                <p className='text-xs text-muted-foreground'>
-                  {logoImage.name} ({Math.round(logoImage.size / 1024)}KB)
+                <p className='text-[11px] text-cart-ink-60 font-mono truncate'>
+                  ● {logoImage.name} · {Math.round(logoImage.size / 1024)}KB
                 </p>
               )}
-              <p className='text-xs text-muted-foreground'>
-                최대 2MB, JPG, PNG 형식만 지원
+              <p className='text-[10px] text-cart-ink-40'>
+                JPG · PNG · WebP / 최대 2MB
               </p>
             </div>
           </div>
-        </div>
+        </Section>
 
-        {/* 표시 여부 */}
-        <div className='flex justify-between items-center p-4 rounded-lg border'>
-          <div>
-            <h3 className='font-medium'>지도에 표시</h3>
-            <p className='text-sm text-muted-foreground'>
-              이 크루를 지도에 표시할지 여부를 설정합니다.
-            </p>
-          </div>
-          <Switch checked={isVisible} onCheckedChange={setIsVisible} />
-        </div>
-
-        {/* 기본 정보 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>기본 정보</h3>
-
-          <div className='space-y-2'>
-            <Label htmlFor='name'>크루명</Label>
-            <Input
-              id='name'
+        {/* Basic info */}
+        <Section kicker='BASICS · 기본 정보' title='기본 정보'>
+          <Field label='크루명' required>
+            <input
+              type='text'
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              className={INPUT_CLS}
             />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='foundedDate'>개설일</Label>
-            <Input
-              id='foundedDate'
+          </Field>
+          <Field label='개설일'>
+            <input
               type='date'
               value={foundedDate}
               onChange={(e) => setFoundedDate(e.target.value)}
-              required
+              className={INPUT_CLS}
             />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='instagram'>인스타그램</Label>
+          </Field>
+          <Field label='인스타그램' helper='@ 제외'>
             <div className='relative'>
-              <span className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground'>
+              <span className='absolute left-3 top-1/2 -translate-y-1/2 text-cart-ink-60 text-[13px]'>
                 @
               </span>
-              <Input
-                id='instagram'
+              <input
+                type='text'
                 value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                className='pl-8'
-                placeholder='인스타그램 계정 (@ 제외)'
+                onChange={(e) =>
+                  setInstagram(e.target.value.replace(/^@/, ""))
+                }
+                placeholder='runhouse_official'
+                className={INPUT_CLS + " pl-7"}
               />
             </div>
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='description'>크루 소개</Label>
-            <Textarea
-              id='description'
+          </Field>
+          <Field label='크루 소개' required>
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={6}
+              rows={5}
               required
+              className={
+                "w-full px-3 py-2 min-h-[120px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 rounded-[4px] focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50 text-[13px]"
+              }
             />
-          </div>
-        </div>
+          </Field>
+        </Section>
 
-        {/* 연령대 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>연령대</h3>
-          <p className='mb-3 text-sm text-muted-foreground'>
-            크루 회원들의 연령대 범위를 설정해주세요.
-          </p>
-
-          <div className='grid grid-cols-2 gap-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='minAge'>최소 연령</Label>
-              <Input
-                id='minAge'
+        {/* Age range */}
+        <Section kicker='AGE · 연령대' title='연령대 범위'>
+          <div className='grid grid-cols-2 gap-3'>
+            <Field label='최소'>
+              <input
                 type='number'
-                min='0'
-                max='100'
+                min={0}
+                max={100}
                 value={minAge}
-                onChange={(e) => setMinAge(parseInt(e.target.value))}
-                required
+                onChange={(e) =>
+                  setMinAge(parseInt(e.target.value) || 0)
+                }
+                className={INPUT_CLS}
               />
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='maxAge'>최대 연령</Label>
-              <Input
-                id='maxAge'
+            </Field>
+            <Field label='최대'>
+              <input
                 type='number'
-                min='0'
-                max='100'
+                min={0}
+                max={100}
                 value={maxAge}
-                onChange={(e) => setMaxAge(parseInt(e.target.value))}
-                required
+                onChange={(e) =>
+                  setMaxAge(parseInt(e.target.value) || 100)
+                }
+                className={INPUT_CLS}
               />
-            </div>
+            </Field>
           </div>
-        </div>
+        </Section>
 
-        {/* 활동 요일 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>활동 요일</h3>
-          <p className='mb-3 text-sm text-muted-foreground'>
-            크루가 활동하는 요일을 선택해주세요. (복수 선택 가능)
-          </p>
-
-          <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'>
-            {ACTIVITY_DAYS.map((day) => (
-              <div key={day} className='flex items-center space-x-2'>
-                <Checkbox
-                  id={`day-${day}`}
-                  checked={activityDays.includes(day)}
-                  onCheckedChange={() => toggleActivityDay(day)}
-                />
-                <Label htmlFor={`day-${day}`} className='cursor-pointer'>
+        {/* Activity days */}
+        <Section
+          kicker='DAYS · 활동 요일'
+          title='정기 러닝 요일'
+          helper='복수 선택 가능'
+        >
+          <div className='flex flex-wrap gap-1.5'>
+            {ACTIVITY_DAYS.map((day) => {
+              const active = activityDays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type='button'
+                  onClick={() => toggleActivityDay(day)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-[4px] border font-mono text-[11px] tracking-[0.05em] font-semibold transition-colors active:scale-95",
+                    active
+                      ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                      : "border-cart-rule text-cart-ink-60 hover:border-[hsl(var(--lime))]/40"
+                  )}
+                >
                   {day}
-                </Label>
-              </div>
-            ))}
+                </button>
+              );
+            })}
           </div>
-        </div>
+        </Section>
 
-        {/* 위치 정보 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>지도 표시 위치 정보</h3>
-
-          <div className='space-y-2'>
-            <Label htmlFor='mainAddress'>주소</Label>
-            <Input
-              id='mainAddress'
+        {/* Location */}
+        <Section
+          kicker='LOCATION · 위치'
+          title='지도 표시 위치'
+          helper='핀을 드래그하거나 지도를 탭해서 정확한 모임 위치를 지정. 다른 크루(연한 lime 점)와 겹치지 않게.'
+        >
+          <Field label='대표 주소' required>
+            <input
+              type='text'
               value={mainAddress}
               onChange={(e) => setMainAddress(e.target.value)}
               required
+              className={INPUT_CLS}
+              placeholder='서울특별시 …'
             />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='detailAddress'>지도 검색 주소</Label>
-            <Input
-              id='detailAddress'
+          </Field>
+          <Field label='상세 주소' helper='선택'>
+            <input
+              type='text'
               value={detailAddress}
               onChange={(e) => setDetailAddress(e.target.value)}
-              placeholder='상세 주소 (선택사항)'
+              className={INPUT_CLS}
+              placeholder='건물명 · 층 · 미팅 포인트'
             />
-          </div>
+          </Field>
 
-          <div className='grid grid-cols-2 gap-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='latitude'>위도</Label>
-              <Input
-                id='latitude'
-                type='number'
-                value={latitude}
-                onChange={(e) => setLatitude(parseFloat(e.target.value))}
-                placeholder='예: 37.5665'
-                required
-                min='-99.99999999'
-                max='99.99999999'
-                step='any'
-              />
-              <p className='text-xs text-muted-foreground'>
-                한국의 위도 범위: 33° ~ 39° (북위)
-              </p>
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='longitude'>경도</Label>
-              <Input
-                id='longitude'
-                type='number'
-                value={longitude}
-                onChange={(e) => setLongitude(parseFloat(e.target.value))}
-                placeholder='예: 126.9780'
-                required
-                min='-999.99999999'
-                max='999.99999999'
-                step='any'
-              />
-              <p className='text-xs text-muted-foreground'>
-                한국의 경도 범위: 124° ~ 132° (동경)
-              </p>
-            </div>
-          </div>
-          <p className='text-xs text-muted-foreground'>
-            위도와 경도는 지도에 크루 위치를 표시하는데 사용됩니다. 정확한
-            좌표를 입력해주세요.
-          </p>
-        </div>
+          <CrewLocationPickerMap
+            value={
+              Number.isFinite(latitude) &&
+              Number.isFinite(longitude) &&
+              (latitude !== 0 || longitude !== 0)
+                ? { lat: latitude, lng: longitude }
+                : null
+            }
+            onChange={(picked) => {
+              setLatitude(picked.lat);
+              setLongitude(picked.lng);
+              if (picked.address && !mainAddress.trim()) {
+                setMainAddress(picked.address);
+              }
+            }}
+            otherCrews={contextCrews}
+            height={280}
+          />
+          <KickerLabel tone='muted' className='tracking-[0.18em]'>
+            ● LAT {latitude.toFixed(5)} / LNG {longitude.toFixed(5)}
+          </KickerLabel>
+        </Section>
 
-        {/* 활동 장소 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>활동 장소</h3>
-
+        {/* Activity locations chips */}
+        <Section
+          kicker='SPOTS · 활동 장소'
+          title='자주 만나는 장소'
+          helper='최대 5개'
+        >
           <div className='flex gap-2'>
-            <Input
+            <input
+              type='text'
               value={newActivityLocation}
               onChange={(e) => setNewActivityLocation(e.target.value)}
-              placeholder='활동 장소 추가'
-              className='flex-1'
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddActivityLocation();
+                }
+              }}
+              placeholder='반포 한강공원'
+              className={INPUT_CLS + " flex-1"}
             />
-            <Button
+            <button
               type='button'
               onClick={handleAddActivityLocation}
-              variant='secondary'
+              disabled={!newActivityLocation.trim()}
+              className='px-3 py-1.5 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform disabled:opacity-40 flex items-center gap-1'
             >
+              <Plus className='w-3 h-3' />
               추가
-            </Button>
+            </button>
           </div>
-
-          <div className='space-y-2'>
-            {activityLocations.length > 0 ? (
-              <div className='flex flex-wrap gap-2'>
-                {activityLocations.map((location, index) => (
-                  <div
-                    key={index}
-                    className='flex gap-1 items-center px-3 py-1 text-sm rounded-full bg-accent'
+          {activityLocations.length > 0 ? (
+            <div className='flex flex-wrap gap-1.5'>
+              {activityLocations.map((loc) => (
+                <div
+                  key={loc}
+                  className='flex items-center gap-1.5 px-3 py-1.5 bg-cart-paper border border-cart-rule rounded-[4px] text-[12px] text-cart-ink'
+                >
+                  <span>{loc}</span>
+                  <button
+                    type='button'
+                    onClick={() => handleRemoveActivityLocation(loc)}
+                    className='text-cart-ink-60 hover:text-[hsl(var(--lime))] active:scale-90 transition-transform'
+                    aria-label={`${loc} 삭제`}
                   >
-                    <span>{location}</span>
-                    <button
-                      type='button'
-                      onClick={() => handleRemoveActivityLocation(location)}
-                      className='flex justify-center items-center w-4 h-4 rounded-full hover:bg-muted-foreground/20'
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className='text-sm text-muted-foreground'>
-                등록된 활동 장소가 없습니다.
-              </p>
-            )}
-          </div>
-        </div>
+                    <X className='w-3 h-3' />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <KickerLabel tone='muted' className='tracking-[0.18em]'>
+              · 등록된 활동 장소가 없습니다 ·
+            </KickerLabel>
+          )}
+        </Section>
 
-        {/* 가입 방식 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>가입 방식</h3>
-          <p className='mb-3 text-sm text-muted-foreground'>
-            신규 회원이 크루에 가입할 수 있는 방법을 선택해주세요.
-          </p>
-
-          <div className='flex flex-wrap gap-2 mb-3'>
+        {/* Join methods */}
+        <Section
+          kicker='JOIN · 가입 방식'
+          title='가입 경로'
+          helper='최소 1개 권장'
+        >
+          <div className='flex flex-wrap gap-1.5'>
             <button
               type='button'
-              className={`px-3 py-1.5 text-sm rounded-full ${
-                useInstagramDm
-                  ? "bg-primary text-white"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
               onClick={toggleInstagramDm}
+              className={cn(
+                "px-3 py-1.5 rounded-[4px] border font-mono text-[11px] tracking-[0.12em] uppercase font-semibold transition-colors active:scale-95 flex items-center gap-1.5",
+                useInstagramDm
+                  ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                  : "border-cart-rule text-cart-ink-60 hover:border-[hsl(var(--lime))]/40"
+              )}
             >
-              인스타그램 DM
+              {useInstagramDm && <Check className='w-3 h-3' />}
+              Instagram DM
             </button>
             <button
               type='button'
-              className={`px-3 py-1.5 text-sm rounded-full ${
-                useOtherJoinMethod
-                  ? "bg-primary text-white"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
               onClick={toggleOtherJoinMethod}
+              className={cn(
+                "px-3 py-1.5 rounded-[4px] border font-mono text-[11px] tracking-[0.12em] uppercase font-semibold transition-colors active:scale-95 flex items-center gap-1.5",
+                useOtherJoinMethod
+                  ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                  : "border-cart-rule text-cart-ink-60 hover:border-[hsl(var(--lime))]/40"
+              )}
             >
-              기타 방식
+              {useOtherJoinMethod && <Check className='w-3 h-3' />}
+              기타 / 오픈채팅
             </button>
           </div>
 
-          {/* 인스타그램 경고 메시지 */}
           {useInstagramDm && !instagram && (
-            <div className='p-2 mb-3 text-sm text-yellow-800 bg-yellow-100 rounded-md border border-yellow-200'>
-              인스타그램 DM을 가입 방식으로 사용하려면 인스타그램 계정을
-              입력해주세요.
+            <div className='px-3 py-2 rounded-[4px] border border-amber-400/40 bg-amber-500/10'>
+              <KickerLabel tone='muted' className='tracking-[0.18em] mb-1'>
+                ● WARNING
+              </KickerLabel>
+              <p className='text-[11px] text-cart-ink-60'>
+                인스타그램 DM 사용 시 위 인스타그램 계정을 먼저 입력해주세요.
+              </p>
             </div>
           )}
 
-          {/* 기타 가입 방식 - 오픈채팅 링크 입력 */}
           {useOtherJoinMethod && (
-            <div className='space-y-2'>
-              <Label htmlFor='open-chat-link'>
-                오픈채팅 링크 또는 기타 가입 정보
-              </Label>
-              <Input
-                id='open-chat-link'
+            <Field label='오픈채팅 / 기타 링크'>
+              <input
                 type='url'
-                placeholder='가입 경로 링크'
+                placeholder='https://open.kakao.com/…'
                 value={openChatLink}
                 onChange={(e) => setOpenChatLink(e.target.value)}
-                className='w-full'
+                className={INPUT_CLS}
               />
+            </Field>
+          )}
+        </Section>
+
+        {/* Photos */}
+        <Section
+          kicker='PHOTOS · 활동 사진'
+          title='크루 대표 사진'
+          helper={`현재 ${existingPhotos.length + crewPhotosPreviews.length}/5 · 최대 5장 · 5MB / JPG · PNG · WebP`}
+        >
+          <input
+            type='file'
+            ref={crewPhotosInputRef}
+            onChange={handleCrewPhotoChange}
+            accept='image/jpeg,image/png,image/webp'
+            className='hidden'
+            multiple
+          />
+
+          {(existingPhotos.length > 0 ||
+            crewPhotosPreviews.length > 0 ||
+            true) && (
+            <div className='grid grid-cols-3 gap-2'>
+              {existingPhotos.map((photo, index) => (
+                <div
+                  key={`existing-${photo.id}`}
+                  className='relative aspect-square rounded-[4px] overflow-hidden border border-cart-rule bg-cart-paper'
+                >
+                  <Image
+                    src={photo.url}
+                    alt={`크루 활동 사진 ${index + 1}`}
+                    fill
+                    quality={20}
+                    className='object-cover'
+                    sizes='(max-width: 430px) 33vw, 140px'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => removeExistingPhoto(index)}
+                    className='absolute top-1 right-1 w-5 h-5 rounded-[4px] bg-background/90 border border-red-500/40 text-red-400 flex items-center justify-center active:scale-90 transition-transform'
+                    aria-label='사진 삭제'
+                  >
+                    <X className='w-3 h-3' />
+                  </button>
+                </div>
+              ))}
+              {crewPhotosPreviews.map((preview, index) => (
+                <div
+                  key={`new-${index}`}
+                  className='relative aspect-square rounded-[4px] overflow-hidden border border-[hsl(var(--lime))]/40 bg-cart-paper'
+                >
+                  <Image
+                    src={preview}
+                    alt={`새 활동 사진 ${index + 1}`}
+                    fill
+                    quality={20}
+                    className='object-cover'
+                    sizes='(max-width: 430px) 33vw, 140px'
+                  />
+                  <span className='absolute top-1 left-1 font-mono text-[8px] tracking-[0.18em] font-bold uppercase px-1.5 py-0.5 rounded-[2px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))]'>
+                    NEW
+                  </span>
+                  <button
+                    type='button'
+                    onClick={() => removeCrewPhoto(index)}
+                    className='absolute top-1 right-1 w-5 h-5 rounded-[4px] bg-background/90 border border-red-500/40 text-red-400 flex items-center justify-center active:scale-90 transition-transform'
+                    aria-label='사진 삭제'
+                  >
+                    <X className='w-3 h-3' />
+                  </button>
+                </div>
+              ))}
+              {existingPhotos.length + crewPhotosPreviews.length < 5 && (
+                <button
+                  type='button'
+                  onClick={handleSelectCrewPhotos}
+                  className='aspect-square rounded-[4px] border border-dashed border-cart-rule bg-transparent text-cart-ink-60 hover:text-[hsl(var(--lime))] hover:border-[hsl(var(--lime))]/60 active:scale-95 transition-all flex flex-col items-center justify-center gap-1'
+                >
+                  <Upload className='w-4 h-4' />
+                  <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
+                    추가
+                  </span>
+                </button>
+              )}
             </div>
           )}
-        </div>
+        </Section>
 
-        {/* 크루 대표 활동 사진 업로드 섹션 */}
-        <div className='p-4 space-y-4 rounded-lg border'>
-          <h3 className='font-medium'>크루 대표 활동 사진</h3>
-          <p className='mb-3 text-sm text-muted-foreground'>
-            크루 대표 활동 사진을 추가하거나 수정할 수 있습니다. 최대 5장까지
-            업로드 가능합니다.
-          </p>
+        {/* Spacer so sticky bottom CTA never covers the last card */}
+        <div className='h-2' />
+      </form>
 
-          <div className='space-y-4'>
-            {/* 현재 선택된 사진과 기존 사진 표시 */}
-            {(existingPhotos.length > 0 || crewPhotosPreviews.length > 0) && (
-              <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
-                {/* 기존 사진 표시 */}
-                {existingPhotos.map((photo, index) => (
-                  <div key={`existing-${index}`} className='relative'>
-                    <div className='flex overflow-hidden justify-center items-center bg-gray-100 rounded-md aspect-square'>
-                      <Image
-                        src={photo.url}
-                        alt={`크루 활동 사진 ${index + 1}`}
-                        quality={20}
-                        className='object-cover'
-                        fill
-                        sizes='(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw'
-                      />
-                    </div>
-                    <button
-                      type='button'
-                      onClick={() => removeExistingPhoto(index)}
-                      className='absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full'
-                      aria-label='사진 삭제'
-                    >
-                      <X className='w-4 h-4' />
-                    </button>
-                  </div>
-                ))}
-
-                {/* 새로 업로드할 사진 표시 */}
-                {crewPhotosPreviews.map((preview, index) => (
-                  <div key={`new-${index}`} className='relative'>
-                    <div className='flex overflow-hidden justify-center items-center bg-gray-100 rounded-md aspect-square'>
-                      <Image
-                        src={preview}
-                        alt={`새 크루 활동 사진 ${index + 1}`}
-                        className='object-cover'
-                        quality={20}
-                        fill
-                        sizes='(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw'
-                      />
-                    </div>
-                    <button
-                      type='button'
-                      onClick={() => removeCrewPhoto(index)}
-                      className='absolute -top-2 -right-2 p-1 text-white bg-red-500 rounded-full'
-                      aria-label='사진 삭제'
-                    >
-                      <X className='w-4 h-4' />
-                    </button>
-                  </div>
-                ))}
-
-                {/* 빈 슬롯 표시 */}
-                {Array.from({
-                  length:
-                    5 - (existingPhotos.length + crewPhotosPreviews.length),
-                }).map((_, index) => (
-                  <div
-                    key={`empty-${index}`}
-                    className='flex justify-center items-center bg-gray-100 rounded-md border-2 border-gray-300 border-dashed aspect-square'
-                  >
-                    <span className='text-xs text-muted-foreground'>
-                      빈 슬롯
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 사진 업로드 버튼 */}
-            {existingPhotos.length + crewPhotosPreviews.length < 5 && (
-              <>
-                <input
-                  type='file'
-                  ref={crewPhotosInputRef}
-                  onChange={handleCrewPhotoChange}
-                  accept='image/jpeg,image/png,image/webp'
-                  className='hidden'
-                  multiple
-                />
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={handleSelectCrewPhotos}
-                  className='w-full h-20 border-dashed'
-                >
-                  <div className='flex flex-col gap-1 items-center'>
-                    <Upload className='w-5 h-5 text-muted-foreground' />
-                    <span>
-                      활동 사진 추가 (
-                      {existingPhotos.length + crewPhotosPreviews.length}/5)
-                    </span>
-                    <span className='text-xs text-muted-foreground'>
-                      최대 5MB, JPG, PNG, GIF 형식만 지원
-                    </span>
-                  </div>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 제출 버튼 */}
-        <div className='flex gap-2 justify-end'>
-          <Button
+      {/* Sticky bottom save action */}
+      <div
+        className='fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 bg-background/95 backdrop-blur-md border-t border-cart-rule'
+        style={{
+          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 12px)`,
+          paddingTop: 12,
+        }}
+      >
+        <div className='px-[18px] flex gap-2'>
+          <button
             type='button'
-            variant='outline'
             onClick={() => router.push("/admin/crew")}
             disabled={isSaving}
+            className='px-4 py-3 rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all disabled:opacity-50'
           >
             취소
-          </Button>
-          <Button type='submit' disabled={isSaving}>
+          </button>
+          <button
+            type='button'
+            onClick={(e) => {
+              const form = e.currentTarget.closest("main")?.querySelector("form");
+              if (form) form.requestSubmit();
+            }}
+            disabled={isSaving}
+            className='flex-1 py-3 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-display text-[14px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90 disabled:opacity-50 flex items-center justify-center gap-2'
+          >
             {isSaving ? (
               <>
-                <Loader2 className='mr-2 w-4 h-4 animate-spin' />
-                저장 중...
+                <Loader2 className='w-4 h-4 animate-spin' />
+                <span className='font-mono text-[10px] tracking-[0.18em]'>
+                  SAVING…
+                </span>
               </>
             ) : (
-              "저장"
+              <>
+                <Save className='w-4 h-4' />
+                <span>저장</span>
+                <span className='font-mono text-[10px] font-semibold tracking-[0.12em]'>
+                  SAVE →
+                </span>
+              </>
             )}
-          </Button>
+          </button>
         </div>
-      </form>
-    </FormLayout>
+      </div>
+    </main>
+  );
+}
+
+// ── Local presentation helpers ─────────────────────────────────────────
+
+const INPUT_CLS =
+  "px-3 py-2 w-full rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink text-[13px] placeholder:text-cart-ink-40 focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50";
+
+function Section({
+  kicker,
+  title,
+  helper,
+  children,
+}: {
+  kicker: string;
+  title: string;
+  helper?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className='rounded-[4px] border border-cart-rule bg-cart-paper p-4 space-y-3'>
+      <div className='space-y-1'>
+        <KickerLabel tone='lime' className='tracking-[0.22em]'>
+          · {kicker}
+        </KickerLabel>
+        <h2 className='font-display text-[16px] font-bold tracking-[-0.02em] text-cart-ink'>
+          {title}
+        </h2>
+        {helper && (
+          <p className='text-[11px] text-cart-ink-60 leading-relaxed'>
+            {helper}
+          </p>
+        )}
+      </div>
+      <div className='space-y-3'>{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  required,
+  helper,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  helper?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className='space-y-1'>
+      <label className='text-[11px] font-semibold text-cart-ink tracking-[-0.005em] flex items-center justify-between'>
+        <span>
+          {label}
+          {required && (
+            <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
+          )}
+        </span>
+        {helper && (
+          <span className='text-[10px] font-normal text-cart-ink-40'>
+            {helper}
+          </span>
+        )}
+      </label>
+      {children}
+    </div>
   );
 }

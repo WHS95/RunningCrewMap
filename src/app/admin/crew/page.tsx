@@ -4,11 +4,10 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { FormLayout } from "@/components/layout/FormLayout";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import type { Crew } from "@/lib/types/crew";
 import { crewService } from "@/lib/services/crew.service";
-import { Button } from "@/components/ui/button";
+import { rotateCrewEditToken } from "@/app/actions/crew";
 import {
   Dialog,
   DialogContent,
@@ -17,10 +16,22 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Pencil, Trash2, AlertTriangle, Search } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  Search,
+  ArrowLeft,
+  Link2,
+  RotateCw,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  CartographicHeader,
+  KickerLabel,
+} from "@/components/design/cartographic";
+import { cn } from "@/lib/utils";
 
 interface AdminCrew extends Crew {
   is_visible: boolean;
@@ -40,60 +51,45 @@ export default function AdminCrewPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [rotatingTokenFor, setRotatingTokenFor] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCrews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 검색어 debouncing
+  // Debounce the search query so we don't run the filter on every keystroke.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(t);
   }, [searchQuery]);
 
-  // useMemo를 사용한 필터링 결과 메모이제이션
   const filteredCrews = useMemo(() => {
-    // 탭에 따른 필터링
     let filtered = [...crews];
-
     if (activeTab === "visible") {
-      filtered = filtered.filter((crew) => crew.is_visible);
+      filtered = filtered.filter((c) => c.is_visible);
     } else if (activeTab === "hidden") {
-      filtered = filtered.filter((crew) => !crew.is_visible);
+      filtered = filtered.filter((c) => !c.is_visible);
     }
-
-    // 검색어에 따른 필터링 (크루명, 인스타, 주소)
-    const trimmedQuery = debouncedSearchQuery.trim();
-    if (trimmedQuery) {
-      const lowercaseQuery = trimmedQuery.toLowerCase();
-      filtered = filtered.filter((crew) => {
-        // 문자열 비교를 한 번씩만 수행하도록 최적화
-        const crewName = crew.name.toLowerCase();
-        const crewInstagram = crew.instagram?.toLowerCase() || "";
-        const crewAddress = crew.location.main_address?.toLowerCase() || "";
-
-        return (
-          crewName.includes(lowercaseQuery) ||
-          crewInstagram.includes(lowercaseQuery) ||
-          crewAddress.includes(lowercaseQuery)
-        );
+    const q = debouncedSearchQuery.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter((c) => {
+        const name = c.name.toLowerCase();
+        const ig = c.instagram?.toLowerCase() || "";
+        const addr = c.location.main_address?.toLowerCase() || "";
+        return name.includes(q) || ig.includes(q) || addr.includes(q);
       });
     }
-
     return filtered;
   }, [crews, activeTab, debouncedSearchQuery]);
 
   const fetchCrews = useCallback(async () => {
     try {
       setIsLoading(true);
-      // crewService의 getCrews 메서드를 사용하여 모든 크루 데이터 가져오기
-      const crewsData = await crewService.getAdminCrews();
-      setCrews(crewsData);
-    } catch (error) {
-      console.error("크루 목록 조회 실패:", error);
+      const data = await crewService.getAdminCrews();
+      setCrews(data);
+    } catch (e) {
+      console.error("크루 목록 조회 실패:", e);
       toast.error("크루 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -103,26 +99,22 @@ export default function AdminCrewPage() {
   const toggleCrewVisibility = useCallback(
     async (crewId: string, newValue: boolean) => {
       try {
-        // crewService의 메서드를 사용하여 크루 표시 상태 변경
         await crewService.updateCrewVisibility(crewId, newValue);
-
-        // 로컬 상태 업데이트 및 크루 이름 가져오기
         let crewName = "";
         setCrews((prev) =>
-          prev.map((crew) => {
-            if (crew.id === crewId) {
-              crewName = crew.name;
-              return { ...crew, is_visible: newValue };
+          prev.map((c) => {
+            if (c.id === crewId) {
+              crewName = c.name;
+              return { ...c, is_visible: newValue };
             }
-            return crew;
+            return c;
           })
         );
-
         toast.success(
           `${crewName} 크루가 ${newValue ? "표시" : "숨김"} 처리되었습니다.`
         );
-      } catch (error) {
-        console.error("크루 표시 상태 변경 실패:", error);
+      } catch (e) {
+        console.error("크루 표시 상태 변경 실패:", e);
         toast.error("크루 표시 상태 변경에 실패했습니다.");
       }
     },
@@ -131,27 +123,23 @@ export default function AdminCrewPage() {
 
   const handleCrewClick = useCallback(async (crew: AdminCrew) => {
     try {
-      // crewService.getCrewDetail을 사용하여 상세 정보 가져오기
-      const detailedCrew = await crewService.getCrewDetail(crew.id);
-      setSelectedCrew(detailedCrew || crew); // 실패 시 기존 데이터 사용
-    } catch (error) {
-      console.error("크루 상세 정보 조회 실패:", error);
-      setSelectedCrew(crew); // 에러 발생 시 기본 정보 사용
+      const detailed = await crewService.getCrewDetail(crew.id);
+      setSelectedCrew(detailed || crew);
+    } catch (e) {
+      console.error("크루 상세 정보 조회 실패:", e);
+      setSelectedCrew(crew);
     }
     setIsDetailOpen(true);
   }, []);
 
   const handleEditCrew = useCallback(
-    (crew: AdminCrew) => {
-      // 수정 페이지로 이동
-      router.push(`/admin/crew/edit/${crew.id}`);
-    },
+    (crew: AdminCrew) => router.push(`/admin/crew/edit/${crew.id}`),
     [router]
   );
 
   const handleDeleteClick = useCallback(
     (crew: AdminCrew, e: React.MouseEvent) => {
-      e.stopPropagation(); // 이벤트 버블링 방지
+      e.stopPropagation();
       setCrewToDelete(crew);
       setIsDeleteDialogOpen(true);
     },
@@ -160,168 +148,281 @@ export default function AdminCrewPage() {
 
   const handleDeleteCrew = useCallback(async () => {
     if (!crewToDelete) return;
-
     try {
       setIsDeleting(true);
-      // 크루 삭제 API 호출
       await crewService.deleteCrew(crewToDelete.id);
-
       toast.success(`${crewToDelete.name} 크루가 삭제되었습니다.`);
-
-      // 로컬 상태에서 삭제된 크루 제거
-      setCrews((prev) => prev.filter((crew) => crew.id !== crewToDelete.id));
-
-      // 삭제 다이얼로그 닫기
+      setCrews((prev) => prev.filter((c) => c.id !== crewToDelete.id));
       setIsDeleteDialogOpen(false);
       setCrewToDelete(null);
-    } catch (error) {
-      console.error("크루 삭제 실패:", error);
+    } catch (e) {
+      console.error("크루 삭제 실패:", e);
       toast.error("크루 삭제에 실패했습니다.");
     } finally {
       setIsDeleting(false);
     }
   }, [crewToDelete]);
 
-  if (isLoading) {
-    return (
-      <FormLayout title='크루 관리'>
-        <div className='flex flex-1 justify-center items-center'>
-          <div className='text-lg'>로딩 중...</div>
-        </div>
-      </FormLayout>
-    );
-  }
+  // Rotate the edit token + copy the new self-edit URL to clipboard so the
+  // admin can DM it on Instagram. Used when a previously-shared link is
+  // suspected to have leaked.
+  const handleRotateToken = useCallback(async (crew: AdminCrew) => {
+    setRotatingTokenFor(crew.id);
+    try {
+      const res = await rotateCrewEditToken(crew.id);
+      if (!res.success || !res.newToken) {
+        toast.error(res.error || "토큰 재발급에 실패했습니다.");
+        return;
+      }
+      const url = `${window.location.origin}/crew/edit/${crew.id}?token=${res.newToken}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("새 자가-편집 URL이 클립보드에 복사되었습니다.");
+      } catch {
+        toast.success(`새 URL: ${url}`);
+      }
+    } catch (e) {
+      console.error("rotateCrewEditToken failed:", e);
+      toast.error("토큰 재발급 중 오류가 발생했습니다.");
+    } finally {
+      setRotatingTokenFor(null);
+    }
+  }, []);
+
+  const counts = useMemo(
+    () => ({
+      all: crews.length,
+      visible: crews.filter((c) => c.is_visible).length,
+      hidden: crews.filter((c) => !c.is_visible).length,
+    }),
+    [crews]
+  );
 
   return (
-    <FormLayout title='크루 관리'>
-      <div className='space-y-4'>
-        {/* 필터링 및 검색 UI */}
-        <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as FilterTab)}
-            className='w-full sm:w-auto'
-          >
-            <TabsList className='grid grid-cols-3 w-full sm:w-auto'>
-              <TabsTrigger value='all'>
-                전체{" "}
-                <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
-                  {crews.length}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value='visible'>
-                표시{" "}
-                <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
-                  {crews.filter((crew) => crew.is_visible).length}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value='hidden'>
-                숨김{" "}
-                <span className='ml-1.5 text-xs rounded-full bg-muted px-1.5 py-0.5'>
-                  {crews.filter((crew) => !crew.is_visible).length}
-                </span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className='relative w-full sm:w-72'>
-            <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
-            <Input
-              placeholder='크루명, 인스타, 주소 검색'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-9'
-            />
-          </div>
-        </div>
-
-        {/* 검색 결과가 없을 때 */}
-        {filteredCrews.length === 0 && (
-          <div className='p-8 text-center rounded-lg border'>
-            <p className='text-muted-foreground'>검색 결과가 없습니다.</p>
-          </div>
-        )}
-
-        {/* 크루 목록 */}
-        {filteredCrews.map((crew) => (
-          <div
-            key={crew.id}
-            className='flex flex-col p-4 rounded-lg border sm:flex-row sm:items-center'
-          >
-            <div
-              className='flex flex-1 gap-3 items-start cursor-pointer'
-              onClick={() => handleCrewClick(crew)}
-            >
-              {/* 크루 로고 */}
-              {crew.logo_image ? (
-                <Image
-                  src={crew.logo_image}
-                  alt={`${crew.name} 로고`}
-                  width={48}
-                  height={48}
-                  quality={20}
-                  className='object-cover w-10 h-10 rounded-full sm:w-12 sm:h-12'
-                  style={{ width: "40px", height: "40px" }}
-                />
-              ) : (
-                <div className='flex justify-center items-center w-10 h-10 text-lg font-medium rounded-full bg-muted sm:w-12 sm:h-12 sm:text-xl'>
-                  {crew.name.charAt(0)}
-                </div>
-              )}
-
-              {/* 크루 정보 */}
-              <div className='overflow-hidden flex-1 min-w-0'>
-                <h2 className='pr-1 text-base font-medium break-all sm:break-normal line-clamp-2'>
-                  {crew.name}
-                </h2>
-                <p className='text-sm truncate text-muted-foreground'>
-                  {crew.location.main_address}
-                </p>
-                {crew.instagram && (
-                  <p className='text-xs text-blue-500 truncate'>
-                    @{crew.instagram}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* 관리 버튼 그룹 */}
-            <div
-              className='flex flex-shrink-0 gap-2 justify-end items-center mt-3 sm:mt-0 sm:ml-2'
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={() => handleEditCrew(crew)}
-                title='크루 정보 수정'
-                className='w-8 h-8 sm:h-9 sm:w-9'
-              >
-                <Pencil className='w-3.5 h-3.5 sm:w-4 sm:h-4' />
-              </Button>
-
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={(e) => handleDeleteClick(crew, e)}
-                className='w-8 h-8 sm:h-9 sm:w-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10'
-                title='크루 삭제'
-              >
-                <Trash2 className='w-3.5 h-3.5 sm:w-4 sm:h-4' />
-              </Button>
-
-              <Switch
-                checked={crew.is_visible}
-                onCheckedChange={(checked) =>
-                  toggleCrewVisibility(crew.id, checked)
-                }
-              />
-            </div>
-          </div>
-        ))}
+    <main className='min-h-screen bg-background pb-16'>
+      {/* Top bar */}
+      <div className='flex items-center justify-between px-[22px] pt-6'>
+        <button
+          type='button'
+          onClick={() => router.push("/admin")}
+          className='w-9 h-9 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center text-cart-ink active:scale-95 transition-transform'
+          aria-label='관리자 대시보드로'
+        >
+          <ArrowLeft className='w-4 h-4' />
+        </button>
+        <KickerLabel tone='muted' className='tracking-[0.22em]'>
+          TOTAL · {counts.all.toString().padStart(3, "0")}
+        </KickerLabel>
       </div>
 
-      {/* 크루 상세 정보 팝업 */}
+      <CartographicHeader
+        kicker={`ADMIN · CREWS · ${counts.all.toString().padStart(3, "0")} REGISTERED`}
+        title='크루 관리'
+      />
+
+      {/* Tabs + search */}
+      <div className='sticky top-0 z-10 px-[22px] pb-3 bg-background/95 backdrop-blur-md border-b border-cart-rule'>
+        {/* Compact pill tabs — fit comfortably in the mobile frame and
+            keep the count visible inline with the label. */}
+        <div className='flex gap-1.5 mb-3'>
+          {(
+            [
+              { value: "all", en: "ALL", n: counts.all },
+              { value: "visible", en: "LIVE", n: counts.visible },
+              { value: "hidden", en: "PENDING", n: counts.hidden },
+            ] as const
+          ).map((t) => {
+            const active = activeTab === t.value;
+            return (
+              <button
+                key={t.value}
+                type='button'
+                onClick={() => setActiveTab(t.value as FilterTab)}
+                className={cn(
+                  "flex-1 px-2 py-1.5 rounded-[4px] border font-mono text-[10px] tracking-[0.1em] uppercase font-semibold transition-colors active:scale-95 inline-flex items-center justify-center gap-1.5 whitespace-nowrap",
+                  active
+                    ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                    : "border-cart-rule text-cart-ink-60 hover:border-[hsl(var(--lime))]/40"
+                )}
+              >
+                <span>{t.en}</span>
+                <span
+                  className={cn(
+                    "tabular-nums",
+                    active ? "opacity-80" : "text-cart-ink-40"
+                  )}
+                >
+                  {t.n.toString().padStart(2, "0")}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search input */}
+        <div className='relative'>
+          <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cart-ink-60' />
+          <input
+            type='text'
+            placeholder='크루명 · 인스타 · 주소'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='w-full pl-9 pr-9 py-2 rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 focus:outline-none focus:border-[hsl(var(--lime))] transition-colors text-[13px]'
+          />
+          {searchQuery && (
+            <button
+              type='button'
+              onClick={() => setSearchQuery("")}
+              className='absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-[2px] flex items-center justify-center text-cart-ink-60 hover:text-cart-ink'
+              aria-label='검색어 지우기'
+            >
+              <X className='w-3.5 h-3.5' />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* List */}
+      <div className='px-[22px]'>
+        {isLoading ? (
+          <KickerLabel
+            tone='muted'
+            className='text-center py-12 tracking-[0.2em]'
+          >
+            · LOADING CREWS ·
+          </KickerLabel>
+        ) : filteredCrews.length === 0 ? (
+          <KickerLabel
+            tone='muted'
+            className='text-center py-12 tracking-[0.2em]'
+          >
+            · NO CREWS MATCHED ·
+          </KickerLabel>
+        ) : (
+          <div>
+            {filteredCrews.map((crew, idx) => (
+              <div
+                key={crew.id}
+                className={cn(
+                  "py-3.5",
+                  idx > 0 && "border-t border-cart-rule"
+                )}
+              >
+                {/* Row 1 — info: rank + logo + name + meta, no buttons.
+                    Crew name + addr + instagram get the full row width. */}
+                <div
+                  className='flex items-start gap-3 cursor-pointer'
+                  onClick={() => handleCrewClick(crew)}
+                >
+                  <div className='w-7 pt-1 font-mono text-[11px] tracking-[0.05em] text-cart-ink-60 tabular-nums flex-shrink-0'>
+                    {String(idx + 1).padStart(2, "0")}
+                  </div>
+                  {crew.logo_image ? (
+                    <Image
+                      src={crew.logo_image}
+                      alt={`${crew.name} 로고`}
+                      width={44}
+                      height={44}
+                      quality={20}
+                      className='object-cover w-11 h-11 rounded-[4px] border border-cart-rule flex-shrink-0'
+                      style={{ width: "44px", height: "44px" }}
+                    />
+                  ) : (
+                    <div className='flex justify-center items-center w-11 h-11 rounded-[4px] bg-cart-paper border border-cart-rule font-display text-[15px] font-bold text-[hsl(var(--lime))] flex-shrink-0'>
+                      {crew.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-center gap-1.5 flex-wrap'>
+                      <span className='text-[14px] font-semibold text-cart-ink break-keep'>
+                        {crew.name}
+                      </span>
+                      {!crew.is_visible && (
+                        <span className='font-mono text-[8px] tracking-[0.15em] font-bold uppercase px-1.5 py-0.5 rounded-[2px] border border-amber-400/40 text-amber-300 flex-shrink-0'>
+                          PENDING
+                        </span>
+                      )}
+                    </div>
+                    <div className='font-mono text-[10px] tracking-[0.04em] text-cart-ink-60 truncate mt-0.5'>
+                      {crew.location.main_address || "—"}
+                    </div>
+                    {crew.instagram && (
+                      <div className='font-mono text-[10px] tracking-[0.04em] text-[hsl(var(--lime))] truncate'>
+                        @{crew.instagram}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 2 — actions: full-width strip below the info, no
+                    competing for horizontal space with the name. */}
+                <div className='flex items-center gap-1.5 mt-2.5 pl-[40px]'>
+                  <button
+                    type='button'
+                    onClick={() => handleRotateToken(crew)}
+                    disabled={rotatingTokenFor === crew.id}
+                    title='수정 URL 재발급 + 복사'
+                    className='flex-1 h-8 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center gap-1 text-cart-ink-60 hover:text-[hsl(var(--lime))] active:scale-95 transition-all disabled:opacity-50'
+                  >
+                    {rotatingTokenFor === crew.id ? (
+                      <RotateCw className='w-3.5 h-3.5 animate-spin' />
+                    ) : (
+                      <Link2 className='w-3.5 h-3.5' />
+                    )}
+                    <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
+                      URL
+                    </span>
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => handleEditCrew(crew)}
+                    title='크루 정보 수정'
+                    className='flex-1 h-8 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center gap-1 text-cart-ink-60 hover:text-cart-ink active:scale-95 transition-all'
+                  >
+                    <Pencil className='w-3.5 h-3.5' />
+                    <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
+                      EDIT
+                    </span>
+                  </button>
+                  <button
+                    type='button'
+                    onClick={(e) => handleDeleteClick(crew, e)}
+                    title='크루 삭제'
+                    className='flex-1 h-8 rounded-[4px] border border-red-500/40 bg-cart-paper flex items-center justify-center gap-1 text-red-400 hover:bg-red-500/10 active:scale-95 transition-all'
+                  >
+                    <Trash2 className='w-3.5 h-3.5' />
+                    <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
+                      DEL
+                    </span>
+                  </button>
+                  {/* Visibility toggle — kept compact with a tiny mono label
+                      so admin can tell at a glance what it controls. */}
+                  <div className='flex items-center gap-1.5 h-8 px-2 rounded-[4px] border border-cart-rule bg-cart-paper'>
+                    <span
+                      className={cn(
+                        "font-mono text-[9px] tracking-[0.15em] uppercase font-semibold",
+                        crew.is_visible
+                          ? "text-[hsl(var(--lime))]"
+                          : "text-cart-ink-40"
+                      )}
+                    >
+                      {crew.is_visible ? "LIVE" : "OFF"}
+                    </span>
+                    <Switch
+                      checked={crew.is_visible}
+                      onCheckedChange={(checked) =>
+                        toggleCrewVisibility(crew.id, checked)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Detail sheet */}
       {isDetailOpen && selectedCrew && (
         <CrewDetailView
           crew={selectedCrew}
@@ -333,37 +434,43 @@ export default function AdminCrewPage() {
         />
       )}
 
-      {/* 삭제 확인 다이얼로그 */}
+      {/* Delete dialog — cartographic */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className='flex gap-2 items-center'>
-              <AlertTriangle className='w-5 h-5 text-destructive' />
+        <DialogContent className='bg-cart-paper border border-cart-rule rounded-[4px] p-0 overflow-hidden'>
+          <DialogHeader className='px-5 pt-5 pb-3 border-b border-cart-rule'>
+            <KickerLabel tone='muted' className='mb-1.5 tracking-[0.22em]'>
+              ● DESTRUCTIVE · CANNOT UNDO
+            </KickerLabel>
+            <DialogTitle className='flex gap-2 items-center font-display text-[18px] font-bold tracking-[-0.02em] text-cart-ink'>
+              <AlertTriangle className='w-4 h-4 text-red-400' />
               크루 삭제 확인
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className='text-[12px] text-cart-ink-60 mt-1.5'>
               이 작업은 되돌릴 수 없습니다. 정말로{" "}
-              <strong>{crewToDelete?.name}</strong> 크루를 삭제하시겠습니까?
+              <strong className='text-cart-ink'>{crewToDelete?.name}</strong>{" "}
+              크루를 삭제하시겠습니까?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className='gap-2 sm:justify-end'>
-            <Button
-              variant='outline'
+          <DialogFooter className='gap-2 px-5 py-4'>
+            <button
+              type='button'
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={isDeleting}
+              className='flex-1 px-3 py-2.5 rounded-[4px] border border-cart-rule bg-background text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all disabled:opacity-50'
             >
-              취소
-            </Button>
-            <Button
-              variant='destructive'
+              취소 · CANCEL
+            </button>
+            <button
+              type='button'
               onClick={handleDeleteCrew}
               disabled={isDeleting}
+              className='flex-1 px-3 py-2.5 rounded-[4px] bg-red-500 text-white font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all disabled:opacity-50'
             >
-              {isDeleting ? "삭제 중..." : "삭제"}
-            </Button>
+              {isDeleting ? "DELETING…" : "삭제 · DELETE"}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </FormLayout>
+    </main>
   );
 }

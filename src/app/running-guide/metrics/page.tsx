@@ -72,10 +72,10 @@ export default function RunnerMetricsPage() {
             &larr; 가이드북 메인으로 돌아가기
           </Link>
         </nav>
-        <h1 className='text-4xl font-bold text-gray-900 mb-4'>
+        <h1 className='text-4xl font-bold text-cart-ink mb-4'>
           러너 운동 관련 지수
         </h1>
-        <p className='text-xl text-gray-600 mb-6'>
+        <p className='text-xl text-cart-ink-60 mb-6'>
           러너들이 목표로 하거나 유지하면 좋은 수치들을 확인하세요.
         </p>
         <div className='bg-blue-50 border-l-4 border-blue-500 p-4'>
@@ -91,18 +91,18 @@ export default function RunnerMetricsPage() {
         {runnerMetrics.map((metric, index) => (
           <div
             key={index}
-            className='bg-white rounded-lg shadow-md overflow-hidden'
+            className='bg-cart-paper rounded-[4px] border border-cart-rule overflow-hidden'
           >
             <div className='p-6'>
               <div className='flex items-center mb-4'>
                 <span className='text-3xl mr-3'>{metric.icon}</span>
-                <h2 className='text-2xl font-bold text-gray-900'>
+                <h2 className='text-2xl font-bold text-cart-ink'>
                   {metric.name}
                 </h2>
               </div>
 
-              <div className='bg-green-50 rounded-lg p-4 mb-4'>
-                <h3 className='font-semibold text-gray-900 mb-1'>좋은 수치</h3>
+              <div className='bg-green-50 rounded-[4px] p-4 mb-4'>
+                <h3 className='font-semibold text-cart-ink mb-1'>좋은 수치</h3>
                 <p className='text-green-700 font-medium'>
                   {metric.goodValue.split("\n").map((line, idx) => (
                     <span key={idx} className='block'>
@@ -112,23 +112,23 @@ export default function RunnerMetricsPage() {
                 </p>
               </div>
 
-              <p className='text-gray-700'>{metric.description}</p>
+              <p className='text-cart-ink'>{metric.description}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className='bg-gray-50 rounded-xl p-8'>
-        <h2 className='text-2xl font-bold text-gray-900 mb-6'>
+      <div className='bg-background rounded-[4px] p-8'>
+        <h2 className='text-2xl font-bold text-cart-ink mb-6'>
           러닝 지수 활용하기
         </h2>
 
         <div className='space-y-6'>
           <div>
-            <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+            <h3 className='text-xl font-semibold text-cart-ink mb-3'>
               지수는 왜 중요한가요?
             </h3>
-            <p className='text-gray-700'>
+            <p className='text-cart-ink'>
               러닝 관련 지수는 훈련의 효율성을 높이고 부상 위험을 줄이는 데
               도움을 줍니다. 자신의 수치를 알고 적절한 목표를 설정하면 러닝
               능력을 체계적으로 향상시킬 수 있습니다.
@@ -136,10 +136,10 @@ export default function RunnerMetricsPage() {
           </div>
 
           <div>
-            <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+            <h3 className='text-xl font-semibold text-cart-ink mb-3'>
               초보자를 위한 조언
             </h3>
-            <p className='text-gray-700'>
+            <p className='text-cart-ink'>
               러닝을 시작하는 초보자는 처음부터 모든 지수를 맞추려고
               노력하기보다, 점진적으로 훈련하며 자신의 신체가 적응하도록 하는
               것이 중요합니다. 특히 케이던스와 심박수는 초보자가 가장 먼저
@@ -148,10 +148,10 @@ export default function RunnerMetricsPage() {
           </div>
 
           <div>
-            <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+            <h3 className='text-xl font-semibold text-cart-ink mb-3'>
               지수 측정 방법
             </h3>
-            <p className='text-gray-700'>
+            <p className='text-cart-ink'>
               러닝 워치, 스마트폰 앱, 가슴 스트랩 심박계 등 다양한 도구를 통해
               이러한 지수들을 측정할 수 있습니다. 정확한 측정을 위해서는 적절한
               장비를 사용하는 것이 좋습니다.
@@ -159,10 +159,10 @@ export default function RunnerMetricsPage() {
           </div>
 
           <div>
-            <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+            <h3 className='text-xl font-semibold text-cart-ink mb-3'>
               나에게 맞는 지수 찾기
             </h3>
-            <p className='text-gray-700'>
+            <p className='text-cart-ink'>
               제시된 범위는 일반적인 가이드라인일 뿐, 개인마다 최적의 수치는
               다를 수 있습니다. 다양한 훈련을 통해 자신에게 가장 편안하고
               효율적인 수치를 찾아보세요.

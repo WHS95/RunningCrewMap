@@ -36,7 +36,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         exit="out"
         variants={pageVariants}
         transition={pageTransition}
-        style={{ width: "100%" }}
+        // Match Framer's first-paint inline styles so SSR HTML doesn't mismatch.
+        // AnimatePresence initial={false} skips the enter animation on first mount,
+        // so the resolved "in" state (opacity:1, y:0) is what the client renders.
+        style={{ width: "100%", opacity: 1, transform: "none" }}
       >
         {children}
       </motion.div>

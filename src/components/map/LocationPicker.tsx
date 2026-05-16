@@ -88,7 +88,7 @@ export default function LocationPicker({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder='도로명 주소, 지하철역, 공원 등으로 검색...'
-            className='w-full px-4 py-2 pl-10 pr-4 border rounded-lg shadow-sm'
+            className='w-full px-4 py-2 pl-10 pr-4 border rounded-[4px] border border-cart-rule'
           />
           <Search className='absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground' />
           <button
@@ -102,7 +102,7 @@ export default function LocationPicker({
 
         {/* 검색 결과 */}
         {searchResults.length > 0 && (
-          <div className='absolute left-0 right-0 z-50 mt-2 overflow-y-auto bg-white border rounded-lg shadow-lg max-h-60'>
+          <div className='absolute left-0 right-0 z-50 mt-2 overflow-y-auto bg-cart-paper border rounded-[4px] shadow-lg max-h-60'>
             {searchResults.map((result, index) => (
               <button
                 key={index}

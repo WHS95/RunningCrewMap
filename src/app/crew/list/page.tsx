@@ -14,10 +14,66 @@ import { HomeHeader, ListHeader } from "@/components/layout/HomeHeader";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
 import dynamic from "next/dynamic";
-import { MapPin, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { useCrewStore } from "@/lib/store/crewStore";
 import { groupCrewsByRegion } from "@/lib/utils/region-utils";
+import { KickerLabel } from "@/components/design/cartographic";
+import type { Crew } from "@/lib/types/crew";
+
+// Cartographic crew row — mono rank, paper avatar, name + city, mono members metric.
+function CrewRow({
+  crew,
+  rank,
+  onClick,
+  isFirst = false,
+}: {
+  crew: Crew;
+  rank: number;
+  onClick: () => void;
+  isFirst?: boolean;
+}) {
+  const area =
+    crew.location.main_address ||
+    crew.location.address?.split(" ").slice(0, 2).join(" ") ||
+    "—";
+  return (
+    <div
+      onClick={onClick}
+      className={`flex items-center gap-3 py-3.5 cursor-pointer active:bg-white/[0.02] ${
+        isFirst ? "" : "border-t border-cart-rule"
+      }`}
+    >
+      <div className="w-8 font-mono text-[11px] tracking-[0.05em] text-cart-ink-60 tabular-nums">
+        {String(rank).padStart(2, "0")}
+      </div>
+      {crew.logo_image ? (
+        <div className="relative flex-shrink-0 w-9 h-9 rounded-[4px] overflow-hidden border border-cart-rule bg-cart-paper">
+          <Image
+            src={crew.logo_image}
+            alt={crew.name}
+            width={36}
+            height={36}
+            className="object-cover w-full h-full"
+            sizes="36px"
+          />
+        </div>
+      ) : (
+        <div className="flex flex-shrink-0 justify-center items-center w-9 h-9 rounded-[4px] bg-cart-paper border border-cart-rule font-display text-[14px] font-semibold text-[hsl(var(--lime))]">
+          {crew.name.charAt(0)}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="text-[14px] font-semibold text-cart-ink truncate">
+          {crew.name}
+        </div>
+        <div className="font-mono text-[10px] tracking-[0.04em] text-cart-ink-60 truncate mt-0.5">
+          {area}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // CrewDetailView를 동적으로 로드하여 코드 스플리팅 강화
 const CrewDetailView = dynamic(
@@ -219,122 +275,61 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
       {/* 리스트 컨테이너 */}
       <div
         ref={listContainerRef}
-        className='overflow-auto flex-1 h-full text-black bg-white scrollbar-hide'
+        className='overflow-auto flex-1 h-full bg-background scrollbar-hide'
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
         }}
       >
+        {/* Cartographic column headers */}
+        <div className="flex items-center gap-3 px-[22px] py-2 sticky top-0 z-10 bg-background/85 backdrop-blur-md border-b border-cart-rule">
+          <div className="w-8 font-mono text-[9px] tracking-[0.15em] text-cart-ink-40">#</div>
+          <div className="flex-1 font-mono text-[9px] tracking-[0.15em] text-cart-ink-40">
+            NAME · AREA
+          </div>
+          <KickerLabel tone="muted" className="tracking-[0.18em]">
+            TOTAL · {filteredCrews.length.toString().padStart(3, "0")}
+          </KickerLabel>
+        </div>
+
         {filteredCrews.length === 0 ? (
           <div className='flex flex-col justify-center items-center h-40 text-center'>
-            <p className='text-gray-500'>
+            <p className='text-cart-ink-60 font-mono text-[11px] tracking-[0.1em]'>
               {selectedRegion === "all"
-                ? "등록된 크루가 없습니다."
-                : "선택한 지역에 등록된 크루가 없습니다."}
+                ? "· NO CREWS REGISTERED ·"
+                : "· NO CREWS IN THIS AREA ·"}
             </p>
           </div>
         ) : (
-          <div className='pb-24'>
+          <div className='pb-24 px-[22px]'>
             {isShowingAllRegions
-              ? // 전체 지역: 평면 리스트 렌더링
-                flatCrewList.map((crew) => (
-                  <div
+              ? flatCrewList.map((crew, idx) => (
+                  <CrewRow
                     key={crew.id}
-                    className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
+                    crew={crew}
+                    rank={idx + 1}
                     onClick={() => setSelectedCrew(crew)}
-                  >
-                    {crew.logo_image ? (
-                      <div className='flex overflow-hidden relative flex-shrink-0 justify-center items-center mr-3 w-10 h-10 rounded-full border border-gray-200'>
-                        <Image
-                          src={crew.logo_image}
-                          alt={crew.name}
-                          width={40}
-                          height={40}
-                          className='object-cover w-full h-full'
-                          sizes='40px'
-                        />
-                      </div>
-                    ) : (
-                      <div className='flex flex-shrink-0 justify-center items-center mr-3 w-10 h-10 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
-                        {crew.name.charAt(0)}
-                      </div>
-                    )}
-
-                    <div className='flex-1 min-w-0'>
-                      <div className='flex justify-between items-center'>
-                        <h3 className='font-medium text-gray-900'>
-                          {crew.name}
-                        </h3>
-                      </div>
-                      <p className='text-sm text-gray-600 line-clamp-1'>
-                        {crew.description}
-                      </p>
-                      {(crew.location.address ||
-                        crew.location.main_address) && (
-                        <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
-                          <MapPin className='flex-shrink-0 mr-1 w-3 h-3' />
-                          {crew.location.address || crew.location.main_address}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                    isFirst={idx === 0}
+                  />
                 ))
-              : // 특정 지역: 그룹화된 리스트 렌더링
-                groupedCrewList.map(({ location, crews }) => (
-                  <div key={location} className='mb-4'>
-                    <div className='flex sticky top-0 z-10 items-center px-4 py-2 backdrop-blur-sm bg-white/95'>
-                      <MapPin className='mr-2 w-4 h-4 text-blue-500' />
-                      <h3 className='text-sm font-medium text-gray-800'>
-                        {location}
-                      </h3>
-                      <span className='ml-2 text-xs text-gray-500'>
-                        ({crews.length})
-                      </span>
+              : groupedCrewList.map(({ location, crews }) => (
+                  <div key={location} className='mb-5'>
+                    <div className="flex items-center gap-2 sticky top-[34px] z-[5] py-3 bg-background/85 backdrop-blur-md">
+                      <span className="size-1.5 rounded-full bg-[hsl(var(--lime))] shadow-[0_0_0_3px_hsl(var(--lime)/0.2)]" />
+                      <KickerLabel tone="lime" className="tracking-[0.2em]">
+                        {location.toUpperCase()} · {crews.length.toString().padStart(2, "0")}
+                      </KickerLabel>
                     </div>
 
                     <div>
-                      {crews.map((crew) => (
-                        <div
+                      {crews.map((crew, idx) => (
+                        <CrewRow
                           key={crew.id}
-                          className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
+                          crew={crew}
+                          rank={idx + 1}
                           onClick={() => setSelectedCrew(crew)}
-                        >
-                          {crew.logo_image ? (
-                            <div className='flex overflow-hidden relative flex-shrink-0 justify-center items-center mr-3 w-10 h-10 rounded-full border border-gray-200'>
-                              <Image
-                                src={crew.logo_image}
-                                alt={crew.name}
-                                width={40}
-                                height={40}
-                                className='object-cover w-full h-full'
-                                sizes='40px'
-                              />
-                            </div>
-                          ) : (
-                            <div className='flex flex-shrink-0 justify-center items-center mr-3 w-10 h-10 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
-                              {crew.name.charAt(0)}
-                            </div>
-                          )}
-
-                          <div className='flex-1 min-w-0'>
-                            <div className='flex justify-between items-center'>
-                              <h3 className='font-medium text-gray-900'>
-                                {crew.name}
-                              </h3>
-                            </div>
-                            <p className='text-sm text-gray-600 line-clamp-1'>
-                              {crew.description}
-                            </p>
-                            {(crew.location.address ||
-                              crew.location.main_address) && (
-                              <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
-                                <MapPin className='flex-shrink-0 mr-1 w-3 h-3' />
-                                {crew.location.address ||
-                                  crew.location.main_address}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                          isFirst={idx === 0}
+                        />
                       ))}
                     </div>
                   </div>
@@ -342,21 +337,21 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
 
             {/* 더 보기 버튼 */}
             {hasMoreItems && (
-              <div ref={loadMoreRef} className='flex justify-center py-4'>
+              <div ref={loadMoreRef} className='flex justify-center py-6'>
                 <button
                   onClick={handleLoadMore}
                   disabled={loadingMore}
-                  className='flex gap-2 items-center px-4 py-2 bg-gray-100 rounded-md transition-colors hover:bg-gray-200 disabled:opacity-50'
+                  className='inline-flex gap-2 items-center px-4 py-2 bg-cart-paper border border-cart-rule rounded-[4px] font-mono text-[10px] tracking-[0.18em] text-cart-ink uppercase transition-transform active:scale-95 disabled:opacity-50'
                 >
                   {loadingMore ? (
                     <>
                       <LoadingSpinner size='sm' className='h-4' />
-                      <span>로딩 중...</span>
+                      <span>LOADING…</span>
                     </>
                   ) : (
                     <>
-                      <ChevronDown className='w-4 h-4' />
-                      <span>더 보기</span>
+                      <ChevronDown className='w-3 h-3' />
+                      <span>LOAD MORE</span>
                     </>
                   )}
                 </button>
@@ -365,13 +360,12 @@ function CrewListContent({ initialRegion }: { initialRegion: string }) {
           </div>
         )}
 
-        {/* 상단 스크롤 버튼 */}
         <button
           onClick={scrollToTop}
-          className='fixed bottom-24 right-4 z-[100] flex items-center justify-center w-11 h-11 bg-gray-400 rounded-full shadow-lg focus:outline-none hover:bg-gray-500 active:bg-gray-600 active:scale-95 transition-all duration-200'
+          className='fixed bottom-24 right-4 z-[100] flex items-center justify-center w-11 h-11 bg-cart-paper border border-cart-rule rounded-[4px] focus:outline-none active:scale-95 transition-transform'
           aria-label='맨 위로 스크롤'
         >
-          <ChevronUp className='w-6 h-6 text-white' />
+          <ChevronUp className='w-5 h-5 text-[hsl(var(--lime))]' />
         </button>
       </div>
 

@@ -309,6 +309,10 @@ class CrewService {
       }
 
       // 트랜잭션 시작
+      // NOTE: `is_visible` is NOT set here — the anon-key client's RLS policy
+      // may reject explicit boolean overrides on insert. Instead, the post-
+      // create server action `notifyCrewRegistration` flips it to false with
+      // the service-role client (see src/app/actions/crew.ts).
       const { data: crewData, error: crewError } = await supabase
         .from("crews")
         .insert({

@@ -55,7 +55,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
         {isOpen && (
           <SheetContent
             side='bottom'
-            className='h-[85vh] p-0 rounded-t-[10px] overflow-hidden z-[10000]'
+            className='h-[85vh] p-0 rounded-t-[10px] overflow-hidden z-[10000] bg-background text-cart-ink md:w-[430px] md:left-[calc(50vw-215px)] md:right-auto md:rounded-[4px] md:border md:border-cart-rule md:shadow-2xl'
           >
             <div className='flex items-center justify-center flex-1 h-full'>
               <div className='text-center'>
@@ -76,45 +76,53 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
       {isOpen && (
         <SheetContent
           side='bottom'
-          className='h-[85vh] p-0 rounded-t-[10px] overflow-hidden z-[10000]'
+          className='h-[85vh] p-0 rounded-t-[10px] overflow-hidden z-[10000] bg-background text-cart-ink md:w-[430px] md:left-[calc(50vw-215px)] md:right-auto md:rounded-[4px] md:border md:border-cart-rule md:shadow-2xl'
           closeButtonPosition={{
             top: "1.5rem",
             right: "1rem",
           }}
         >
-          <SheetHeader className='relative p-4 pb-2 border-b'>
+          <SheetHeader className='relative p-4 pb-3 border-b border-cart-rule'>
             <div className='flex items-center justify-between'>
-              <button onClick={onClose} className='p-2'>
-                <ArrowLeft className='w-5 h-5' />
+              <button
+                onClick={onClose}
+                className='w-9 h-9 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center active:scale-95 transition-transform'
+              >
+                <ArrowLeft className='w-4 h-4 text-cart-ink' />
               </button>
-              <SheetTitle className='flex-1 text-lg text-center'>
-                {crew.name}
-              </SheetTitle>
-              <div className='w-9' /> {/* 왼쪽 버튼과 동일한 공간 확보 */}
+              <div className='flex-1 text-center'>
+                <div className='font-mono text-[9px] tracking-[0.22em] text-[hsl(var(--lime))] font-semibold uppercase mb-0.5'>
+                  · CREW
+                </div>
+                <SheetTitle className='font-display text-[18px] font-bold tracking-[-0.02em] text-cart-ink'>
+                  {crew.name}
+                </SheetTitle>
+              </div>
+              <div className='w-9' />
             </div>
           </SheetHeader>
 
           {/* 탭 네비게이션 */}
-          <div className='flex border-b'>
+          <div className='flex border-b border-cart-rule'>
             <button
-              className={`flex-1 py-3 text-center font-medium text-sm ${
+              className={`flex-1 py-3 text-center font-mono text-[10px] tracking-[0.22em] uppercase ${
                 activeTab === "info"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground"
+                  ? "text-[hsl(var(--lime))] border-b border-[hsl(var(--lime))] font-semibold"
+                  : "text-cart-ink-60"
               }`}
               onClick={() => setActiveTab("info")}
             >
-              정보
+              INFO · 정보
             </button>
             <button
-              className={`flex-1 py-3 text-center font-medium text-sm ${
+              className={`flex-1 py-3 text-center font-mono text-[10px] tracking-[0.22em] uppercase ${
                 activeTab === "photos"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground"
+                  ? "text-[hsl(var(--lime))] border-b border-[hsl(var(--lime))] font-semibold"
+                  : "text-cart-ink-60"
               }`}
               onClick={() => setActiveTab("photos")}
             >
-              사진
+              PHOTOS · 사진
             </button>
           </div>
 
@@ -131,12 +139,12 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       width={56}
                       height={56}
                       quality={20}
-                      className='object-cover rounded-full w-14 h-14'
+                      className='object-cover rounded-[4px] w-14 h-14 border border-cart-rule'
                       style={{ width: "56px", height: "56px" }}
                     />
                   ) : (
-                    <div className='flex items-center justify-center rounded-full w-14 h-14 bg-muted'>
-                      <span className='text-xl font-medium text-muted-foreground'>
+                    <div className='flex items-center justify-center rounded-[4px] w-14 h-14 bg-cart-paper border border-cart-rule'>
+                      <span className='font-display text-xl font-bold text-[hsl(var(--lime))]'>
                         {crew.name.charAt(0)}
                       </span>
                     </div>
@@ -181,7 +189,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                 {/* 크루 정보 요약 - 세로 배치로 변경 */}
                 <div className='grid grid-cols-1 gap-2'>
                   {/* 활동 지역 */}
-                  <div className='flex items-start gap-2 p-2.5 rounded-lg bg-accent/50'>
+                  <div className='flex items-start gap-2 p-2.5 rounded-[4px] bg-cart-paper border border-cart-rule'>
                     <MapPin className='w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5' />
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-center justify-between'>
@@ -225,7 +233,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                   </div>
 
                   {/* 주요 활동 요일 */}
-                  <div className='flex items-center gap-2 p-2.5 rounded-lg bg-accent/50'>
+                  <div className='flex items-center gap-2 p-2.5 rounded-[4px] bg-cart-paper border border-cart-rule'>
                     <Calendar className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-center'>
@@ -238,7 +246,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                   </div>
 
                   {/* 연령대 */}
-                  <div className='flex items-center gap-2 p-2.5 rounded-lg bg-accent/50'>
+                  <div className='flex items-center gap-2 p-2.5 rounded-[4px] bg-cart-paper border border-cart-rule'>
                     <Users className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-center'>
@@ -252,7 +260,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                 </div>
 
                 {/* 가입 방식 (링크) */}
-                <div className='p-2.5 rounded-lg bg-accent/50'>
+                <div className='p-2.5 rounded-[4px] bg-cart-paper border border-cart-rule'>
                   <h3 className='mb-1.5 text-sm font-medium flex items-center gap-1'>
                     <svg
                       xmlns='http://www.w3.org/2000/svg'
@@ -278,7 +286,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       crew.instagram && (
                         <a
                           href='#'
-                          className='flex items-center gap-1.5 text-xs px-4 py-2 rounded-full bg-[#E4405F] text-white hover:bg-[#d1365a] active:bg-[#bc2f50] transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0'
+                          className='flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase font-semibold px-3.5 py-2 rounded-[4px] bg-cart-paper border border-cart-rule text-cart-ink hover:border-[hsl(var(--lime))]/40 active:scale-95 transition-transform'
                           onClick={(e) => {
                             e.preventDefault();
                             if (crew?.instagram) {
@@ -304,7 +312,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       )) && (
                       <a
                         href='#'
-                        className='flex items-center gap-1.5 text-xs px-4 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0'
+                        className='flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase font-semibold px-3.5 py-2 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] active:scale-95 transition-transform'
                         onClick={(e) => {
                           e.preventDefault();
                           const otherMethod =
@@ -341,7 +349,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                 </div>
 
                 {/* 크루 소개 */}
-                <div className='p-2 mb-3 rounded-lg bg-accent/50'>
+                <div className='p-2 mb-3 rounded-[4px] bg-cart-paper border border-cart-rule'>
                   <h3 className='mb-1 text-sm font-medium'>소개글</h3>
                   <div className='max-h-[35vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-accent-foreground/40'>
                     <p className='pb-1 text-xs whitespace-pre-wrap text-muted-foreground'>
@@ -357,30 +365,33 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
 
             {activeTab === "photos" && (
               <div className='p-4 pb-8'>
-                <h3 className='mb-4 font-medium'>대표 사진</h3>
+                <div className='mb-4'>
+                  <div className='font-mono text-[9px] tracking-[0.22em] text-[hsl(var(--lime))] font-semibold mb-1'>
+                    · CREW · PHOTOS
+                  </div>
+                  <h3 className='font-display text-[18px] font-bold tracking-[-0.02em] text-cart-ink'>
+                    대표 사진
+                  </h3>
+                </div>
 
                 {crew.photos && crew.photos.length > 0 ? (
-                  <div className='flex justify-center w-full'>
-                    <div className='relative w-full overflow-hidden rounded-lg md:w-2/3 lg:w-1/2 aspect-square'>
-                      <Image
-                        src={crew.photos[0]}
-                        alt={`${crew.name} 대표 사진`}
-                        fill
-                        sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
-                        className='object-cover'
-                        quality={60}
-                        priority
-                        style={{ objectFit: "cover" }}
-                      />
-                    </div>
+                  <div className='relative w-full overflow-hidden rounded-[4px] border border-cart-rule aspect-square bg-cart-paper'>
+                    <Image
+                      src={crew.photos[0]}
+                      alt={`${crew.name} 대표 사진`}
+                      fill
+                      sizes='(max-width: 768px) 100vw, 430px'
+                      className='object-cover'
+                      quality={70}
+                      priority
+                      style={{ objectFit: "cover" }}
+                    />
                   </div>
                 ) : (
-                  <div className='flex justify-center w-full'>
-                    <div className='relative w-full overflow-hidden rounded-lg bg-slate-400 md:w-2/3 lg:w-1/2 aspect-square'>
-                      <div className='absolute inset-0 flex items-center justify-center'>
-                        <p className='text-sm text-white'>
-                          🙏🏻사진 준비 중 입니다
-                        </p>
+                  <div className='relative w-full overflow-hidden rounded-[4px] border border-cart-rule bg-cart-paper aspect-square'>
+                    <div className='absolute inset-0 flex items-center justify-center'>
+                      <div className='font-mono text-[10px] tracking-[0.2em] text-cart-ink-60 uppercase'>
+                        · 사진 준비 중 ·
                       </div>
                     </div>
                   </div>

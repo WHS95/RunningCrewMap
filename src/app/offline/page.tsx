@@ -1,8 +1,8 @@
 export default function OfflinePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[hsl(220,15%,4%)] text-white p-8">
-      <div className="w-16 h-16 rounded-full bg-white/[0.06] flex items-center justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+      <div className="w-16 h-16 rounded-full bg-cart-paper/[0.06] flex items-center justify-center mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cart-ink-40">
           <line x1="1" y1="1" x2="23" y2="23" />
           <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
           <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
@@ -13,7 +13,7 @@ export default function OfflinePage() {
         </svg>
       </div>
       <h1 className="text-xl font-bold mb-2">오프라인 상태입니다</h1>
-      <p className="text-gray-400 text-center text-sm">인터넷 연결을 확인하고 다시 시도해주세요.</p>
+      <p className="text-cart-ink-40 text-center text-sm">인터넷 연결을 확인하고 다시 시도해주세요.</p>
     </div>
   );
 }

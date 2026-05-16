@@ -220,13 +220,13 @@ export default function CertificationPage() {
             <div ref={imageContainerRef} className='relative'>
               <label
                 htmlFor='image-upload'
-                className='flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50'
+                className='flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-[4px] cursor-pointer hover:bg-accent/50'
               >
                 {image ? (
                   <img
                     src={image}
                     alt='Preview'
-                    className='object-contain w-full h-full rounded-lg'
+                    className='object-contain w-full h-full rounded-[4px]'
                   />
                 ) : (
                   <div className='flex flex-col items-center'>

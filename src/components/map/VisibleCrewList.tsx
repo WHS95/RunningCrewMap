@@ -52,7 +52,7 @@ export function VisibleCrewList({
       <Sheet open={isOpen && !isDetailOpen} onOpenChange={onClose}>
         <SheetContent
           side='bottom'
-          className='h-[calc(80vh-4rem)] p-0 rounded-t-[10px]'
+          className='h-[calc(80vh-4rem)] p-0 rounded-t-[10px] bg-background md:w-[430px] md:left-[calc(50vw-215px)] md:right-auto md:rounded-[4px] md:border md:border-cart-rule md:shadow-2xl'
         >
           <div className='sticky top-0 flex items-center justify-center h-10 border-b bg-background/80 backdrop-blur-md'>
             <SheetTitle>목록</SheetTitle>

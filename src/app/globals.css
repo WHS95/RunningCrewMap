@@ -57,46 +57,61 @@
   }
 
   .dark {
-    --background: 220 15% 6%;
-    --foreground: 0 0% 95%;
+    /* Cartographic Dark — warm near-black with restrained lime */
+    --background: 80 6% 4%;            /* #0B0C0A */
+    --foreground: 60 9% 94%;           /* #F2F2EE */
 
-    --card: 220 14% 9%;
-    --card-foreground: 0 0% 95%;
+    --card: 75 6% 8%;                  /* #141512 */
+    --card-foreground: 60 9% 94%;
 
-    --popover: 220 14% 9%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 75 6% 8%;
+    --popover-foreground: 60 9% 94%;
 
-    --primary: 72 100% 50%;
-    --primary-foreground: 220 15% 6%;
+    --primary: 72 100% 50%;            /* #C7FF00 */
+    --primary-foreground: 80 6% 4%;
 
-    --secondary: 220 12% 14%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 75 6% 10%;
+    --secondary-foreground: 60 9% 88%;
 
-    --muted: 220 12% 14%;
-    --muted-foreground: 220 8% 55%;
+    --muted: 75 6% 10%;
+    --muted-foreground: 60 6% 62%;
 
-    --accent: 220 12% 14%;
-    --accent-foreground: 0 0% 90%;
+    --accent: 75 6% 10%;
+    --accent-foreground: 60 9% 88%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 95%;
 
-    --border: 220 12% 16%;
-    --input: 220 12% 16%;
+    --border: 60 9% 94% / 0.08;        /* hairline rule */
+    --input: 60 9% 94% / 0.08;
     --ring: 72 100% 50%;
 
-    --sidebar-background: 220 15% 6%;
-    --sidebar-foreground: 0 0% 95%;
+    --sidebar-background: 80 6% 4%;
+    --sidebar-foreground: 60 9% 94%;
     --sidebar-primary: 72 100% 50%;
-    --sidebar-primary-foreground: 220 15% 6%;
-    --sidebar-accent: 220 12% 14%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 220 12% 16%;
+    --sidebar-primary-foreground: 80 6% 4%;
+    --sidebar-accent: 75 6% 10%;
+    --sidebar-accent-foreground: 60 9% 88%;
+    --sidebar-border: 60 9% 94% / 0.08;
     --sidebar-ring: 72 100% 50%;
 
     --lime: 72 100% 50%;
-    --lime-foreground: 220 15% 6%;
-    --surface-elevated: 220 14% 10%;
+    --lime-foreground: 80 6% 4%;
+    --surface-elevated: 75 6% 8%;
+
+    /* Cartographic system tokens */
+    --cart-ink: 60 9% 94%;             /* primary text */
+    --cart-ink-60: 60 9% 94% / 0.62;   /* secondary text */
+    --cart-ink-40: 60 9% 94% / 0.38;   /* tertiary / column headers */
+    --cart-rule: 60 9% 94% / 0.08;     /* hairline border */
+    --cart-paper: 75 6% 8%;            /* card surface */
+    --cart-lime-soft: 72 100% 50% / 0.1; /* lime tint background */
+
+    /* Desktop "ambient" surface — what surrounds the mobile-sized frame on
+       wide screens. Slightly lighter & cooler than --background so the
+       device frame is visually distinct from the desk beneath it. */
+    --canvas-outer: 60 4% 10%;         /* ≈ #1A1A17 */
+    --canvas-outer-rule: 60 9% 94% / 0.12; /* slightly brighter hairline for the frame edge */
   }
 }
 

@@ -352,11 +352,11 @@ export default function RunningTermsPage() {
             &larr; 가이드북 메인으로 돌아가기
           </Link>
         </nav>
-        <h1 className='text-4xl font-bold text-gray-900 mb-4'>러닝 용어</h1>
-        <p className='text-xl text-gray-600 mb-2'>
+        <h1 className='text-4xl font-bold text-cart-ink mb-4'>러닝 용어</h1>
+        <p className='text-xl text-cart-ink-60 mb-2'>
           러닝과 마라톤에 관련된 다양한 용어들을 알아보세요.
         </p>
-        <p className='text-gray-500 italic'>
+        <p className='text-cart-ink-60 italic'>
           * 자주 사용하는 용어들은 빨간색으로 표시되어 있습니다.
         </p>
       </header>
@@ -365,7 +365,7 @@ export default function RunningTermsPage() {
         {runningTerms.map((term, index) => (
           <div
             key={index}
-            className={`bg-white rounded-lg shadow p-5 border-l-4 ${
+            className={`bg-cart-paper rounded-[4px] shadow p-5 border-l-4 ${
               term.isHighlighted ? "border-red-500" : "border-blue-500"
             }`}
           >
@@ -374,28 +374,28 @@ export default function RunningTermsPage() {
               <div>
                 <h3
                   className={`text-lg font-bold mb-1 ${
-                    term.isHighlighted ? "text-red-600" : "text-gray-900"
+                    term.isHighlighted ? "text-red-600" : "text-cart-ink"
                   }`}
                 >
                   {term.term}
                 </h3>
-                <p className='text-gray-700'>{term.description}</p>
+                <p className='text-cart-ink'>{term.description}</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className='mt-16 bg-gray-50 rounded-xl p-8'>
-        <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+      <div className='mt-16 bg-background rounded-[4px] p-8'>
+        <h2 className='text-2xl font-bold text-cart-ink mb-4'>
           러닝 용어의 중요성
         </h2>
-        <p className='text-gray-700 mb-4'>
+        <p className='text-cart-ink mb-4'>
           러닝 용어를 이해하는 것은 러닝 커뮤니티의 일원이 되는 첫 걸음입니다.
           이러한 용어들은 훈련 계획을 세우거나 다른 러너들과 소통할 때 매우
           유용합니다.
         </p>
-        <p className='text-gray-700'>
+        <p className='text-cart-ink'>
           특히 빨간색으로 표시된 용어들은 초보자들이 자주 접하게 되는 용어들이니
           먼저 익혀두시면 좋습니다!
         </p>

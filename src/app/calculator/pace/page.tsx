@@ -151,7 +151,7 @@ export default function PaceCalculatorPage() {
     <FormLayout title='페이스 계산기'>
       <div className='max-w-md mx-auto space-y-6'>
         {/* 모드 선택 탭 */}
-        <div className='flex p-1 space-x-1 border rounded-lg'>
+        <div className='flex p-1 space-x-1 border rounded-[4px]'>
           {[
             { id: "pace", label: "페이스" },
             { id: "distance", label: "거리" },
@@ -291,7 +291,7 @@ export default function PaceCalculatorPage() {
         {results && (
           <div className='mt-6'>
             <h2 className='mb-4 text-lg font-medium'>결과</h2>
-            <div className='overflow-hidden border rounded-lg'>
+            <div className='overflow-hidden border rounded-[4px]'>
               <table className='w-full'>
                 <tbody className='divide-y'>
                   {results.pace && (

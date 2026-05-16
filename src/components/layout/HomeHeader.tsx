@@ -36,27 +36,29 @@ interface BaseHeaderProps {
 
 const BaseHeader = ({ currentView }: BaseHeaderProps) => {
   return (
-    <div className='grid grid-cols-2 border-b border-gray-800'>
-      {TAB_ITEMS.map((item) => (
-        <Link
-          key={item.mode}
-          href={item.href}
-          className={cn(
-            "py-3 text-center relative text-sm font-medium flex items-center justify-center",
-            "transition-all duration-150",
-            "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1px]",
-            currentView === item.mode
-              ? "text-white after:bg-white"
-              : "text-gray-400 after:bg-transparent",
-            "active:bg-gray-900/70 active:scale-[0.98]"
-          )}
-        >
-          <div className='flex justify-center items-center'>
+    <div className='grid grid-cols-2 border-b border-cart-rule'>
+      {TAB_ITEMS.map((item) => {
+        const active = currentView === item.mode;
+        return (
+          <Link
+            key={item.mode}
+            href={item.href}
+            className={cn(
+              "py-3 text-center relative flex items-center justify-center gap-2",
+              "font-mono text-[10px] font-semibold tracking-[0.22em] uppercase",
+              "transition-all duration-150",
+              "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1px]",
+              active
+                ? "text-[hsl(var(--lime))] after:bg-[hsl(var(--lime))]"
+                : "text-cart-ink-60 after:bg-transparent",
+              "active:bg-white/[0.02] active:scale-[0.98]"
+            )}
+          >
             {item.icon}
-            <span className='ml-2'>{item.label}</span>
-          </div>
-        </Link>
-      ))}
+            <span>{item.label === "지도" ? "MAP" : "LIST"}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 };
@@ -64,7 +66,7 @@ const BaseHeader = ({ currentView }: BaseHeaderProps) => {
 // 지도 페이지용 헤더
 export const MapHeader = () => {
   return (
-    <div className='sticky top-0 z-30 w-full bg-black'>
+    <div className='sticky top-0 z-30 w-full bg-background'>
       <BaseHeader currentView='map' />
     </div>
   );
@@ -116,34 +118,41 @@ export const ListHeader = ({
   };
 
   return (
-    <div className='sticky top-0 z-30 w-full bg-black'>
+    <div className='sticky top-0 z-30 w-full bg-background'>
       {/* 탭 바 */}
       <BaseHeader currentView='list' />
 
       {/* 지역 필터 - 항상 표시 */}
-      <div className='overflow-x-auto border-b border-gray-800 scrollbar-hide'>
-        <div className='flex min-w-max'>
-          {regions.map((region) => (
-            <button
-              key={region.id}
-              className={cn(
-                "px-4 py-3 text-center relative whitespace-nowrap",
-                "transition-all duration-150",
-                selectedRegion === region.id
-                  ? "text-white font-medium border-b-2 border-white"
-                  : "text-gray-500",
-                "active:bg-gray-900 active:scale-[0.98] hover:bg-gray-900/50"
-              )}
-              onClick={() => handleRegionChange(region.id)}
-            >
-              {region.name}
-              {region.count > 0 && (
-                <span className='ml-1 text-xs text-gray-400'>
-                  ({region.count})
-                </span>
-              )}
-            </button>
-          ))}
+      <div className='overflow-x-auto border-b border-cart-rule scrollbar-hide'>
+        <div className='flex min-w-max px-3 py-2 gap-1.5'>
+          {regions.map((region) => {
+            const active = selectedRegion === region.id;
+            return (
+              <button
+                key={region.id}
+                className={cn(
+                  "px-3 py-1.5 relative whitespace-nowrap rounded-[4px]",
+                  "font-mono text-[10px] font-semibold tracking-[0.12em] uppercase",
+                  "border transition-all duration-150",
+                  active
+                    ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] border-[hsl(var(--lime))]"
+                    : "text-cart-ink-60 border-cart-rule",
+                  "active:scale-95"
+                )}
+                onClick={() => handleRegionChange(region.id)}
+              >
+                {region.name}
+                {region.count > 0 && (
+                  <span className={cn(
+                    "ml-1.5 text-[9px]",
+                    active ? "opacity-70" : "text-cart-ink-40"
+                  )}>
+                    {String(region.count).padStart(2, "0")}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

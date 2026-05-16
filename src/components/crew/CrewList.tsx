@@ -198,13 +198,13 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
           key={crew.id}
           data-crew-id={crew.id}
           ref={(el) => setItemRef(crew.id, el)}
-          className='flex items-start px-4 py-3 border-b border-gray-200 hover:bg-gray-50'
+          className='flex items-start px-4 py-3 border-b border-cart-rule hover:bg-background'
           onClick={() => onSelect?.(crew)}
         >
           {shouldRenderFull ? (
             <>
               {crew.logo_image ? (
-                <div className='relative flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-gray-200 rounded-full'>
+                <div className='relative flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-cart-rule rounded-full'>
                   <Image
                     src={crew.logo_image}
                     alt={crew.name}
@@ -218,21 +218,21 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
                   />
                 </div>
               ) : (
-                <div className='flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 text-base font-medium text-gray-600 bg-gray-100 rounded-full'>
+                <div className='flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 text-base font-medium text-cart-ink-60 bg-cart-paper rounded-full'>
                   {crew.name.charAt(0)}
                 </div>
               )}
 
               <div className='flex-1 min-w-0'>
                 <div className='flex items-center justify-between'>
-                  <h3 className='font-medium text-gray-900'>{crew.name}</h3>
-                  <ArrowUpRight className='w-4 h-4 text-gray-500' />
+                  <h3 className='font-medium text-cart-ink'>{crew.name}</h3>
+                  <ArrowUpRight className='w-4 h-4 text-cart-ink-60' />
                 </div>
-                <p className='text-sm text-gray-600 line-clamp-1'>
+                <p className='text-sm text-cart-ink-60 line-clamp-1'>
                   {crew.description}
                 </p>
                 {(crew.location.address || crew.location.main_address) && (
-                  <p className='flex items-center mt-1 text-xs text-gray-500 line-clamp-1'>
+                  <p className='flex items-center mt-1 text-xs text-cart-ink-60 line-clamp-1'>
                     <MapPin className='flex-shrink-0 w-3 h-3 mr-1' />
                     {crew.location.address || crew.location.main_address}
                   </p>
@@ -241,7 +241,7 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
             </>
           ) : (
             // 화면에 보이지 않는 아이템은 최소한의 내용만 표시
-            <div className='w-full h-[84px] bg-gray-50 animate-pulse'></div>
+            <div className='w-full h-[84px] bg-background animate-pulse'></div>
           )}
         </div>
       );
@@ -252,26 +252,26 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
   return (
     <div
       ref={listContainerRef}
-      className='relative h-full overflow-auto text-black bg-white'
+      className='relative h-full overflow-auto text-cart-ink bg-cart-paper'
     >
       <div className='px-4 pt-4 pb-2'>
-        <p className='text-sm text-gray-600'>총 {crews.length}개의 크루</p>
+        <p className='text-sm text-cart-ink-60'>총 {crews.length}개의 크루</p>
       </div>
 
       {groupedCrews.length === 0 ? (
         <div className='flex flex-col items-center justify-center h-40 text-center'>
-          <p className='text-gray-500'>등록된 크루가 없습니다.</p>
+          <p className='text-cart-ink-60'>등록된 크루가 없습니다.</p>
         </div>
       ) : (
         <div className='pb-24'>
           {groupedCrews.map(({ location, crews }) => (
             <div key={location} className='mb-4'>
-              <div className='sticky top-0 z-10 flex items-center px-4 py-2 bg-white/95 backdrop-blur-sm'>
+              <div className='sticky top-0 z-10 flex items-center px-4 py-2 bg-cart-paper/95 backdrop-blur-sm'>
                 <MapPin className='w-4 h-4 mr-2 text-blue-500' />
-                <h3 className='text-sm font-medium text-gray-800'>
+                <h3 className='text-sm font-medium text-cart-ink'>
                   {location}
                 </h3>
-                <span className='ml-2 text-xs text-gray-500'>
+                <span className='ml-2 text-xs text-cart-ink-60'>
                   ({crews.length})
                 </span>
               </div>

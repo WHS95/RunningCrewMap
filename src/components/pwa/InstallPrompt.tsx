@@ -50,25 +50,25 @@ export function InstallPrompt() {
 
   return (
     <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px)+12px)] left-4 right-4 z-[9998] animate-fade-in-up">
-      <div className="flex items-center gap-3 p-4 rounded-2xl bg-[hsl(220,14%,9%)] border border-white/[0.08] shadow-2xl">
-        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[hsl(72,100%,50%)] flex items-center justify-center">
-          <Download className="w-5 h-5 text-black" />
+      <div className="flex items-center gap-3 p-4 rounded-[4px] bg-[hsl(220,14%,9%)] border border-white/[0.08] shadow-2xl">
+        <div className="flex-shrink-0 w-10 h-10 rounded-[4px] bg-[hsl(72,100%,50%)] flex items-center justify-center">
+          <Download className="w-5 h-5 text-cart-ink" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">앱으로 설치하기</p>
-          <p className="text-xs text-gray-400 truncate">홈 화면에 추가하면 더 빠르게!</p>
+          <p className="text-xs text-cart-ink-40 truncate">홈 화면에 추가하면 더 빠르게!</p>
         </div>
         <button
           onClick={handleInstall}
-          className="px-4 py-2 text-xs font-bold rounded-xl bg-[hsl(72,100%,50%)] text-black active:scale-95 transition-transform"
+          className="px-4 py-2 text-xs font-bold rounded-[4px] bg-[hsl(72,100%,50%)] text-cart-ink active:scale-95 transition-transform"
         >
           설치
         </button>
         <button
           onClick={handleDismiss}
-          className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+          className="p-1.5 rounded-[4px] hover:bg-cart-paper/[0.06] transition-colors"
         >
-          <X className="w-4 h-4 text-gray-500" />
+          <X className="w-4 h-4 text-cart-ink-60" />
         </button>
       </div>
     </div>
