@@ -12,6 +12,13 @@ import { crewService } from "@/lib/services/crew.service";
 // ======================================
 // 마커 클러스터링 설정 (수정 가능한 기준들)
 // ======================================
+// Cartographic Dark cluster + pin colors
+const CART_LIME = "#C7FF00";
+const CART_INK = "#0B0C0A";
+// Counter-filter to cancel the map container's dark inversion on marker HTML.
+const MARKER_COUNTER_FILTER =
+  "invert(1) hue-rotate(180deg) saturate(1.8) brightness(1.05) contrast(1.05)";
+
 const CLUSTERING_CONFIG = {
   // 클러스터링을 시작할 최대 줌 레벨 (이 값보다 낮으면 클러스터링 적용)
   MAX_ZOOM_FOR_CLUSTERING: 20,
@@ -23,14 +30,13 @@ const CLUSTERING_CONFIG = {
   MIN_CLUSTER_SIZE: 3,
 
   // 클러스터 마커 크기
-  CLUSTER_SIZE: 40,
+  CLUSTER_SIZE: 36,
 
-  // 클러스터 스타일 설정
   CLUSTER_STYLES: {
-    backgroundColor: "#000000", // 클러스터 배경색
-    textColor: "#ffff00", // 클러스터 텍스트 색상
-    borderColor: "#ffffff", // 클러스터 테두리 색상
-    borderWidth: 3, // 클러스터 테두리 두께
+    backgroundColor: CART_LIME,
+    textColor: CART_INK,
+    borderColor: CART_INK,
+    borderWidth: 1,
   },
 };
 
@@ -94,6 +100,14 @@ export default function NaverMap({
   const markersCreatedRef = useRef(false);
   // 이미지 캐시 상태 저장용 ref 추가
   const imageCache = useRef<Record<string, HTMLImageElement>>({});
+  const refreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRefreshZoomRef = useRef<number | null>(null);
+  const lastRefreshBoundsRef = useRef<{
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  } | null>(null);
   // 현재 위치 관련 상태
   const [isLocating, setIsLocating] = useState(false);
 
@@ -264,26 +278,35 @@ export default function NaverMap({
     [getPixelDistance]
   );
 
-  // 클러스터 마커 콘텐츠 생성
+  // Cartographic Dark cluster stamp — lime square with mono count, counter-filtered
+  // so the map container's dark inversion doesn't flip its color.
   const createClusterContent = useCallback((clusterData: ClusterMarker) => {
     const size = CLUSTERING_CONFIG.CLUSTER_SIZE;
     const styles = CLUSTERING_CONFIG.CLUSTER_STYLES;
+    const fontSize = clusterData.crews.length > 99 ? 11 : 13;
 
     return `<div style="
-      width: ${size}px; 
-      height: ${size}px; 
-      border-radius: 50%; 
-      background-color: ${styles.backgroundColor}; 
-      border: ${styles.borderWidth}px solid ${styles.borderColor}; 
-      color: ${styles.textColor}; 
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      font-size: ${Math.min(16, size / 3)}px;
-      cursor: pointer;
-    ">${clusterData.crews.length}</div>`;
+      filter: ${MARKER_COUNTER_FILTER};
+      width: ${size}px;
+      height: ${size}px;
+    ">
+      <div style="
+        width: 100%;
+        height: 100%;
+        border-radius: 3px;
+        background-color: ${styles.backgroundColor};
+        border: ${styles.borderWidth}px solid ${styles.borderColor};
+        color: ${styles.textColor};
+        font-weight: 700;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+        letter-spacing: 0.04em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: ${fontSize}px;
+        cursor: pointer;
+      ">${clusterData.crews.length}</div>
+    </div>`;
   }, []);
 
   // 이미지 프리로딩 개선
@@ -407,41 +430,71 @@ export default function NaverMap({
   }, []);
 
   // 마커 생성 함수 - 로고 이미지 포함하되 최적화 (기존 디자인 유지)
+  // Cartographic Dark crew pin — lime teardrop with dark stroke + center logo.
+  // Wrapped in a counter-filter div so it renders correctly atop the inverted map.
   const createMarkerContent = useCallback((crew: Crew) => {
-    const size = 40; // 크기 최적화
+    const width = 36;
+    const height = 42;
+    const logoSize = 24;
 
-    if (!crew.logo_image) {
-      // 로고 이미지가 없는 경우 기본 마커
-      return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: #f1f5f9; border: 2px solid white; color: #64748b; font-weight: bold; text-align: center; line-height: ${size}px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${crew.name.charAt(
-        0
-      )}</div>`;
+    // Logo or initial inside the teardrop head
+    let innerContent = "";
+    if (crew.logo_image) {
+      const optimizedLogoUrl = crew.logo_image.includes("?")
+        ? `${crew.logo_image}&width=${logoSize * 2}`
+        : `${crew.logo_image}?width=${logoSize * 2}`;
+      innerContent = `
+        <img
+          src="${optimizedLogoUrl}"
+          width="${logoSize}"
+          height="${logoSize}"
+          alt="${crew.name}"
+          style="object-fit: cover; width: ${logoSize}px; height: ${logoSize}px; border-radius: 50%; display:block;"
+          loading="lazy"
+          decoding="async"
+          onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;font-family:Inter,sans-serif;font-weight:700;font-size:15px;color:${CART_INK}&quot;>${crew.name.charAt(0)}</span>'"
+        />
+      `;
+    } else {
+      innerContent = `<span style="font-family:Inter,sans-serif;font-weight:700;font-size:16px;color:${CART_INK};line-height:1;">${crew.name.charAt(0)}</span>`;
     }
 
-    // 로고 이미지가 있는 경우 - 최적화된 이미지 사용
-    // 이미지 URL에 사이즈 파라미터 추가 (CDN이 지원하는 경우)
-    const optimizedLogoUrl = crew.logo_image.includes("?")
-      ? `${crew.logo_image}&width=${size * 2}`
-      : `${crew.logo_image}?width=${size * 2}`;
-
-    return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; overflow: hidden; border: 2px solid white; background-color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <img 
-        src="${optimizedLogoUrl}" 
-        width="${size}" 
-        height="${size}" 
-        alt="${crew.name}" 
-        style="object-fit: cover; width: 100%; height: 100%;"
-        loading="lazy"
-        decoding="async"
-        onerror="this.style.display='none'; this.parentElement.innerHTML='${crew.name.charAt(
-          0
-        )}'"
-      />
+    return `<div style="
+      filter: ${MARKER_COUNTER_FILTER};
+      width: ${width}px;
+      height: ${height}px;
+      position: relative;
+      cursor: pointer;
+    ">
+      <svg width="${width}" height="${height}" viewBox="0 0 36 42" style="position:absolute;inset:0;display:block;">
+        <path
+          d="M18 41 C 18 28, 35 28, 35 16 a 17 17 0 1 0 -34 0 c 0 12, 17 12, 17 25 z"
+          fill="${CART_LIME}"
+          stroke="${CART_INK}"
+          stroke-width="1.4"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <div style="
+        position: absolute;
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: ${logoSize + 2}px;
+        height: ${logoSize + 2}px;
+        background: ${CART_LIME};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      ">${innerContent}</div>
     </div>`;
   }, []);
 
   // 클러스터링을 적용한 마커 생성 함수
   const createMarkersWithClustering = useCallback(
-    (markerData: MarkerData[], batchSize = 20, delayMs = 100) => {
+    (markerData: MarkerData[], batchSize = 50, delayMs = 30) => {
       // 안전성 검사 강화
       if (
         !mapInstanceRef.current ||
@@ -495,11 +548,12 @@ export default function NaverMap({
                   : createMarkerContent(data.crew),
                 size: new window.naver.maps.Size(
                   data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 36,
-                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 36
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE : 42
                 ),
+                // Teardrop pin: anchor at the tip (bottom center) so pin points to the location.
                 anchor: new window.naver.maps.Point(
                   data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 18,
-                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 18
+                  data.isCluster ? CLUSTERING_CONFIG.CLUSTER_SIZE / 2 : 42
                 ),
               },
             });
@@ -574,6 +628,54 @@ export default function NaverMap({
   const refreshMarkers = useCallback(() => {
     if (!mapInstanceRef.current || typeof window === "undefined") return;
 
+    const currentZoom = mapInstanceRef.current.getZoom();
+    const bounds = mapInstanceRef.current.getBounds() as
+      | naver.maps.LatLngBounds
+      | null;
+
+    let currentBoundsBox: {
+      minLat: number;
+      maxLat: number;
+      minLng: number;
+      maxLng: number;
+    } | null = null;
+
+    if (bounds) {
+      const sw = bounds.getSW();
+      const ne = bounds.getNE();
+      currentBoundsBox = {
+        minLat: sw.lat(),
+        maxLat: ne.lat(),
+        minLng: sw.lng(),
+        maxLng: ne.lng(),
+      };
+
+      // 줌이 동일하고 bounds 가 95% 이상 겹치면 재계산 스킵 (작은 드래그 무시)
+      if (
+        lastRefreshZoomRef.current === currentZoom &&
+        lastRefreshBoundsRef.current
+      ) {
+        const prev = lastRefreshBoundsRef.current;
+        const curr = currentBoundsBox;
+        const interMinLat = Math.max(prev.minLat, curr.minLat);
+        const interMaxLat = Math.min(prev.maxLat, curr.maxLat);
+        const interMinLng = Math.max(prev.minLng, curr.minLng);
+        const interMaxLng = Math.min(prev.maxLng, curr.maxLng);
+        const interLat = Math.max(0, interMaxLat - interMinLat);
+        const interLng = Math.max(0, interMaxLng - interMinLng);
+        const interArea = interLat * interLng;
+        const prevArea =
+          (prev.maxLat - prev.minLat) * (prev.maxLng - prev.minLng);
+        const currArea =
+          (curr.maxLat - curr.minLat) * (curr.maxLng - curr.minLng);
+        const unionArea = prevArea + currArea - interArea;
+        const overlap = unionArea > 0 ? interArea / unionArea : 0;
+        if (overlap > 0.95) {
+          return;
+        }
+      }
+    }
+
     // 기존 마커 제거
     markersRef.current.forEach((marker) => {
       marker.setMap(null);
@@ -581,14 +683,13 @@ export default function NaverMap({
     markersRef.current = [];
 
     // 화면에 보이는 크루만 필터링
-    const bounds = mapInstanceRef.current.getBounds();
     const visibleCrewsForClustering = bounds
       ? crews.filter((crew) => {
           const position = new window.naver.maps.LatLng(
             crew.location.lat,
             crew.location.lng
           );
-          return (bounds as naver.maps.LatLngBounds).hasLatLng(position);
+          return bounds.hasLatLng(position);
         })
       : crews;
 
@@ -596,10 +697,13 @@ export default function NaverMap({
     const markerData = clusterCrews(visibleCrewsForClustering);
 
     // 새 마커 생성
-    markersRef.current = createMarkersWithClustering(markerData, 20, 50);
+    markersRef.current = createMarkersWithClustering(markerData, 50, 30);
 
     // 보이는 크루 목록 업데이트
     updateVisibleCrews();
+
+    lastRefreshZoomRef.current = currentZoom;
+    lastRefreshBoundsRef.current = currentBoundsBox;
   }, [crews, clusterCrews, createMarkersWithClustering, updateVisibleCrews]);
 
   // 마커 초기화 - 클러스터링 적용
@@ -750,11 +854,14 @@ export default function NaverMap({
 
       // 모든 줌 변경 시 클러스터링 다시 적용 (클릭 줌인, 드래그 줌, 버튼 줌 등 모든 경우)
       window.naver.maps.Event.addListener(mapInstance, "zoom_changed", () => {
-        // 줌 변경 후 클러스터링 다시 적용
-        setTimeout(() => {
-          refreshMarkers(); // 클러스터링 다시 적용
-          setIsZooming(false); // 줌 상태 초기화
-        }, 150);
+        if (refreshDebounceRef.current) {
+          clearTimeout(refreshDebounceRef.current);
+        }
+        refreshDebounceRef.current = setTimeout(() => {
+          refreshMarkers();
+          setIsZooming(false);
+          refreshDebounceRef.current = null;
+        }, 350);
       });
 
       // 드래그 시작 시 마커 숨김
@@ -764,8 +871,13 @@ export default function NaverMap({
 
       // 드래그 종료 후 클러스터링 다시 적용
       window.naver.maps.Event.addListener(mapInstance, "dragend", () => {
-        // 지도 이동 종료 시 클러스터링 다시 적용
-        refreshMarkers();
+        if (refreshDebounceRef.current) {
+          clearTimeout(refreshDebounceRef.current);
+        }
+        refreshDebounceRef.current = setTimeout(() => {
+          refreshMarkers();
+          refreshDebounceRef.current = null;
+        }, 350);
       });
 
       setIsMapReady(true);
@@ -837,6 +949,12 @@ export default function NaverMap({
 
     // 언마운트 시 모든 리소스 해제 - 개선된 메모리 관리
     return () => {
+      // 디바운스 타이머 정리
+      if (refreshDebounceRef.current) {
+        clearTimeout(refreshDebounceRef.current);
+        refreshDebounceRef.current = null;
+      }
+
       // 스크립트 제거
       if (script && script.parentNode) {
         script.parentNode.removeChild(script);
@@ -939,13 +1057,23 @@ export default function NaverMap({
         <SearchBox crews={crews} onSelect={handleCrewSelect} />
       </div>
 
-      <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+      <div
+        ref={mapRef}
+        className="cartographic-map"
+        style={{
+          width: "100%",
+          height: "100%",
+          // Cartographic dark inversion. Markers counter-filter inline below.
+          filter:
+            "invert(0.92) hue-rotate(180deg) saturate(0.55) brightness(0.95) contrast(0.95)",
+        }}
+      />
 
       {/* 현재 위치로 이동 버튼 */}
       <button
         onClick={moveToCurrentLocation}
         disabled={isLocating}
-        className='absolute bottom-36 right-4 bg-white rounded-full w-12 h-12 shadow-lg z-[100] hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed'
+        className='absolute bottom-36 right-4 bg-cart-paper rounded-full w-12 h-12 shadow-lg z-[100] hover:bg-background flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed'
         title='현재 위치로 이동'
       >
         {isLocating ? (
@@ -958,7 +1086,7 @@ export default function NaverMap({
       {/* 현재 화면에 보이는 크루 목록 버튼 */}
       <button
         onClick={() => setIsListOpen(true)}
-        className='absolute bottom-20 right-4 bg-white rounded-full w-12 h-12 shadow-lg z-[100] hover:bg-gray-50 flex flex-col items-center justify-center'
+        className='absolute bottom-20 right-4 bg-cart-paper rounded-full w-12 h-12 shadow-lg z-[100] hover:bg-background flex flex-col items-center justify-center'
       >
         <ListFilter className='w-5 h-5' />
         <span className='mt-1 text-xs'>{visibleCrews.length}</span>

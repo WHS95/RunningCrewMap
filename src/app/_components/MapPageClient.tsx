@@ -14,6 +14,7 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import { MapHeader } from "@/components/layout/HomeHeader";
 import { useCrewStore } from "@/lib/store/crewStore";
 import type { Crew } from "@/lib/types/crew";
+import { CoordPair, KickerLabel } from "@/components/design/cartographic";
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -246,7 +247,7 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
 
       {/* 지도 컨테이너 */}
       <div
-        className='flex-1'
+        className='flex-1 relative'
         style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
       >
         <NaverMap
@@ -259,6 +260,29 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
           onMapLoad={handleMapLoad}
           onCrewSelect={setSelectedCrew}
         />
+
+        {/* Cartographic HUD overlay — non-interactive, hidden on mobile (overlapped by SearchBox) */}
+        <div className='pointer-events-none absolute inset-x-0 top-3 px-4 hidden md:flex items-start justify-between z-[5]'>
+          <div className='bg-background/70 backdrop-blur-md border border-cart-rule rounded-[4px] px-2.5 py-1.5'>
+            <KickerLabel tone="lime" className="tracking-[0.18em] flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-[hsl(var(--lime))] shadow-[0_0_0_3px_hsl(var(--lime)/0.25)]" />
+              SEOUL · LIVE
+            </KickerLabel>
+            <CoordPair
+              lat={center.lat.toFixed(4)}
+              lng={center.lng.toFixed(4)}
+              className="mt-1"
+            />
+          </div>
+          <div className='bg-background/70 backdrop-blur-md border border-cart-rule rounded-[4px] px-2.5 py-1.5 text-right'>
+            <KickerLabel tone="muted" className="tracking-[0.15em]">
+              SHOWING {filteredCrews.length.toString().padStart(3, "0")} / {filteredCrews.length.toString().padStart(3, "0")}
+            </KickerLabel>
+            <KickerLabel tone="muted" className="tracking-[0.15em] mt-1">
+              ZOOM · 13
+            </KickerLabel>
+          </div>
+        </div>
       </div>
 
       {/* 크루 상세 정보 */}
