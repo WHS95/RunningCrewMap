@@ -1080,18 +1080,18 @@ export default function NaverMap({
         }}
       />
 
-      {/* Primary action FAB — go register a crew. Lime fill + larger size
-          so it reads as "the thing to do" if you're a crew leader. Sits
-          atop the right-side stack above the location/list utility buttons.
-          Routes directly to /register (the in-context shortcut admins
-          asked for, equivalent to the menu's "크루 등록" entry). */}
+      {/* Primary action FAB — go register a crew. Same 48×48 size and
+          shadow as the location / list-filter utility buttons below
+          it, but lime-filled so the color alone signals "this is the
+          primary action" without breaking the visual rhythm of the
+          right-side button stack. */}
       <Link
         href='/register'
         aria-label='크루 등록'
         title='크루 등록'
-        className='absolute bottom-52 right-4 z-[101] w-14 h-14 rounded-full bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] shadow-[0_8px_24px_-4px_hsl(var(--lime)/0.45),0_2px_6px_rgba(0,0,0,0.35)] border-2 border-[hsl(var(--lime-foreground))]/10 flex items-center justify-center active:scale-95 hover:scale-[1.04] transition-transform'
+        className='absolute bottom-52 right-4 z-[101] w-12 h-12 rounded-full bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] shadow-lg flex items-center justify-center active:scale-95 hover:bg-[hsl(var(--lime))]/90 transition-transform'
       >
-        <Plus className='w-7 h-7' strokeWidth={2.4} />
+        <Plus className='w-5 h-5' strokeWidth={2.4} />
       </Link>
 
       {/* 현재 위치로 이동 버튼 */}
