@@ -16,12 +16,29 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-outfit)", "var(--font-noto-sans-kr)", "system-ui", "sans-serif"],
+        display: ["var(--font-outfit)", "var(--font-noto-sans-kr)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "IBM Plex Mono", "ui-monospace", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        lime: {
+          DEFAULT: "hsl(var(--lime))",
+          foreground: "hsl(var(--lime-foreground))",
+          soft: "hsl(var(--cart-lime-soft))",
+        },
+        cart: {
+          ink: "hsl(var(--cart-ink))",
+          "ink-60": "hsl(var(--cart-ink-60))",
+          "ink-40": "hsl(var(--cart-ink-40))",
+          rule: "hsl(var(--cart-rule))",
+          paper: "hsl(var(--cart-paper))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
