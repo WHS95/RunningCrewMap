@@ -62,6 +62,15 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
     closeDetail,
   } = useCrewStore();
 
+  // The Zustand store's filteredCrews starts at [] and only fills after
+  // hydrateCrews() runs inside a useEffect — so the first paint after
+  // navigating to / would briefly hand an empty array to NaverMap,
+  // leading to a "no markers" flash that users (especially those landing
+  // from Google) read as "site is broken". Fall back to the SSR-provided
+  // initialCrews whenever the store hasn't populated yet so markers
+  // render on the very first render.
+  const mapCrews = filteredCrews.length > 0 ? filteredCrews : initialCrews;
+
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -179,18 +188,20 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
     }
   }, []);
 
-  // 로딩 타임아웃 설정 (안전장치)
+  // Loading-overlay safety net. NaverMap should call onMapLoad once its
+  // tile layer initializes (~300-800ms on a warm connection). If that
+  // somehow never fires we still drop the overlay after 600ms so the
+  // real map and any rendered markers become visible — never let the
+  // user stare at a blank page for over half a second.
   useEffect(() => {
-    // 1초 이상 로딩이 지속되면 강제로 로딩 완료 처리
     loadingTimeoutRef.current = setTimeout(() => {
       if (!mapLoaded) {
-        console.log("Loading timeout - force completing");
         setMapLoaded(true);
       }
       if (isLocationLoading) {
         setIsLocationLoading(false);
       }
-    }, 1000);
+    }, 600);
 
     return () => {
       if (loadingTimeoutRef.current) {
@@ -250,11 +261,37 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
             height='100%'
             initialCenter={center}
             initialZoom={13}
-            crews={filteredCrews}
+            crews={mapCrews}
             selectedCrew={selectedCrew}
             onMapLoad={handleMapLoad}
             onCrewSelect={setSelectedCrew}
           />
+
+          {/* Empty-state HUD — visible only after loading clears AND we
+              genuinely have zero crews. Prevents the "is this broken?"
+              read when a first-time visitor lands on an empty database
+              (e.g. fresh deploy, all crews pending admin approval, or
+              a server-side getCrews failure that swallowed the data). */}
+          {!showLoading && mapCrews.length === 0 && (
+            <div className='pointer-events-none absolute inset-x-4 top-20 z-[10] flex justify-center'>
+              <div className='pointer-events-auto bg-background/90 backdrop-blur-md border border-cart-rule rounded-[4px] px-4 py-3 text-center max-w-[320px]'>
+                <KickerLabel tone='lime' className='mb-1.5 tracking-[0.22em]'>
+                  · NO CREWS · YET
+                </KickerLabel>
+                <p className='text-[12px] text-cart-ink-60 leading-relaxed'>
+                  표시할 크루가 아직 없습니다.
+                  <br />
+                  크루를 가장 먼저 등록해보세요.
+                </p>
+                <a
+                  href='/register'
+                  className='inline-flex items-center justify-center gap-1.5 mt-3 px-3 py-1.5 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform'
+                >
+                  크루 등록 →
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Skeleton overlay — cartographic dotted backdrop + spinner.
               Replaces the old full-page LoadingSpinner which forced a
