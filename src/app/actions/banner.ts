@@ -75,10 +75,19 @@ function describeSupabaseError(
   const code = e.code;
   const details = e.details;
   const hint = e.hint;
-  const isMissingTable =
+  // When `error` is an opaque `{}` (no introspectable fields), `String(err)`
+  // is "[object Object]". We treat this on the banner path as a likely
+  // missing-table since the only other realistic failure mode here is a
+  // misconfigured Supabase client which we already warn about elsewhere.
+  // Better to over-suggest the migration than spam dev overlays.
+  const isOpaque = Boolean(
+    err && typeof err === "object" && Object.keys(err).length === 0
+  );
+  const isMissingTable: boolean =
     code === "42P01" ||
     /relation .* does not exist/i.test(message) ||
-    /Could not find the table/i.test(message);
+    /Could not find the table/i.test(message) ||
+    isOpaque;
 
   // Known "table doesn't exist" is a soft condition — the UI surfaces a
   // migration banner that tells the admin exactly what to do.
