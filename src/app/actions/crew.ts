@@ -1,7 +1,8 @@
 "use server";
 
 import { serverSupabase } from "@/lib/server/supabase";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CREWS_CACHE_TAG } from "@/lib/server/crews";
 
 /**
  * Notify the admin Discord channel that a new crew registration has arrived.
@@ -43,6 +44,10 @@ export async function notifyCrewRegistration(crew: {
     }
     editToken =
       (data as { edit_token?: string } | null)?.edit_token ?? null;
+    // New crew arrives as is_visible=false → not yet in the public list,
+    // but tag-invalidate anyway so any in-flight cached read is refreshed
+    // when an admin later approves the crew.
+    revalidateTag(CREWS_CACHE_TAG);
   } catch (err) {
     console.error("Unexpected error setting is_visible=false:", err);
   }
@@ -475,7 +480,10 @@ export async function updateCrewByToken(
     }
   }
 
-  // 8. Cache invalidation — map page and home rely on this data.
+  // 8. Cache invalidation — map page and home rely on this data. The tag
+  // invalidates the `unstable_cache`-wrapped getCrews data layer; the path
+  // calls bust the per-route render cache for navigation freshness.
+  revalidateTag(CREWS_CACHE_TAG);
   revalidatePath("/");
   revalidatePath("/home");
   revalidatePath("/crew/list");
@@ -604,6 +612,7 @@ export async function updateCrewVisibility(
       return { success: false, error: error.message };
     }
 
+    revalidateTag(CREWS_CACHE_TAG);
     revalidatePath("/");
     revalidatePath("/home");
     return { success: true };
@@ -659,6 +668,7 @@ export async function deleteCrew(
       return { success: false, error: deleteError.message };
     }
 
+    revalidateTag(CREWS_CACHE_TAG);
     revalidatePath("/");
     revalidatePath("/home");
     return { success: true };

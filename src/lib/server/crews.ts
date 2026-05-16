@@ -1,7 +1,13 @@
 import "server-only";
 import { serverSupabase } from "./supabase";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Crew } from "@/lib/types/crew";
+
+// Tag used by mutation paths to invalidate the cached crew list.
+// See revalidateTag(CREWS_CACHE_TAG) calls in src/app/actions/crew.ts.
+export const CREWS_CACHE_TAG = "crews";
+const CREWS_CACHE_TTL_SECS = 60;
 
 // Supabase DB row types (mirrored from crew.service.ts)
 interface DbCrew {
@@ -128,11 +134,10 @@ function transformCrews(
 }
 
 /**
- * Fetch all visible crews with their related data.
- * Wrapped with React.cache() so the result is deduplicated
- * within a single server render pass.
+ * Inner uncached implementation. Kept separate so we can compose
+ * `unstable_cache` (cross-request) with `cache` (per-render dedupe).
  */
-export const getCrews = cache(async (): Promise<Crew[]> => {
+async function fetchCrewsFromDb(): Promise<Crew[]> {
   const [crewsResult, joinMethodsResult] = await Promise.all([
     serverSupabase
       .from("crews")
@@ -161,6 +166,31 @@ export const getCrews = cache(async (): Promise<Crew[]> => {
     crewsResult.data as DbCrew[],
     joinMethodsResult.data as DbJoinMethod[]
   );
+}
+
+// Cross-request data cache: every server render of `/` within the TTL
+// reuses the same crew list, dramatically cutting TTFB after a cold load.
+// Invalidated by `revalidateTag("crews")` from mutation server actions
+// (registration, edit, visibility toggle, delete).
+const fetchCrewsCached = unstable_cache(
+  fetchCrewsFromDb,
+  ["server-crews-v1"],
+  {
+    revalidate: CREWS_CACHE_TTL_SECS,
+    tags: [CREWS_CACHE_TAG],
+  }
+);
+
+/**
+ * Fetch all visible crews with their related data.
+ *
+ * Layered caching:
+ *   - `unstable_cache` deduplicates **across requests** for ~60s.
+ *   - React `cache` deduplicates **within a single render** so multiple
+ *     callers (page.tsx + any nested server components) share one call.
+ */
+export const getCrews = cache(async (): Promise<Crew[]> => {
+  return fetchCrewsCached();
 });
 
 /**

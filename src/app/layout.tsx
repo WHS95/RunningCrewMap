@@ -122,6 +122,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang='ko' className='dark' suppressHydrationWarning>
+      <head>
+        {/* Perf hints — kick off DNS lookup + TLS handshake for hosts the
+            map / tile loads will hit. Saves 100-300ms on the first map
+            paint by overlapping these with the HTML/JS download. */}
+        <link rel='dns-prefetch' href='https://oapi.map.naver.com' />
+        <link rel='preconnect' href='https://oapi.map.naver.com' crossOrigin='anonymous' />
+        <link rel='dns-prefetch' href='https://nrbe.map.naver.net' />
+        <link rel='preconnect' href='https://nrbe.map.naver.net' crossOrigin='anonymous' />
+        <link rel='dns-prefetch' href='https://map.pstatic.net' />
+        <link rel='preconnect' href='https://map.pstatic.net' crossOrigin='anonymous' />
+      </head>
       <body
         className={`${outfit.variable} ${notoSansKR.variable} ${jetbrainsMono.variable} font-sans bg-background text-foreground md:bg-[hsl(var(--canvas-outer))]`}
         suppressHydrationWarning

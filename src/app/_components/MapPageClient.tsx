@@ -8,12 +8,16 @@ import {
   useMemo,
 } from "react";
 import dynamic from "next/dynamic";
+import Script from "next/script";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { eventEmitter, EVENTS } from "@/lib/events";
 import { CSS_VARIABLES } from "@/lib/constants";
 import { MapHeader } from "@/components/layout/HomeHeader";
 import { useCrewStore } from "@/lib/store/crewStore";
+import { KickerLabel } from "@/components/design/cartographic";
 import type { Crew } from "@/lib/types/crew";
+
+const NAVER_MAPS_SDK_URL = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_RUN_NAVER_CLIENT_ID}&submodules=geocoder`;
 
 const NaverMap = dynamic(() => import("@/components/map/NaverMap"), {
   ssr: false,
@@ -206,67 +210,97 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
   // 지도가 로드될 때까지 로딩 표시
   const showLoading = !mapLoaded || isLocationLoading || isCrewsLoading;
 
-  if (showLoading) {
-    return (
-      <div style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}>
-        {/* 지도 미리보기 이미지 표시 (네이버 지도 로딩 중일 때) - Next.js Image 컴포넌트로 최적화 */}
-        {preloadedMapUrl && !isLocationLoading ? (
-          <div className='relative h-[80vh]'>
-            <div className='absolute top-0 right-0 left-0 p-4 text-center'>
-              <LoadingSpinner />
-            </div>
-          </div>
-        ) : (
-          <LoadingSpinner
-            message={
-              isLocationLoading
-                ? "위치 정보를 불러오는 중"
-                : "지도를 불러오는 중"
-            }
-          />
-        )}
-      </div>
-    );
-  }
-
   return (
-    <main
-      className='flex relative flex-col'
-      style={{
-        height: CSS_VARIABLES.CONTENT_HEIGHT,
-      }}
-    >
-      {/* 헤더 영역 */}
-      <div
-        style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING, marginTop: "-1px" }}
-      >
-        {/* 지도 전용 헤더 */}
-        <MapHeader />
-      </div>
-
-      {/* 지도 컨테이너 */}
-      <div
-        className='flex-1 relative'
-        style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
-      >
-        <NaverMap
-          width='100%'
-          height='100%'
-          initialCenter={center}
-          initialZoom={13} // 초기 줌 레벨 조정 (값을 높이면 더 가까이, 낮추면 더 멀리 보임)
-          crews={filteredCrews}
-          selectedCrew={selectedCrew}
-          onMapLoad={handleMapLoad}
-          onCrewSelect={setSelectedCrew}
-        />
-      </div>
-
-      {/* 크루 상세 정보 */}
-      <CrewDetailView
-        crew={selectedCrew}
-        isOpen={isDetailOpen}
-        onClose={closeDetail}
+    <>
+      {/* Naver Maps SDK — `afterInteractive` starts the download right
+          after hydration. This used to be a dynamic <script> injected by
+          NaverMap.tsx on mount, which added one extra serial wait. Now
+          the SDK download overlaps with React hydration. */}
+      <Script
+        src={NAVER_MAPS_SDK_URL}
+        strategy='afterInteractive'
       />
-    </main>
+      <main
+        className='flex relative flex-col'
+        style={{
+          height: CSS_VARIABLES.CONTENT_HEIGHT,
+        }}
+      >
+        {/* Header is rendered immediately so the first paint shows the
+            real chrome (MAP / LIST tabs) instead of an empty page. */}
+        <div
+          style={{
+            paddingTop: CSS_VARIABLES.HEADER_PADDING,
+            marginTop: "-1px",
+          }}
+        >
+          <MapHeader />
+        </div>
+
+        {/* Map container — always rendered. The skeleton overlay only
+            paints on top while loading, so the underlying NaverMap can
+            initialize concurrently and we avoid a re-mount when loading
+            flips to false. */}
+        <div
+          className='flex-1 relative'
+          style={{ height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE }}
+        >
+          <NaverMap
+            width='100%'
+            height='100%'
+            initialCenter={center}
+            initialZoom={13}
+            crews={filteredCrews}
+            selectedCrew={selectedCrew}
+            onMapLoad={handleMapLoad}
+            onCrewSelect={setSelectedCrew}
+          />
+
+          {/* Skeleton overlay — cartographic dotted backdrop + spinner.
+              Replaces the old full-page LoadingSpinner which forced a
+              re-mount of NaverMap once loading completed. */}
+          {showLoading && (
+            <div
+              className='absolute inset-0 z-[200] bg-background flex flex-col items-center justify-center'
+              aria-live='polite'
+            >
+              <div
+                aria-hidden
+                className='absolute inset-0 opacity-40'
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle, hsl(var(--cart-ink-40)) 1px, transparent 1.2px)",
+                  backgroundSize: "26px 26px",
+                }}
+              />
+              <div className='relative z-10 text-center'>
+                <LoadingSpinner />
+                <KickerLabel
+                  tone='lime'
+                  className='mt-3 tracking-[0.22em]'
+                >
+                  ●{" "}
+                  {isLocationLoading
+                    ? "LOCATING…"
+                    : isCrewsLoading
+                    ? "LOADING CREWS…"
+                    : "RENDERING MAP…"}
+                </KickerLabel>
+                {/* Reserve the preloaded static-map URL via a no-op ref
+                    so the optimizer doesn't drop the useMemo. */}
+                <div className='hidden' data-url={preloadedMapUrl} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 크루 상세 정보 */}
+        <CrewDetailView
+          crew={selectedCrew}
+          isOpen={isDetailOpen}
+          onClose={closeDetail}
+        />
+      </main>
+    </>
   );
 }
