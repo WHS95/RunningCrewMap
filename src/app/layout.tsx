@@ -3,6 +3,7 @@ import { Outfit, Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { DesktopSidePanel } from "@/components/layout/DesktopSidePanel";
 import { Toaster } from "@/components/ui/sonner";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { PageTransition } from "@/components/layout/PageTransition";
@@ -157,6 +158,10 @@ export default function RootLayout({
             </main>
             <MobileNav />
           </div>
+          {/* Desktop-only side panel — promotional cards parked in the
+              right gutter (lg+ viewports). Hides on admin / token-edit
+              focus routes via its own pathname check. */}
+          <DesktopSidePanel />
           <Toaster />
         </ClientLayout>
       </body>

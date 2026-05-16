@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { CSS_VARIABLES } from "@/lib/constants";
 import type { Metadata } from "next";
+import { KickerLabel } from "@/components/design/cartographic";
+import { ShoppingBag, MessageCircle } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "런하우스 러닝 기능성 모자 특가 | 러닝크루맵",
@@ -25,19 +27,44 @@ export const metadata: Metadata = {
 export default function Event3Page() {
   return (
     <div
-      className='flex flex-col min-h-screen bg-[#f5f5f7]'
+      className='flex flex-col min-h-screen bg-background'
       style={{
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
       }}
     >
-      {/* 주문 및 상담 버튼 - 최상단 고정 */}
-      <div className='relative z-10 p-4 bg-cart-paper border border-cart-rule'>
+      {/* CTA stack — primary lime CTA goes straight to the standalone
+          custom production site, secondary kakao link is kept as a
+          ghost button. Replaces the old blue/purple gradient pill so
+          it matches the cartographic system used everywhere else. */}
+      <div className='relative z-10 p-4 bg-cart-paper border-b border-cart-rule space-y-2'>
+        <KickerLabel tone='lime' className='tracking-[0.22em] mb-1'>
+          · ORDER · CUSTOM · RUNHOUSE
+        </KickerLabel>
+        <Link
+          href='https://runhouse-custom.vercel.app/'
+          target='_blank'
+          rel='noopener noreferrer'
+          className='flex items-center justify-between w-full py-3.5 px-4 bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] font-display text-[15px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90'
+        >
+          <span className='inline-flex items-center gap-2'>
+            <ShoppingBag className='w-4 h-4' strokeWidth={2} />
+            커스텀 제작 사이트로 이동
+          </span>
+          <span className='font-mono text-[10px] font-semibold tracking-[0.12em]'>
+            CUSTOM →
+          </span>
+        </Link>
         <Link
           href='https://open.kakao.com/me/runhouse'
           target='_blank'
-          className='block w-full py-4 text-lg font-bold text-center text-white transition bg-gradient-to-r from-blue-500 to-purple-500 rounded-full border border-cart-rule hover:from-blue-600 hover:to-purple-600 active:transform active:scale-[0.98]'
+          rel='noopener noreferrer'
+          className='flex items-center justify-between w-full py-3 px-4 bg-background border border-cart-rule text-cart-ink rounded-[4px] font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-transform hover:border-[hsl(var(--lime))]/40'
         >
-          주문 및 상담 카톡
+          <span className='inline-flex items-center gap-2'>
+            <MessageCircle className='w-3.5 h-3.5' strokeWidth={2} />
+            주문 · 상담 카톡
+          </span>
+          <span className='text-cart-ink-40'>KAKAO →</span>
         </Link>
       </div>
 
