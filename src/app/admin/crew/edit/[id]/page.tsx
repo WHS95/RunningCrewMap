@@ -909,6 +909,31 @@ export default function EditCrewPage() {
           )}
         </Section>
 
+        {/* Inline submit — visible at the natural end of the form so admins
+            don't have to hunt for the sticky CTA on long scrolls. */}
+        <button
+          type='submit'
+          disabled={isSaving}
+          className='w-full py-3 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-display text-[14px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90 disabled:opacity-50 flex items-center justify-center gap-2'
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className='w-4 h-4 animate-spin' />
+              <span className='font-mono text-[10px] tracking-[0.18em]'>
+                SAVING…
+              </span>
+            </>
+          ) : (
+            <>
+              <Check className='w-4 h-4' />
+              <span>수정 완료</span>
+              <span className='font-mono text-[10px] font-semibold tracking-[0.12em]'>
+                DONE →
+              </span>
+            </>
+          )}
+        </button>
+
         {/* Spacer so sticky bottom CTA never covers the last card */}
         <div className='h-2' />
       </form>
