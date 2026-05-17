@@ -22,6 +22,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { crewService } from "@/lib/services/crew.service";
+import { revalidateCrewsCache } from "@/app/actions/crew";
 import {
   ArrowLeft,
   Loader2,
@@ -408,6 +409,7 @@ export default function EditCrewPage() {
 
       await crewService.updateCrew(crewId, updateData);
       await crewService.updateCrewVisibility(crewId, isVisible);
+      await revalidateCrewsCache(crewId);
 
       toast.success("크루 정보가 업데이트되었습니다.");
       router.push("/admin/crew");

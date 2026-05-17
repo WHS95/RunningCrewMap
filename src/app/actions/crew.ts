@@ -626,6 +626,29 @@ export async function updateCrewVisibility(
 }
 
 /**
+ * Invalidate the public crew cache after a client-side admin mutation.
+ *
+ * The admin edit page (`/admin/crew/edit/[id]`) writes through the browser
+ * Supabase client (`crewService.updateCrew` etc.), which bypasses Next's
+ * data cache. Call this from the client right after a successful save so
+ * `/`, `/map`, and `/crew/list` (wrapped in `unstable_cache` with the
+ * `CREWS_CACHE_TAG` tag) don't serve stale data for up to 60s.
+ */
+export async function revalidateCrewsCache(
+  crewId?: string
+): Promise<{ success: boolean }> {
+  revalidateTag(CREWS_CACHE_TAG);
+  revalidatePath("/");
+  revalidatePath("/map");
+  revalidatePath("/crew/list");
+  if (crewId) {
+    revalidatePath(`/crew/${crewId}`);
+    revalidatePath(`/crew/edit/${crewId}`);
+  }
+  return { success: true };
+}
+
+/**
  * Delete a crew and its associated storage assets.
  * ON DELETE CASCADE in the DB handles related table cleanup.
  */
