@@ -101,16 +101,6 @@ const FALLBACK_BANNERS = [
     code: "0312",
     cta: "RUNHOUSE →",
   },
-  {
-    id: 2,
-    link: "/notice/event/1",
-    imageUrl: "/event5.webp",
-    title: "크루 깃발 무료 제작",
-    description: "보아델와 런하우스 협업 프로모션",
-    variant: "flag" as const,
-    code: "0420",
-    cta: "신청하기 →",
-  },
 ];
 
 interface InfoCardProps {
