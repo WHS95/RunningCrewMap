@@ -119,7 +119,45 @@ export async function loginWithPin(
   }
 }
 
+type SetPinResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid-token" | "weak-pin" | "bad-format" };
+
+export async function setCrewPinWithToken(
+  crewId: string,
+  token: string,
+  pin: string
+): Promise<SetPinResult> {
+  if (!isValidPinFormat(pin)) return { ok: false, reason: "bad-format" };
+  if (isWeakPin(pin)) return { ok: false, reason: "weak-pin" };
+  if (!crewId || !token) return { ok: false, reason: "invalid-token" };
+
+  const { data, error } = await serverSupabase
+    .from("crews")
+    .select("id, edit_token")
+    .eq("id", crewId)
+    .maybeSingle();
+  if (error || !data) return { ok: false, reason: "invalid-token" };
+  const row = data as { id: string; edit_token: string };
+  if (row.edit_token !== token) return { ok: false, reason: "invalid-token" };
+
+  const hash = await hashPin(pin);
+  const pinSetAt = new Date().toISOString();
+  const { error: upErr } = await serverSupabase
+    .from("crews")
+    .update({
+      pin_hash: hash,
+      pin_set_at: pinSetAt,
+      failed_pin_attempts: 0,
+      pin_locked_until: null,
+    })
+    .eq("id", crewId);
+  if (upErr) return { ok: false, reason: "invalid-token" };
+
+  await setCrewSessionCookie(crewId, pinSetAt);
+  return { ok: true };
+}
+
 // 다음 태스크에서 추가:
-// - setCrewPinWithToken (Task 7)
 // - clearCrewPinAdmin (Task 8)
 // - changeCrewPin (Task 9)
