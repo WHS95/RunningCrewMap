@@ -194,5 +194,38 @@ export async function clearCrewPinAdmin(
   return { ok: true, newEditToken: newToken };
 }
 
-// 다음 태스크에서 추가:
-// - changeCrewPin (Task 9)
+export async function changeCrewPin(
+  currentPin: string,
+  newPin: string
+): Promise<
+  | { ok: true }
+  | { ok: false; reason: "unauthenticated" | "wrong-pin" | "weak-pin" | "bad-format" }
+> {
+  const session = await getCrewSession();
+  if (!session) return { ok: false, reason: "unauthenticated" };
+  if (!isValidPinFormat(newPin)) return { ok: false, reason: "bad-format" };
+  if (isWeakPin(newPin)) return { ok: false, reason: "weak-pin" };
+
+  const { data, error } = await serverSupabase
+    .from("crews")
+    .select("pin_hash")
+    .eq("id", session.crewId)
+    .maybeSingle();
+  if (error || !data) return { ok: false, reason: "unauthenticated" };
+  const row = data as { pin_hash: string | null };
+  if (!row.pin_hash) return { ok: false, reason: "unauthenticated" };
+
+  const ok = await verifyPin(currentPin, row.pin_hash);
+  if (!ok) return { ok: false, reason: "wrong-pin" };
+
+  const hash = await hashPin(newPin);
+  const newPinSetAt = new Date().toISOString();
+  await serverSupabase
+    .from("crews")
+    .update({ pin_hash: hash, pin_set_at: newPinSetAt })
+    .eq("id", session.crewId);
+
+  // 새 세션 발급 — 사용자의 현재 세션이 끊기지 않게
+  await setCrewSessionCookie(session.crewId, newPinSetAt);
+  return { ok: true };
+}
