@@ -9,7 +9,7 @@ export function RegionIndexList({ rows }: { rows: ReadonlyArray<RegionSummary> }
         <li key={row.code}>
           <Link
             href={`/regions/${row.code}`}
-            className="flex items-center gap-3 px-[18px] py-3.5 active:bg-white/[0.02] focus:outline-none focus:bg-white/[0.02]"
+            className="flex items-center gap-3 px-[18px] py-3.5 active:bg-white/[0.02] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[hsl(var(--lime))] focus-visible:-outline-offset-1"
           >
             <div className="w-8 font-mono text-[11px] tracking-[0.05em] text-cart-ink-60 tabular-nums">
               {String(idx + 1).padStart(2, "0")}

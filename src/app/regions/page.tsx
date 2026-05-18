@@ -28,6 +28,7 @@ export default async function RegionsIndexPage() {
       style={{ paddingTop: CSS_VARIABLES.HEADER_PADDING }}
     >
       <div className="px-[18px] pt-4 pb-3">
+        {/* kicker: leading · 는 CartographicHeader가 자동으로 붙이므로 여기엔 생략 */}
         <CartographicHeader
           kicker="DISCOVER · 7 REGIONS"
           title="지역별 러닝크루"
