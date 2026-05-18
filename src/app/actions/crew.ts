@@ -47,6 +47,9 @@ export async function notifyCrewRegistration(crew: {
     // New crew arrives as is_visible=false → not yet in the public list,
     // but tag-invalidate anyway so any in-flight cached read is refreshed
     // when an admin later approves the crew.
+    // 등록 시점에는 is_visible=false라 공개 페이지(지역/리스트/sitemap)에 없으므로
+    // 경로 revalidate는 불필요. revalidateCrewsCache 헬퍼를 부르지 않는 이유.
+    // 단, 관리자가 나중에 승인할 때 in-flight 캐시 read가 신선해지도록 태그만 무효화.
     revalidateTag(CREWS_CACHE_TAG);
   } catch (err) {
     console.error("Unexpected error setting is_visible=false:", err);
