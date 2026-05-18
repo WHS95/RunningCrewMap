@@ -43,12 +43,23 @@ export function getAllRegionCodes(): RegionCode[] {
   return REGION_DEFS.map((d) => d.code);
 }
 
+/**
+ * Look up a region definition by code.
+ *
+ * `code` is intentionally `string` (not `RegionCode`): this is the gateway
+ * used by route handlers receiving raw URL params, which arrive as `string`.
+ * Returns `undefined` for unknown codes — callers should branch on that
+ * (e.g. call `notFound()` in a page) instead of pre-validating.
+ */
 export function getRegionDef(code: string): RegionDef | undefined {
   return REGION_DEFS.find((d) => d.code === code);
 }
 
 /** main_address 우선으로 크루 1개의 지역 코드를 결정. 매칭 실패 시 null. */
 export function regionCodeForCrew(crew: Crew): RegionCode | null {
+  // 주의: main_address 우선. filterCrewsByRegion(region-utils.ts)은
+  // address(=detail_address||main_address) 우선이라 상세주소가 다른 시/도로
+  // 시작하는 데이터에서 잘못 분류됨 — 이 함수는 그 버그를 회피.
   const address = crew.location.main_address || crew.location.address || "";
   if (!address) return null;
   const firstPart = address.split(" ")[0] || "";
