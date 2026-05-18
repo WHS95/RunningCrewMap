@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusCircle, MessageCircle, ChevronRight } from "lucide-react";
+import { PlusCircle, MessageCircle, MapPin, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CSS_VARIABLES } from "@/lib/constants";
 import {
@@ -18,6 +18,7 @@ interface MenuLinkRow {
 
 const PRIMARY_LINKS: MenuLinkRow[] = [
   { title: "크루 등록", en: "REGISTER", path: "/register" },
+  { title: "지역별 보기", en: "REGIONS", path: "/regions" },
   {
     title: "문의 및 건의",
     en: "CONTACT",
@@ -74,6 +75,8 @@ export default function MenuPage() {
               <div className="w-9 h-9 rounded-[4px] bg-cart-paper border border-cart-rule flex items-center justify-center flex-shrink-0">
                 {item.en === "REGISTER" ? (
                   <PlusCircle className="w-4 h-4 text-[hsl(var(--lime))]" strokeWidth={1.6} />
+                ) : item.en === "REGIONS" ? (
+                  <MapPin className="w-4 h-4 text-[hsl(var(--lime))]" strokeWidth={1.6} />
                 ) : (
                   <MessageCircle className="w-4 h-4 text-[hsl(var(--lime))]" strokeWidth={1.6} />
                 )}
