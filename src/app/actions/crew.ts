@@ -483,11 +483,7 @@ export async function updateCrewByToken(
   // 8. Cache invalidation — map page and home rely on this data. The tag
   // invalidates the `unstable_cache`-wrapped getCrews data layer; the path
   // calls bust the per-route render cache for navigation freshness.
-  revalidateTag(CREWS_CACHE_TAG);
-  revalidatePath("/");
-  revalidatePath("/map");
-  revalidatePath("/crew/list");
-  revalidatePath(`/crew/edit/${crewId}`);
+  await revalidateCrewsCache(crewId);
 
   // 9. Discord notification with diff. Fire-and-forget.
   notifyCrewEdit({
@@ -612,9 +608,7 @@ export async function updateCrewVisibility(
       return { success: false, error: error.message };
     }
 
-    revalidateTag(CREWS_CACHE_TAG);
-    revalidatePath("/");
-    revalidatePath("/map");
+    await revalidateCrewsCache(crewId);
     return { success: true };
   } catch (err) {
     console.error("크루 가시성 업데이트 실패:", err);
@@ -641,6 +635,9 @@ export async function revalidateCrewsCache(
   revalidatePath("/");
   revalidatePath("/map");
   revalidatePath("/crew/list");
+  revalidatePath("/regions");
+  revalidatePath("/regions/[code]", "page");
+  revalidatePath("/sitemap.xml");
   if (crewId) {
     revalidatePath(`/crew/${crewId}`);
     revalidatePath(`/crew/edit/${crewId}`);
@@ -691,9 +688,7 @@ export async function deleteCrew(
       return { success: false, error: deleteError.message };
     }
 
-    revalidateTag(CREWS_CACHE_TAG);
-    revalidatePath("/");
-    revalidatePath("/map");
+    await revalidateCrewsCache(crewId);
     return { success: true };
   } catch (err) {
     console.error("크루 삭제 실패:", err);
