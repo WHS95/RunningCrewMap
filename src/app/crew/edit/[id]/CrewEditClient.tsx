@@ -77,6 +77,7 @@ function formatDaysString(days: Day[]): string {
 interface Props {
   crewId: string;
   initialToken: string | null;
+  hasSession?: boolean;  // ← Task 16 will use it
 }
 
 export function CrewEditClient({ crewId, initialToken }: Props) {
