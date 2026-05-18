@@ -18,6 +18,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   getCrewForEdit,
@@ -77,16 +78,16 @@ function formatDaysString(days: Day[]): string {
 interface Props {
   crewId: string;
   initialToken: string | null;
-  hasSession?: boolean;  // ← Task 16 will use it
+  hasSession?: boolean;
 }
 
-export function CrewEditClient({ crewId, initialToken }: Props) {
+export function CrewEditClient({ crewId, initialToken, hasSession = false }: Props) {
   const router = useRouter();
 
   type LoadState =
     | { phase: "loading" }
     | { phase: "denied"; reason: string }
-    | { phase: "ready"; crew: CrewForEdit; token: string };
+    | { phase: "ready"; crew: CrewForEdit; token: string | null };
   const [state, setState] = useState<LoadState>({ phase: "loading" });
 
   // Form state — initialized from the loaded crew below.
@@ -115,12 +116,15 @@ export function CrewEditClient({ crewId, initialToken }: Props) {
   useEffect(() => {
     let mounted = true;
     const token = initialToken || readStoredToken(crewId);
-    if (!token) {
+
+    // If we have neither token nor session, deny upfront.
+    if (!token && !hasSession) {
       setState({ phase: "denied", reason: "no-token" });
       return;
     }
 
     (async () => {
+      // token may be null when session-auth path is used
       const res = await getCrewForEdit(crewId, token);
       if (!mounted) return;
       if (res.error || !res.crew) {
@@ -130,9 +134,9 @@ export function CrewEditClient({ crewId, initialToken }: Props) {
         });
         return;
       }
-      writeStoredToken(crewId, token);
+      if (token) writeStoredToken(crewId, token);
       const crew = res.crew;
-      setState({ phase: "ready", crew, token });
+      setState({ phase: "ready", crew, token: token ?? null });
       // Seed form
       setName(crew.name);
       setDescription(crew.description);
@@ -151,7 +155,7 @@ export function CrewEditClient({ crewId, initialToken }: Props) {
     return () => {
       mounted = false;
     };
-  }, [crewId, initialToken]);
+  }, [crewId, initialToken, hasSession]);
 
   // Existing pin moved? Compare to original to know if we should warn.
   const locationMoved = useMemo(() => {
@@ -219,7 +223,7 @@ export function CrewEditClient({ crewId, initialToken }: Props) {
           longitude: pickedLocation.lng,
         },
       };
-      const res = await updateCrewByToken(crewId, state.token, payload);
+      const res = await updateCrewByToken(crewId, state.token || null, payload);
       if (!res.success) {
         setFeedback({
           kind: "error",
@@ -282,9 +286,14 @@ export function CrewEditClient({ crewId, initialToken }: Props) {
             수정 권한이 없습니다
           </h1>
           <p className='text-[12px] text-cart-ink-60 leading-relaxed mb-5'>
-            URL의 토큰이 유효하지 않거나 만료되었습니다. 등록 시 사용한
-            인스타그램 DM으로 받으신 수정 링크를 다시 확인해주세요.
+            다시 로그인하시거나 등록 시 받으신 수정 링크를 확인해주세요.
           </p>
+          <Link
+            href='/crew/edit/login'
+            className='block w-full py-2.5 rounded-[4px] bg-lime text-lime-foreground font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all mb-2'
+          >
+            로그인
+          </Link>
           <button
             onClick={() => router.push("/")}
             className='w-full py-2.5 rounded-[4px] border border-cart-rule bg-background text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all'

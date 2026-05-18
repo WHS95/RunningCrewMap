@@ -3,6 +3,7 @@
 import { serverSupabase } from "@/lib/server/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CREWS_CACHE_TAG } from "@/lib/server/crews";
+import { getCrewSession } from "@/lib/server/crewSession";
 
 /**
  * Notify the admin Discord channel that a new crew registration has arrived.
@@ -252,13 +253,26 @@ interface CrewRow {
  * Returns { crew } on success or { error } if the token is wrong / row
  * doesn't exist. We use a constant-time-ish comparison (string equality
  * is fine here — tokens are UUIDs with high entropy, not user passwords).
+ *
+ * Session fallback: if token is null/missing, checks getCrewSession() for a
+ * matching crewId. Allows crew leaders to edit after PIN auth.
  */
 export async function getCrewForEdit(
   crewId: string,
-  token: string
+  token: string | null
 ): Promise<{ crew?: CrewForEdit; error?: string }> {
-  if (!crewId || !token) {
+  if (!crewId) {
     return { error: "missing-credentials" };
+  }
+  // 세션 fallback: token이 없거나 일치하지 않아도 세션이 같은 crewId면 통과.
+  let isSessionAuth = false;
+  if (!token) {
+    const session = await getCrewSession();
+    if (session?.crewId === crewId) {
+      isSessionAuth = true;
+    } else {
+      return { error: "missing-credentials" };
+    }
   }
   try {
     const { data, error } = await serverSupabase
@@ -283,7 +297,7 @@ export async function getCrewForEdit(
     }
 
     const row = data as unknown as CrewRow;
-    if (row.edit_token !== token) {
+    if (!isSessionAuth && row.edit_token !== token) {
       // Don't leak whether the token was wrong vs the row missing.
       return { error: "invalid-token" };
     }
@@ -344,7 +358,7 @@ export interface CrewEditPayload {
 
 export async function updateCrewByToken(
   crewId: string,
-  token: string,
+  token: string | null,
   payload: CrewEditPayload
 ): Promise<{
   success: boolean;
