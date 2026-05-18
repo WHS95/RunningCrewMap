@@ -8,6 +8,7 @@ import { CrewDetailView } from "@/components/map/CrewDetailView";
 import type { Crew } from "@/lib/types/crew";
 import { crewService } from "@/lib/services/crew.service";
 import { rotateCrewEditToken } from "@/app/actions/crew";
+import { clearCrewPinAdmin } from "@/app/actions/crewAuth";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
   ArrowLeft,
   Link2,
   RotateCw,
+  KeyRound,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -52,6 +54,7 @@ export default function AdminCrewPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [rotatingTokenFor, setRotatingTokenFor] = useState<string | null>(null);
+  const [resettingPinFor, setResettingPinFor] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCrews();
@@ -186,6 +189,39 @@ export default function AdminCrewPage() {
       toast.error("토큰 재발급 중 오류가 발생했습니다.");
     } finally {
       setRotatingTokenFor(null);
+    }
+  }, []);
+
+  // Admin-only: clear the crew's PIN, rotate edit_token, invalidate sessions.
+  // Used when crew leader requests PIN reset via Instagram DM.
+  const handleClearPin = useCallback(async (crew: AdminCrew) => {
+    const ok = window.confirm(
+      `'${crew.name}' 크루의 PIN을 초기화하시겠어요?\n새 수정 링크가 발급되며 기존 세션은 모두 만료됩니다.`
+    );
+    if (!ok) return;
+    setResettingPinFor(crew.id);
+    try {
+      const res = await clearCrewPinAdmin(crew.id);
+      if (!res.ok) {
+        toast.error(
+          res.reason === "unauthorized"
+            ? "권한이 없습니다."
+            : "PIN 초기화에 실패했습니다."
+        );
+        return;
+      }
+      const url = `${window.location.origin}/crew/edit/${crew.id}?token=${res.newEditToken}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("PIN 초기화 완료. 새 수정 링크가 클립보드에 복사되었습니다.");
+      } catch {
+        toast.success(`PIN 초기화 완료. 새 URL: ${url}`);
+      }
+    } catch (e) {
+      console.error("clearCrewPinAdmin failed:", e);
+      toast.error("PIN 초기화 중 오류가 발생했습니다.");
+    } finally {
+      setResettingPinFor(null);
     }
   }, []);
 
@@ -371,6 +407,22 @@ export default function AdminCrewPage() {
                     )}
                     <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
                       URL
+                    </span>
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => handleClearPin(crew)}
+                    disabled={resettingPinFor === crew.id}
+                    title='PIN 초기화 + 새 URL 발급'
+                    className='flex-1 h-8 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center gap-1 text-cart-ink-60 hover:text-[hsl(var(--lime))] active:scale-95 transition-all disabled:opacity-50'
+                  >
+                    {resettingPinFor === crew.id ? (
+                      <RotateCw className='w-3.5 h-3.5 animate-spin' />
+                    ) : (
+                      <KeyRound className='w-3.5 h-3.5' />
+                    )}
+                    <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
+                      PIN
                     </span>
                   </button>
                   <button
