@@ -13,6 +13,8 @@ import {
   getCrewSession,
   setCrewSessionCookie,
 } from "@/lib/server/crewSession";
+import { cookies } from "next/headers";
+import crypto from "crypto";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000; // 15분
@@ -158,6 +160,39 @@ export async function setCrewPinWithToken(
   return { ok: true };
 }
 
+async function requireAdmin(): Promise<boolean> {
+  const jar = await cookies();
+  return jar.get("auth")?.value === "true";
+}
+
+export async function clearCrewPinAdmin(
+  crewId: string
+): Promise<
+  | { ok: true; newEditToken: string }
+  | { ok: false; reason: "unauthorized" | "not-found" }
+> {
+  if (!(await requireAdmin())) return { ok: false, reason: "unauthorized" };
+  if (!crewId) return { ok: false, reason: "not-found" };
+
+  const newToken = crypto.randomUUID();
+  const newPinSetAt = new Date().toISOString();
+
+  const { data, error } = await serverSupabase
+    .from("crews")
+    .update({
+      pin_hash: null,
+      pin_set_at: newPinSetAt, // 기존 세션 즉시 무효화
+      failed_pin_attempts: 0,
+      pin_locked_until: null,
+      edit_token: newToken,
+    })
+    .eq("id", crewId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) return { ok: false, reason: "not-found" };
+  return { ok: true, newEditToken: newToken };
+}
+
 // 다음 태스크에서 추가:
-// - clearCrewPinAdmin (Task 8)
 // - changeCrewPin (Task 9)
