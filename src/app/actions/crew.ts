@@ -13,15 +13,18 @@ import { CREWS_CACHE_TAG } from "@/lib/server/crews";
  *
  * Webhook URL is read from `DISCORD_REGISTRATION_WEBHOOK_URL` (server-only).
  */
-export async function notifyCrewRegistration(crew: {
-  id: string;
-  name: string;
-  instagram?: string | null;
-  mainAddress?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-  description?: string | null;
-}): Promise<{ success: boolean; error?: string }> {
+export async function notifyCrewRegistration(
+  crew: {
+    id: string;
+    name: string;
+    instagram?: string | null;
+    mainAddress?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+    description?: string | null;
+  },
+  options?: { pin?: string }
+): Promise<{ success: boolean; error?: string }> {
   // Approval-queue enforcement: force is_visible=false via the server-role
   // client. This runs regardless of webhook config so newly-registered crews
   // never go live before admin review, even if Discord notifications are off.
@@ -50,6 +53,34 @@ export async function notifyCrewRegistration(crew: {
     revalidateTag(CREWS_CACHE_TAG);
   } catch (err) {
     console.error("Unexpected error setting is_visible=false:", err);
+  }
+
+  // PIN: 등록 폼에서 받은 PIN을 서버에서 해싱하여 저장.
+  // 실패해도 등록은 막지 않는다 — 사용자는 첫 편집 시 다시 설정할 수 있다.
+  if (options?.pin && /^\d{4}$/.test(options.pin)) {
+    try {
+      const { isWeakPin, hashPin } = await import("@/lib/server/pin");
+      if (!isWeakPin(options.pin)) {
+        const hash = await hashPin(options.pin);
+        const pinSetAt = new Date().toISOString();
+        const { error: pinErr } = await serverSupabase
+          .from("crews")
+          .update({
+            pin_hash: hash,
+            pin_set_at: pinSetAt,
+            failed_pin_attempts: 0,
+            pin_locked_until: null,
+          })
+          .eq("id", crew.id);
+        if (pinErr) {
+          console.error("[notifyCrewRegistration] PIN update failed:", pinErr);
+        }
+      } else {
+        console.warn("[notifyCrewRegistration] Weak PIN supplied; skipping save.");
+      }
+    } catch (e) {
+      console.error("[notifyCrewRegistration] PIN hash failed:", e);
+    }
   }
 
   const webhookUrl = process.env.DISCORD_REGISTRATION_WEBHOOK_URL;
