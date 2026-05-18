@@ -18,6 +18,7 @@ interface MenuLinkRow {
 
 const PRIMARY_LINKS: MenuLinkRow[] = [
   { title: "크루 등록", en: "REGISTER", path: "/register" },
+  { title: "내 크루 정보 수정", en: "EDIT MY CREW", path: "/crew/edit/login" },
   {
     title: "문의 및 건의",
     en: "CONTACT",
