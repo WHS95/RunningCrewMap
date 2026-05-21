@@ -1,8 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Crew } from "@/lib/types/crew";
+import type { RegionCode } from "@/lib/server/regions";
 
-export function RegionCrewRow({ crew, rank }: { crew: Crew; rank: number }) {
+export function RegionCrewRow({
+  crew,
+  rank,
+  regionCode,
+}: {
+  crew: Crew;
+  rank: number;
+  regionCode: RegionCode;
+}) {
   const area =
     crew.location.main_address?.split(" ").slice(0, 2).join(" ") ||
     crew.location.address?.split(" ").slice(0, 2).join(" ") ||
@@ -10,7 +19,8 @@ export function RegionCrewRow({ crew, rank }: { crew: Crew; rank: number }) {
   return (
     <Link
       // Week 2에 /crew/[id] 단독 페이지가 생기면 그곳으로 교체.
-      href={`/crew/list#crew-${crew.id}`}
+      // ?region= 쿼리로 list 페이지가 같은 region에 필터된 상태로 열리도록.
+      href={`/crew/list?region=${regionCode}#crew-${crew.id}`}
       className="flex items-center gap-3 py-3.5 px-[18px] border-t border-cart-rule first:border-t-0 active:bg-white/[0.02] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[hsl(var(--lime))] focus-visible:-outline-offset-1"
     >
       <div className="w-8 font-mono text-[11px] tracking-[0.05em] text-cart-ink-60 tabular-nums">

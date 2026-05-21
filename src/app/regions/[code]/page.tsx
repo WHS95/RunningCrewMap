@@ -92,7 +92,12 @@ export default async function RegionDetailPage(
       ) : (
         <div className="border-t border-b border-cart-rule">
           {crews.map((crew, i) => (
-            <RegionCrewRow key={crew.id} crew={crew} rank={i + 1} />
+            <RegionCrewRow
+              key={crew.id}
+              crew={crew}
+              rank={i + 1}
+              regionCode={code as RegionCode}
+            />
           ))}
         </div>
       )}
