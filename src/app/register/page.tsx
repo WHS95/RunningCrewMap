@@ -25,6 +25,13 @@ import {
   ACTIVITY_DAYS,
 } from "@/lib/types/crewInsert";
 
+// Weak PIN validation set (mirrored from server)
+const WEAK_PINS_CLIENT = new Set([
+  "0000","1111","2222","3333","4444","5555","6666","7777","8888","9999",
+  "0123","1234","2345","3456","4567","5678","6789",
+  "9876","8765","7654","6543","5432","4321","3210",
+]);
+
 // UI Components - 실제 사용하는 컴포넌트만 임포트
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -222,6 +229,9 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instagram, setInstagram] = useState("");
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [pinError, setPinError] = useState<string | null>(null);
   const [foundedDate, setFoundedDate] = useState(todayDate);
   const [mainAddress, setMainAddress] = useState("");
 
@@ -473,6 +483,24 @@ export default function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
 
+    // PIN 검증
+    if (!/^\d{4}$/.test(pin)) {
+      setPinError("4자리 숫자를 입력해주세요.");
+      setIsLoading(false);
+      return;
+    }
+    if (pin !== pinConfirm) {
+      setPinError("PIN이 일치하지 않습니다.");
+      setIsLoading(false);
+      return;
+    }
+    if (WEAK_PINS_CLIENT.has(pin)) {
+      setPinError("너무 쉬운 PIN입니다. 다른 숫자로 입력해주세요.");
+      setIsLoading(false);
+      return;
+    }
+    setPinError(null);
+
     try {
       // 폼 데이터 가져오기
       const formData = getFormData();
@@ -698,7 +726,7 @@ export default function RegisterPage() {
         lat: typeSafeInput.location.latitude,
         lng: typeSafeInput.location.longitude,
         description: typeSafeInput.description || null,
-      }).catch((err) => {
+      }, { pin }).catch((err) => {
         // Log but don't break the user flow.
         console.error("Discord notify failed:", err);
       });
@@ -1326,6 +1354,52 @@ export default function RegisterPage() {
                 </Label>
               )}
             </div>
+          </div>
+
+          {/* 수정 PIN 섹션 */}
+          <div className='space-y-2'>
+            <label className="text-[13px] font-semibold text-cart-ink tracking-[-0.005em]">
+              수정 PIN
+              <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
+            </label>
+            <p className='mb-3 text-sm text-cart-ink-60'>
+              수정/관리에 사용할 4자리 비밀번호입니다. 잊지 않게 안전한 곳에 메모해두세요.
+            </p>
+            <div className='grid grid-cols-2 gap-3'>
+              <input
+                type='password'
+                inputMode='numeric'
+                pattern='[0-9]*'
+                maxLength={4}
+                placeholder='4자리 숫자'
+                value={pin}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  setPin(v);
+                  setPinError(null);
+                }}
+                disabled={isLoading}
+                className='font-mono text-[16px] tracking-[0.4em] text-center bg-cart-paper border border-cart-rule rounded-[4px] px-3 py-2.5'
+              />
+              <input
+                type='password'
+                inputMode='numeric'
+                pattern='[0-9]*'
+                maxLength={4}
+                placeholder='다시 입력'
+                value={pinConfirm}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  setPinConfirm(v);
+                  setPinError(null);
+                }}
+                disabled={isLoading}
+                className='font-mono text-[16px] tracking-[0.4em] text-center bg-cart-paper border border-cart-rule rounded-[4px] px-3 py-2.5'
+              />
+            </div>
+            {pinError && (
+              <p className='text-[11px] text-red-400 mt-1'>{pinError}</p>
+            )}
           </div>
 
           {/* 안내 문구 */}

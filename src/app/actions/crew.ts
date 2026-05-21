@@ -3,6 +3,7 @@
 import { serverSupabase } from "@/lib/server/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CREWS_CACHE_TAG } from "@/lib/server/crews";
+import { getCrewSession } from "@/lib/server/crewSession";
 
 /**
  * Notify the admin Discord channel that a new crew registration has arrived.
@@ -13,15 +14,18 @@ import { CREWS_CACHE_TAG } from "@/lib/server/crews";
  *
  * Webhook URL is read from `DISCORD_REGISTRATION_WEBHOOK_URL` (server-only).
  */
-export async function notifyCrewRegistration(crew: {
-  id: string;
-  name: string;
-  instagram?: string | null;
-  mainAddress?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-  description?: string | null;
-}): Promise<{ success: boolean; error?: string }> {
+export async function notifyCrewRegistration(
+  crew: {
+    id: string;
+    name: string;
+    instagram?: string | null;
+    mainAddress?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+    description?: string | null;
+  },
+  options?: { pin?: string }
+): Promise<{ success: boolean; error?: string }> {
   // Approval-queue enforcement: force is_visible=false via the server-role
   // client. This runs regardless of webhook config so newly-registered crews
   // never go live before admin review, even if Discord notifications are off.
@@ -47,9 +51,40 @@ export async function notifyCrewRegistration(crew: {
     // New crew arrives as is_visible=false → not yet in the public list,
     // but tag-invalidate anyway so any in-flight cached read is refreshed
     // when an admin later approves the crew.
+    // 등록 시점에는 is_visible=false라 공개 페이지(지역/리스트/sitemap)에 없으므로
+    // 경로 revalidate는 불필요. revalidateCrewsCache 헬퍼를 부르지 않는 이유.
+    // 단, 관리자가 나중에 승인할 때 in-flight 캐시 read가 신선해지도록 태그만 무효화.
     revalidateTag(CREWS_CACHE_TAG);
   } catch (err) {
     console.error("Unexpected error setting is_visible=false:", err);
+  }
+
+  // PIN: 등록 폼에서 받은 PIN을 서버에서 해싱하여 저장.
+  // 실패해도 등록은 막지 않는다 — 사용자는 첫 편집 시 다시 설정할 수 있다.
+  if (options?.pin && /^\d{4}$/.test(options.pin)) {
+    try {
+      const { isWeakPin, hashPin } = await import("@/lib/server/pin");
+      if (!isWeakPin(options.pin)) {
+        const hash = await hashPin(options.pin);
+        const pinSetAt = new Date().toISOString();
+        const { error: pinErr } = await serverSupabase
+          .from("crews")
+          .update({
+            pin_hash: hash,
+            pin_set_at: pinSetAt,
+            failed_pin_attempts: 0,
+            pin_locked_until: null,
+          })
+          .eq("id", crew.id);
+        if (pinErr) {
+          console.error("[notifyCrewRegistration] PIN update failed:", pinErr);
+        }
+      } else {
+        console.warn("[notifyCrewRegistration] Weak PIN supplied; skipping save.");
+      }
+    } catch (e) {
+      console.error("[notifyCrewRegistration] PIN hash failed:", e);
+    }
   }
 
   const webhookUrl = process.env.DISCORD_REGISTRATION_WEBHOOK_URL;
@@ -201,17 +236,26 @@ interface CrewActivityLocationRow {
   location_name: string;
 }
 
+interface CrewActivityDayRow {
+  day_of_week: string;
+}
+
+interface CrewAgeRangeRow {
+  min_age: number;
+  max_age: number;
+}
+
 interface CrewRow {
   id: string;
   name: string;
   description: string;
   instagram: string | null;
   founded_date: string | null;
-  activity_day: string | null;
-  age_range: string | null;
   is_visible: boolean;
   edit_token: string;
   crew_locations: CrewLocationRow[] | null;
+  crew_activity_days: CrewActivityDayRow[] | null;
+  crew_age_ranges: CrewAgeRangeRow[] | null;
   crew_activity_locations: CrewActivityLocationRow[] | null;
 }
 
@@ -221,22 +265,37 @@ interface CrewRow {
  * Returns { crew } on success or { error } if the token is wrong / row
  * doesn't exist. We use a constant-time-ish comparison (string equality
  * is fine here — tokens are UUIDs with high entropy, not user passwords).
+ *
+ * Session fallback: if token is null/missing, checks getCrewSession() for a
+ * matching crewId. Allows crew leaders to edit after PIN auth.
  */
 export async function getCrewForEdit(
   crewId: string,
-  token: string
+  token: string | null
 ): Promise<{ crew?: CrewForEdit; error?: string }> {
-  if (!crewId || !token) {
+  if (!crewId) {
     return { error: "missing-credentials" };
+  }
+  // 세션 fallback: token이 없거나 일치하지 않아도 세션이 같은 crewId면 통과.
+  let isSessionAuth = false;
+  if (!token) {
+    const session = await getCrewSession();
+    if (session?.crewId === crewId) {
+      isSessionAuth = true;
+    } else {
+      return { error: "missing-credentials" };
+    }
   }
   try {
     const { data, error } = await serverSupabase
       .from("crews")
       .select(
         `
-          id, name, description, instagram, founded_date, activity_day,
-          age_range, is_visible, edit_token,
+          id, name, description, instagram, founded_date,
+          is_visible, edit_token,
           crew_locations ( main_address, detail_address, latitude, longitude ),
+          crew_activity_days ( day_of_week ),
+          crew_age_ranges ( min_age, max_age ),
           crew_activity_locations ( location_name )
         `
       )
@@ -252,7 +311,7 @@ export async function getCrewForEdit(
     }
 
     const row = data as unknown as CrewRow;
-    if (row.edit_token !== token) {
+    if (!isSessionAuth && row.edit_token !== token) {
       // Don't leak whether the token was wrong vs the row missing.
       return { error: "invalid-token" };
     }
@@ -260,6 +319,15 @@ export async function getCrewForEdit(
     const loc = row.crew_locations?.[0] ?? null;
     const activityLocations =
       row.crew_activity_locations?.map((l) => l.location_name) ?? [];
+    // Compose display strings from related tables (mirrors crew.service.ts).
+    const activityDay =
+      row.crew_activity_days && row.crew_activity_days.length > 0
+        ? row.crew_activity_days.map((d) => d.day_of_week).join(", ")
+        : null;
+    const ageRangeRow = row.crew_age_ranges?.[0] ?? null;
+    const ageRange = ageRangeRow
+      ? `${ageRangeRow.min_age}~${ageRangeRow.max_age}대`
+      : null;
 
     return {
       crew: {
@@ -268,8 +336,8 @@ export async function getCrewForEdit(
         description: row.description,
         instagram: row.instagram,
         founded_date: row.founded_date,
-        activity_day: row.activity_day,
-        age_range: row.age_range,
+        activity_day: activityDay,
+        age_range: ageRange,
         is_visible: row.is_visible,
         activity_locations: activityLocations,
         location: {
@@ -313,7 +381,7 @@ export interface CrewEditPayload {
 
 export async function updateCrewByToken(
   crewId: string,
-  token: string,
+  token: string | null,
   payload: CrewEditPayload
 ): Promise<{
   success: boolean;
@@ -350,20 +418,18 @@ export async function updateCrewByToken(
     crewUpdate.instagram = payload.instagram || null;
     changedFields.push("인스타그램");
   }
-  if (
+  // activity_day / age_range are stored in separate related tables
+  // (crew_activity_days, crew_age_ranges). We detect change at the display-
+  // string level here, then apply delete+reinsert below in step 7b/7c.
+  const activityDayChanged =
     payload.activity_day !== undefined &&
-    (payload.activity_day || null) !== prev.activity_day
-  ) {
-    crewUpdate.activity_day = payload.activity_day || null;
-    changedFields.push("활동 요일");
-  }
-  if (
+    (payload.activity_day || null) !== prev.activity_day;
+  if (activityDayChanged) changedFields.push("활동 요일");
+
+  const ageRangeChanged =
     payload.age_range !== undefined &&
-    (payload.age_range || null) !== prev.age_range
-  ) {
-    crewUpdate.age_range = payload.age_range || null;
-    changedFields.push("연령대");
-  }
+    (payload.age_range || null) !== prev.age_range;
+  if (ageRangeChanged) changedFields.push("연령대");
 
   // 3. Detect location coordinate change — if so, force re-approval.
   let visibilityReset = false;
@@ -413,7 +479,9 @@ export async function updateCrewByToken(
   if (
     Object.keys(crewUpdate).length === 0 &&
     !locationChanged &&
-    !activityLocationsChanged
+    !activityLocationsChanged &&
+    !activityDayChanged &&
+    !ageRangeChanged
   ) {
     return { success: true, changedFields: [] };
   }
@@ -480,14 +548,77 @@ export async function updateCrewByToken(
     }
   }
 
+  // 7b. Activity days: input is a comma-joined display string ("월요일, 화요일").
+  // Parse → delete + reinsert into crew_activity_days.
+  if (activityDayChanged) {
+    const dayNames = (payload.activity_day || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const { error: delErr } = await serverSupabase
+      .from("crew_activity_days")
+      .delete()
+      .eq("crew_id", crewId);
+    if (delErr) {
+      console.error("updateCrewByToken activity_days delete error:", delErr);
+      return { success: false, error: "db-activity-days" };
+    }
+    if (dayNames.length > 0) {
+      const { error: insErr } = await serverSupabase
+        .from("crew_activity_days")
+        .insert(dayNames.map((d) => ({ crew_id: crewId, day_of_week: d })));
+      if (insErr) {
+        console.error("updateCrewByToken activity_days insert error:", insErr);
+        return { success: false, error: "db-activity-days-insert" };
+      }
+    }
+  }
+
+  // 7c. Age range: input is a display string ("20~39대" or "20-39"). Parse
+  // two integers; if parse fails treat as no-op (don't wipe the existing row).
+  if (ageRangeChanged) {
+    const m = (payload.age_range || "").match(/(\d+)\s*[~\-—]\s*(\d+)/);
+    if (m) {
+      const minAge = parseInt(m[1], 10);
+      const maxAge = parseInt(m[2], 10);
+      if (
+        Number.isFinite(minAge) &&
+        Number.isFinite(maxAge) &&
+        minAge <= maxAge
+      ) {
+        const { error: delErr } = await serverSupabase
+          .from("crew_age_ranges")
+          .delete()
+          .eq("crew_id", crewId);
+        if (delErr) {
+          console.error("updateCrewByToken age_ranges delete error:", delErr);
+          return { success: false, error: "db-age-range" };
+        }
+        const { error: insErr } = await serverSupabase
+          .from("crew_age_ranges")
+          .insert({ crew_id: crewId, min_age: minAge, max_age: maxAge });
+        if (insErr) {
+          console.error("updateCrewByToken age_ranges insert error:", insErr);
+          return { success: false, error: "db-age-range-insert" };
+        }
+      }
+    } else if (!payload.age_range) {
+      // empty input → clear the row
+      const { error: delErr } = await serverSupabase
+        .from("crew_age_ranges")
+        .delete()
+        .eq("crew_id", crewId);
+      if (delErr) {
+        console.error("updateCrewByToken age_ranges clear error:", delErr);
+        return { success: false, error: "db-age-range" };
+      }
+    }
+  }
+
   // 8. Cache invalidation — map page and home rely on this data. The tag
   // invalidates the `unstable_cache`-wrapped getCrews data layer; the path
   // calls bust the per-route render cache for navigation freshness.
-  revalidateTag(CREWS_CACHE_TAG);
-  revalidatePath("/");
-  revalidatePath("/map");
-  revalidatePath("/crew/list");
-  revalidatePath(`/crew/edit/${crewId}`);
+  await revalidateCrewsCache(crewId);
 
   // 9. Discord notification with diff. Fire-and-forget.
   notifyCrewEdit({
@@ -612,9 +743,7 @@ export async function updateCrewVisibility(
       return { success: false, error: error.message };
     }
 
-    revalidateTag(CREWS_CACHE_TAG);
-    revalidatePath("/");
-    revalidatePath("/map");
+    await revalidateCrewsCache(crewId);
     return { success: true };
   } catch (err) {
     console.error("크루 가시성 업데이트 실패:", err);
@@ -641,6 +770,9 @@ export async function revalidateCrewsCache(
   revalidatePath("/");
   revalidatePath("/map");
   revalidatePath("/crew/list");
+  revalidatePath("/regions");
+  revalidatePath("/regions/[code]", "page");
+  revalidatePath("/sitemap.xml");
   if (crewId) {
     revalidatePath(`/crew/${crewId}`);
     revalidatePath(`/crew/edit/${crewId}`);
@@ -691,9 +823,7 @@ export async function deleteCrew(
       return { success: false, error: deleteError.message };
     }
 
-    revalidateTag(CREWS_CACHE_TAG);
-    revalidatePath("/");
-    revalidatePath("/map");
+    await revalidateCrewsCache(crewId);
     return { success: true };
   } catch (err) {
     console.error("크루 삭제 실패:", err);
