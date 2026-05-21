@@ -51,6 +51,9 @@ export async function notifyCrewRegistration(
     // New crew arrives as is_visible=false → not yet in the public list,
     // but tag-invalidate anyway so any in-flight cached read is refreshed
     // when an admin later approves the crew.
+    // 등록 시점에는 is_visible=false라 공개 페이지(지역/리스트/sitemap)에 없으므로
+    // 경로 revalidate는 불필요. revalidateCrewsCache 헬퍼를 부르지 않는 이유.
+    // 단, 관리자가 나중에 승인할 때 in-flight 캐시 read가 신선해지도록 태그만 무효화.
     revalidateTag(CREWS_CACHE_TAG);
   } catch (err) {
     console.error("Unexpected error setting is_visible=false:", err);
@@ -615,11 +618,7 @@ export async function updateCrewByToken(
   // 8. Cache invalidation — map page and home rely on this data. The tag
   // invalidates the `unstable_cache`-wrapped getCrews data layer; the path
   // calls bust the per-route render cache for navigation freshness.
-  revalidateTag(CREWS_CACHE_TAG);
-  revalidatePath("/");
-  revalidatePath("/map");
-  revalidatePath("/crew/list");
-  revalidatePath(`/crew/edit/${crewId}`);
+  await revalidateCrewsCache(crewId);
 
   // 9. Discord notification with diff. Fire-and-forget.
   notifyCrewEdit({
@@ -744,9 +743,7 @@ export async function updateCrewVisibility(
       return { success: false, error: error.message };
     }
 
-    revalidateTag(CREWS_CACHE_TAG);
-    revalidatePath("/");
-    revalidatePath("/map");
+    await revalidateCrewsCache(crewId);
     return { success: true };
   } catch (err) {
     console.error("크루 가시성 업데이트 실패:", err);
@@ -773,6 +770,9 @@ export async function revalidateCrewsCache(
   revalidatePath("/");
   revalidatePath("/map");
   revalidatePath("/crew/list");
+  revalidatePath("/regions");
+  revalidatePath("/regions/[code]", "page");
+  revalidatePath("/sitemap.xml");
   if (crewId) {
     revalidatePath(`/crew/${crewId}`);
     revalidatePath(`/crew/edit/${crewId}`);
@@ -823,9 +823,7 @@ export async function deleteCrew(
       return { success: false, error: deleteError.message };
     }
 
-    revalidateTag(CREWS_CACHE_TAG);
-    revalidatePath("/");
-    revalidatePath("/map");
+    await revalidateCrewsCache(crewId);
     return { success: true };
   } catch (err) {
     console.error("크루 삭제 실패:", err);
