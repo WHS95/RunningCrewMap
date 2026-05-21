@@ -233,17 +233,26 @@ interface CrewActivityLocationRow {
   location_name: string;
 }
 
+interface CrewActivityDayRow {
+  day_of_week: string;
+}
+
+interface CrewAgeRangeRow {
+  min_age: number;
+  max_age: number;
+}
+
 interface CrewRow {
   id: string;
   name: string;
   description: string;
   instagram: string | null;
   founded_date: string | null;
-  activity_day: string | null;
-  age_range: string | null;
   is_visible: boolean;
   edit_token: string;
   crew_locations: CrewLocationRow[] | null;
+  crew_activity_days: CrewActivityDayRow[] | null;
+  crew_age_ranges: CrewAgeRangeRow[] | null;
   crew_activity_locations: CrewActivityLocationRow[] | null;
 }
 
@@ -279,9 +288,11 @@ export async function getCrewForEdit(
       .from("crews")
       .select(
         `
-          id, name, description, instagram, founded_date, activity_day,
-          age_range, is_visible, edit_token,
+          id, name, description, instagram, founded_date,
+          is_visible, edit_token,
           crew_locations ( main_address, detail_address, latitude, longitude ),
+          crew_activity_days ( day_of_week ),
+          crew_age_ranges ( min_age, max_age ),
           crew_activity_locations ( location_name )
         `
       )
@@ -305,6 +316,15 @@ export async function getCrewForEdit(
     const loc = row.crew_locations?.[0] ?? null;
     const activityLocations =
       row.crew_activity_locations?.map((l) => l.location_name) ?? [];
+    // Compose display strings from related tables (mirrors crew.service.ts).
+    const activityDay =
+      row.crew_activity_days && row.crew_activity_days.length > 0
+        ? row.crew_activity_days.map((d) => d.day_of_week).join(", ")
+        : null;
+    const ageRangeRow = row.crew_age_ranges?.[0] ?? null;
+    const ageRange = ageRangeRow
+      ? `${ageRangeRow.min_age}~${ageRangeRow.max_age}대`
+      : null;
 
     return {
       crew: {
@@ -313,8 +333,8 @@ export async function getCrewForEdit(
         description: row.description,
         instagram: row.instagram,
         founded_date: row.founded_date,
-        activity_day: row.activity_day,
-        age_range: row.age_range,
+        activity_day: activityDay,
+        age_range: ageRange,
         is_visible: row.is_visible,
         activity_locations: activityLocations,
         location: {
@@ -395,20 +415,18 @@ export async function updateCrewByToken(
     crewUpdate.instagram = payload.instagram || null;
     changedFields.push("인스타그램");
   }
-  if (
+  // activity_day / age_range are stored in separate related tables
+  // (crew_activity_days, crew_age_ranges). We detect change at the display-
+  // string level here, then apply delete+reinsert below in step 7b/7c.
+  const activityDayChanged =
     payload.activity_day !== undefined &&
-    (payload.activity_day || null) !== prev.activity_day
-  ) {
-    crewUpdate.activity_day = payload.activity_day || null;
-    changedFields.push("활동 요일");
-  }
-  if (
+    (payload.activity_day || null) !== prev.activity_day;
+  if (activityDayChanged) changedFields.push("활동 요일");
+
+  const ageRangeChanged =
     payload.age_range !== undefined &&
-    (payload.age_range || null) !== prev.age_range
-  ) {
-    crewUpdate.age_range = payload.age_range || null;
-    changedFields.push("연령대");
-  }
+    (payload.age_range || null) !== prev.age_range;
+  if (ageRangeChanged) changedFields.push("연령대");
 
   // 3. Detect location coordinate change — if so, force re-approval.
   let visibilityReset = false;
@@ -458,7 +476,9 @@ export async function updateCrewByToken(
   if (
     Object.keys(crewUpdate).length === 0 &&
     !locationChanged &&
-    !activityLocationsChanged
+    !activityLocationsChanged &&
+    !activityDayChanged &&
+    !ageRangeChanged
   ) {
     return { success: true, changedFields: [] };
   }
@@ -521,6 +541,73 @@ export async function updateCrewByToken(
       if (insErr) {
         console.error("updateCrewByToken activity insert error:", insErr);
         return { success: false, error: "db-activity-locations-insert" };
+      }
+    }
+  }
+
+  // 7b. Activity days: input is a comma-joined display string ("월요일, 화요일").
+  // Parse → delete + reinsert into crew_activity_days.
+  if (activityDayChanged) {
+    const dayNames = (payload.activity_day || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const { error: delErr } = await serverSupabase
+      .from("crew_activity_days")
+      .delete()
+      .eq("crew_id", crewId);
+    if (delErr) {
+      console.error("updateCrewByToken activity_days delete error:", delErr);
+      return { success: false, error: "db-activity-days" };
+    }
+    if (dayNames.length > 0) {
+      const { error: insErr } = await serverSupabase
+        .from("crew_activity_days")
+        .insert(dayNames.map((d) => ({ crew_id: crewId, day_of_week: d })));
+      if (insErr) {
+        console.error("updateCrewByToken activity_days insert error:", insErr);
+        return { success: false, error: "db-activity-days-insert" };
+      }
+    }
+  }
+
+  // 7c. Age range: input is a display string ("20~39대" or "20-39"). Parse
+  // two integers; if parse fails treat as no-op (don't wipe the existing row).
+  if (ageRangeChanged) {
+    const m = (payload.age_range || "").match(/(\d+)\s*[~\-—]\s*(\d+)/);
+    if (m) {
+      const minAge = parseInt(m[1], 10);
+      const maxAge = parseInt(m[2], 10);
+      if (
+        Number.isFinite(minAge) &&
+        Number.isFinite(maxAge) &&
+        minAge <= maxAge
+      ) {
+        const { error: delErr } = await serverSupabase
+          .from("crew_age_ranges")
+          .delete()
+          .eq("crew_id", crewId);
+        if (delErr) {
+          console.error("updateCrewByToken age_ranges delete error:", delErr);
+          return { success: false, error: "db-age-range" };
+        }
+        const { error: insErr } = await serverSupabase
+          .from("crew_age_ranges")
+          .insert({ crew_id: crewId, min_age: minAge, max_age: maxAge });
+        if (insErr) {
+          console.error("updateCrewByToken age_ranges insert error:", insErr);
+          return { success: false, error: "db-age-range-insert" };
+        }
+      }
+    } else if (!payload.age_range) {
+      // empty input → clear the row
+      const { error: delErr } = await serverSupabase
+        .from("crew_age_ranges")
+        .delete()
+        .eq("crew_id", crewId);
+      if (delErr) {
+        console.error("updateCrewByToken age_ranges clear error:", delErr);
+        return { success: false, error: "db-age-range" };
       }
     }
   }
