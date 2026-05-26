@@ -2,6 +2,7 @@
 "use server";
 
 import crypto from "crypto";
+import { cookies } from "next/headers";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { serverSupabase } from "@/lib/server/supabase";
 import { STORES_CACHE_TAG } from "@/lib/server/stores";
@@ -11,6 +12,13 @@ import {
   clearStoreSessionCookie,
   getStoreSession,
 } from "@/lib/server/storeSession";
+
+// 어드민 미들웨어(/admin/**)는 auth=true 쿠키로 가드한다. 매장 서버 액션이
+// 어드민 페이지에서 호출될 때 토큰/세션 검증을 우회하기 위한 헬퍼.
+async function isAdminRequest(): Promise<boolean> {
+  const jar = await cookies();
+  return jar.get("auth")?.value === "true";
+}
 
 // ----- 캐시 무효화 -----
 export async function revalidateStoresCache() {
@@ -277,10 +285,13 @@ export async function updateStoreByToken(
     };
   }
 ): Promise<{ success: boolean; resetVisibility?: boolean; error?: string }> {
-  // 권한
-  const session = await getStoreSession();
-  let authorized = false;
-  if (session && session.storeId === storeId) authorized = true;
+  // 권한 — 어드민 쿠키 우선, 그다음 세션/토큰
+  const isAdmin = await isAdminRequest();
+  let authorized = isAdmin;
+  if (!authorized) {
+    const session = await getStoreSession();
+    if (session && session.storeId === storeId) authorized = true;
+  }
   if (!authorized && token) {
     const { data } = await serverSupabase
       .from("stores")
@@ -296,9 +307,9 @@ export async function updateStoreByToken(
   }
   if (!authorized) return { success: false, error: "unauthorized" };
 
-  // 좌표/주소 변경 감지 → is_visible=false 재트리거
+  // 좌표/주소 변경 감지 → is_visible=false 재트리거 (어드민은 권위자이므로 skip)
   let resetVisibility = false;
-  if (patch.location) {
+  if (!isAdmin && patch.location) {
     const { data: cur } = await serverSupabase
       .from("store_locations")
       .select("main_address, latitude, longitude")
