@@ -83,15 +83,20 @@ ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_photos ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "stores select public"
+-- 주의: Postgres는 `CREATE POLICY IF NOT EXISTS`를 지원하지 않음
+-- (CREATE INDEX/TABLE과 달리). 멱등성은 DROP POLICY IF EXISTS + CREATE POLICY로.
+DROP POLICY IF EXISTS "stores select public" ON public.stores;
+CREATE POLICY "stores select public"
   ON public.stores FOR SELECT
   TO anon, authenticated USING (true);
 
-CREATE POLICY IF NOT EXISTS "store_locations select public"
+DROP POLICY IF EXISTS "store_locations select public" ON public.store_locations;
+CREATE POLICY "store_locations select public"
   ON public.store_locations FOR SELECT
   TO anon, authenticated USING (true);
 
-CREATE POLICY IF NOT EXISTS "store_photos select public"
+DROP POLICY IF EXISTS "store_photos select public" ON public.store_photos;
+CREATE POLICY "store_photos select public"
   ON public.store_photos FOR SELECT
   TO anon, authenticated USING (true);
 
