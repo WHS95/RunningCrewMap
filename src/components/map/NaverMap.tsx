@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { Crew } from "@/lib/types/crew";
+import type { Store, StoreCategory } from "@/lib/types/store";
 // import { CrewDetailSheet } from "@/components/map/CrewDetailSheet";
 import { CrewDetailView } from "@/components/map/CrewDetailView";
 import { VisibleCrewList } from "@/components/map/VisibleCrewList";
@@ -9,6 +10,20 @@ import { SearchBox } from "@/components/search/SearchBox";
 import { ListFilter, Target, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { crewService } from "@/lib/services/crew.service";
+
+// 매장 카테고리별 마커 색 — 디자인 톤 매핑 (계획서 Step 3).
+const STORE_COLOR: Record<StoreCategory, string> = {
+  cafe: "#A87E5B",
+  restaurant: "#D97757",
+  pub: "#7A4C3E",
+  other: "#8A8A8A",
+};
+const STORE_LABEL: Record<StoreCategory, string> = {
+  cafe: "C",
+  restaurant: "R",
+  pub: "P",
+  other: "·",
+};
 
 // ======================================
 // 마커 클러스터링 설정 (수정 가능한 기준들)
@@ -64,6 +79,9 @@ interface NaverMapProps {
   selectedCrew?: Crew | null;
   onMapLoad?: () => void;
   onCrewSelect?: (crew: Crew) => void;
+  stores?: Store[];
+  selectedStore?: Store | null;
+  onStoreSelect?: (store: Store) => void;
 }
 
 // 클러스터 타입 정의
@@ -92,10 +110,16 @@ export default function NaverMap({
   selectedCrew: externalSelectedCrew,
   onMapLoad,
   onCrewSelect,
+  stores = [],
+  selectedStore: externalSelectedStore,
+  onStoreSelect,
 }: NaverMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<naver.maps.Map | null>(null);
   const markersRef = useRef<naver.maps.Marker[]>([]);
+  // Store markers live in their own ref so the existing crew marker
+  // pipeline (clustering, refresh, viewport filtering) stays untouched.
+  const storeMarkersRef = useRef<naver.maps.Marker[]>([]);
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(
     externalSelectedCrew || null
   );
@@ -1035,6 +1059,105 @@ export default function NaverMap({
       refreshMarkers();
     }
   }, [refreshTrigger, refreshMarkers]);
+
+  // ======================================
+  // 매장 마커 렌더링 (크루 마커와 독립)
+  // ======================================
+  //
+  // 크루 마커처럼 클러스터링·뷰포트 필터링까지 가지 않고, 단순히 stores prop
+  // 변경 시 전부 다시 그린다. 매장 수가 크루보다 훨씬 적다는 가정 (running
+  // certification stores are a curated list). 성능 이슈가 생기면 추후 확장.
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current || typeof window === "undefined") {
+      return;
+    }
+    if (!window.naver?.maps?.Marker) return;
+
+    // 기존 매장 마커 제거
+    storeMarkersRef.current.forEach((m) => m.setMap(null));
+    storeMarkersRef.current = [];
+
+    if (stores.length === 0) return;
+
+    const created: naver.maps.Marker[] = [];
+    stores.forEach((store) => {
+      const color = STORE_COLOR[store.category] ?? STORE_COLOR.other;
+      const label = STORE_LABEL[store.category] ?? STORE_LABEL.other;
+      const size = 32;
+
+      // 카테고리별 색의 원형 핀 + 가운데 모노 글자 1자. counter-filter로
+      // 지도 컨테이너의 다크 인버전을 상쇄해서 의도한 색으로 표시.
+      const content = `<div style="
+        filter: ${MARKER_COUNTER_FILTER};
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        background: ${color};
+        border: 1.4px solid ${CART_INK};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+        font-weight: 700;
+        font-size: 13px;
+        color: ${MARKER_BG};
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+      ">${label}</div>`;
+
+      const marker = new window.naver.maps.Marker({
+        position: new window.naver.maps.LatLng(
+          store.location.lat,
+          store.location.lng
+        ),
+        map: mapInstanceRef.current!,
+        icon: {
+          content,
+          size: new window.naver.maps.Size(size, size),
+          anchor: new window.naver.maps.Point(size / 2, size / 2),
+        },
+        zIndex: 50, // 크루 마커보다 약간 아래로
+      });
+
+      window.naver.maps.Event.addListener(marker, "click", () => {
+        if (onStoreSelect) {
+          onStoreSelect(store);
+        }
+      });
+
+      created.push(marker);
+    });
+
+    storeMarkersRef.current = created;
+
+    return () => {
+      created.forEach((m) => {
+        m.setMap(null);
+        if (window.naver?.maps) {
+          window.naver.maps.Event.clearInstanceListeners(m);
+        }
+      });
+    };
+  }, [stores, isMapReady, onStoreSelect]);
+
+  // 외부에서 선택된 매장이 바뀌면 지도 이동
+  useEffect(() => {
+    if (
+      !externalSelectedStore ||
+      !mapInstanceRef.current ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+    const position = new window.naver.maps.LatLng(
+      externalSelectedStore.location.lat,
+      externalSelectedStore.location.lng
+    );
+    mapInstanceRef.current.setCenter(position);
+    if (mapInstanceRef.current.getZoom() < 15) {
+      mapInstanceRef.current.setZoom(16);
+    }
+  }, [externalSelectedStore]);
 
   // 외부에서 선택된 크루가 변경될 경우 상태 업데이트
   useEffect(() => {

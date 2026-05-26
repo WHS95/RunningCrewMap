@@ -15,7 +15,16 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import { MapHeader } from "@/components/layout/HomeHeader";
 import { useCrewStore } from "@/lib/store/crewStore";
 import { KickerLabel } from "@/components/design/cartographic";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { StoreDetailView } from "@/components/store/StoreDetailView";
 import type { Crew } from "@/lib/types/crew";
+import type { Store } from "@/lib/types/store";
+
+type MapLayer = "all" | "crew" | "store";
 
 const NAVER_MAPS_SDK_URL = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_RUN_NAVER_CLIENT_ID}&submodules=geocoder`;
 
@@ -46,9 +55,28 @@ const LOCATION_EXPIRY_TIME = 7 * 24 * 60 * 60 * 1000;
 
 interface MapPageClientProps {
   initialCrews: Crew[];
+  initialStores: Store[];
 }
 
-export default function MapPageClient({ initialCrews }: MapPageClientProps) {
+export default function MapPageClient({
+  initialCrews,
+  initialStores,
+}: MapPageClientProps) {
+  // Layer toggle — page-local state, not URL-synced (spec 5.2).
+  const [layer, setLayer] = useState<MapLayer>("all");
+
+  // 매장 상세 sheet 상태
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [isStoreDetailOpen, setIsStoreDetailOpen] = useState(false);
+
+  const handleStoreSelect = useCallback((store: Store) => {
+    setSelectedStore(store);
+    setIsStoreDetailOpen(true);
+  }, []);
+
+  const closeStoreDetail = useCallback(() => {
+    setIsStoreDetailOpen(false);
+  }, []);
   // Zustand 스토어에서 크루 데이터 및 상태 가져오기
   const {
     filteredCrews,
@@ -261,11 +289,36 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
             height='100%'
             initialCenter={center}
             initialZoom={13}
-            crews={mapCrews}
+            crews={layer === "store" ? [] : mapCrews}
+            stores={layer === "crew" ? [] : initialStores}
             selectedCrew={selectedCrew}
+            selectedStore={selectedStore}
             onMapLoad={handleMapLoad}
             onCrewSelect={setSelectedCrew}
+            onStoreSelect={handleStoreSelect}
           />
+
+          {/* Layer toggle — crew / store / all. Page-local state, not
+              URL-synced. Floats over the map below the search box. */}
+          <div className='absolute top-[68px] left-1/2 -translate-x-1/2 z-[150] pointer-events-auto'>
+            <div className='flex gap-1 rounded-full border border-cart-rule bg-background/90 backdrop-blur-md p-1 text-[10px] font-mono tracking-[0.18em] uppercase shadow-lg'>
+              {(["all", "crew", "store"] as const).map((k) => (
+                <button
+                  key={k}
+                  type='button'
+                  onClick={() => setLayer(k)}
+                  aria-pressed={layer === k}
+                  className={`rounded-full px-3 py-1.5 transition-colors ${
+                    layer === k
+                      ? "bg-cart-ink text-cart-paper"
+                      : "text-cart-ink-60 hover:text-cart-ink"
+                  }`}
+                >
+                  {k === "all" ? "전체" : k === "crew" ? "크루" : "매장"}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Empty-state HUD — visible only after loading clears AND we
               genuinely have zero crews. Prevents the "is this broken?"
@@ -337,6 +390,20 @@ export default function MapPageClient({ initialCrews }: MapPageClientProps) {
           isOpen={isDetailOpen}
           onClose={closeDetail}
         />
+
+        {/* 매장 상세 — StoreDetailView를 Sheet으로 감싼 인라인 래퍼.
+            크루용 CrewDetailView가 자체 Sheet을 갖는 것과 동일 패턴. */}
+        <Sheet open={isStoreDetailOpen} onOpenChange={closeStoreDetail}>
+          <SheetContent
+            side='bottom'
+            className='h-[85vh] overflow-y-auto p-0 sm:max-w-full'
+          >
+            <SheetTitle className='sr-only'>
+              {selectedStore ? selectedStore.name : "매장 상세"}
+            </SheetTitle>
+            {selectedStore && <StoreDetailView store={selectedStore} />}
+          </SheetContent>
+        </Sheet>
       </main>
     </>
   );
