@@ -20,6 +20,9 @@ const PRIMARY_LINKS: MenuLinkRow[] = [
   { title: "크루 등록", en: "REGISTER", path: "/register" },
   { title: "내 크루 정보 수정", en: "EDIT MY CREW", path: "/crew/edit/login" },
   { title: "지역별 보기", en: "REGIONS", path: "/regions" },
+  { title: "러닝 인증 매장", en: "STORES", path: "/store" },
+  { title: "매장 등록", en: "STORE REGISTER", path: "/store/register" },
+  { title: "내 매장 수정", en: "STORE EDIT", path: "/store/edit/login" },
   {
     title: "문의 및 건의",
     en: "CONTACT",
