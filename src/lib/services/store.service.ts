@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 import imageCompression from "browser-image-compression";
 import type {
   Store,
+  StoreAdmin,
   StoreCategory,
 } from "@/lib/types/store";
 import type {
@@ -203,6 +204,87 @@ class StoreService {
   async getStoreById(id: string): Promise<Store | null> {
     const list = await this.getStoreList();
     return list.find((s) => s.id === id) ?? null;
+  }
+
+  // 어드민 전용: is_visible을 보존한 채 매장 목록을 반환.
+  // /admin/store 페이지가 가시성 토글 / PENDING 필터에 쓰임. 미들웨어 가드
+  // 통과를 권한 증명으로 사용 (RLS SELECT 공개 정책 + service-key 불필요).
+  async getStoreListAdmin(options?: StoreFilterOptions): Promise<StoreAdmin[]> {
+    let q = supabase
+      .from("stores")
+      .select(
+        `
+        id, name, category, description, verification_method,
+        reward_description, owner_message, business_hours, contact,
+        instagram, naver_map_url, event_post_url, main_image_url,
+        is_visible, created_at,
+        store_locations (*),
+        store_photos ( photo_url, display_order )
+        `
+      )
+      .order("created_at", { ascending: false });
+
+    if (options?.visibilityFilter === "live") q = q.eq("is_visible", true);
+    else if (options?.visibilityFilter === "pending")
+      q = q.eq("is_visible", false);
+
+    if (options?.category) q = q.eq("category", options.category);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    return ((data ?? []) as unknown as Array<{
+      id: string;
+      name: string;
+      category: StoreCategory;
+      description?: string;
+      verification_method?: string;
+      reward_description?: string;
+      owner_message?: string;
+      business_hours?: string;
+      contact?: string;
+      instagram?: string;
+      naver_map_url?: string;
+      event_post_url?: string;
+      main_image_url?: string;
+      is_visible: boolean;
+      created_at: string;
+      store_locations: Array<{
+        main_address: string;
+        detail_address?: string;
+        latitude: number;
+        longitude: number;
+      }>;
+      store_photos?: Array<{ photo_url: string; display_order: number }>;
+    }>).map((r) => {
+      const loc = r.store_locations[0];
+      return {
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        description: r.description,
+        verification_method: r.verification_method,
+        reward_description: r.reward_description,
+        owner_message: r.owner_message,
+        business_hours: r.business_hours,
+        contact: r.contact,
+        instagram: r.instagram,
+        naver_map_url: r.naver_map_url,
+        event_post_url: r.event_post_url,
+        main_image_url: r.main_image_url,
+        is_visible: r.is_visible,
+        location: {
+          lat: loc?.latitude ?? 0,
+          lng: loc?.longitude ?? 0,
+          address: loc?.detail_address || loc?.main_address || "",
+          main_address: loc?.main_address ?? "",
+        },
+        photos: (r.store_photos ?? [])
+          .slice()
+          .sort((a, b) => a.display_order - b.display_order)
+          .map((p) => p.photo_url),
+        created_at: r.created_at,
+      };
+    });
   }
 
   async updateStore(id: string, input: UpdateStoreInput): Promise<void> {
