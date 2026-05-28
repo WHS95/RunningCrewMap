@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch, type Control, type FieldErrors } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, X, ChevronLeft } from "lucide-react";
+import { Check, X, ChevronLeft, Search, Loader2 } from "lucide-react";
 import {
   STORE_CATEGORIES,
   STORE_CATEGORY_LABELS,
@@ -14,6 +14,7 @@ import {
 import { storeService } from "@/lib/services/store.service";
 import { notifyStoreRegistration } from "@/app/actions/store";
 import { StorePhotosUpload, type StorePhotoSlot } from "./StorePhotosUpload";
+import CrewLocationPickerMap from "@/components/map/CrewLocationPickerMap";
 
 const Schema = z
   .object({
@@ -115,12 +116,20 @@ export function StoreRegisterForm() {
     handleSubmit,
     trigger,
     control,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(Schema),
     mode: "onChange",
     defaultValues: { category: "cafe" },
   });
+
+  // Coordinates locked in from the map picker. main_address is the source
+  // of truth in form state; coords are committed when the user moves the pin
+  // (drag/tap) or jumps via the search box.
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
 
   useEffect(() => {
     if (!mainImage) {
@@ -183,9 +192,23 @@ export function StoreRegisterForm() {
     }
     setSubmitting(true);
     try {
-      const coords = await geocode(values.main_address);
-      const lat = coords?.lat ?? 0;
-      const lng = coords?.lng ?? 0;
+      // Prefer coords committed by the map picker. If the user typed the
+      // address without ever moving the pin, try the geocode API as a fallback.
+      let lat = coords?.lat ?? 0;
+      let lng = coords?.lng ?? 0;
+      if (!coords) {
+        const fallback = await geocode(values.main_address);
+        if (fallback) {
+          lat = fallback.lat;
+          lng = fallback.lng;
+        }
+      }
+      if (!lat || !lng) {
+        setTopErr("매장 위치를 지도에서 지정해 주세요.");
+        setStep(1);
+        setSubmitting(false);
+        return;
+      }
       const { id } = await storeService.createStore({
         name: values.name,
         category: values.category as StoreCategory,
@@ -292,36 +315,24 @@ export function StoreRegisterForm() {
         )}
 
         {step === 1 && (
-          <div className="space-y-4">
-            <ValidatedField
-              name="main_address"
-              label="주소"
-              control={control}
-              errors={errors}
-              required
-            >
-              <input
-                type="text"
-                {...register("main_address")}
-                placeholder="예: 서울시 강남구 테헤란로 123"
-                autoFocus
-                className={inputCls}
-              />
-            </ValidatedField>
-            <ValidatedField
-              name="detail_address"
-              label="상세 주소 (선택)"
-              control={control}
-              errors={errors}
-            >
-              <input
-                type="text"
-                {...register("detail_address")}
-                placeholder="예: 2층, 101호 등"
-                className={inputCls}
-              />
-            </ValidatedField>
-          </div>
+          <AddressStep
+            control={control}
+            register={register}
+            errors={errors}
+            initialCoords={coords}
+            onCommit={(loc) => {
+              setCoords({ lat: loc.lat, lng: loc.lng });
+              setValue("main_address", loc.main_address, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+              if (loc.detail_address !== undefined) {
+                setValue("detail_address", loc.detail_address, {
+                  shouldDirty: true,
+                });
+              }
+            }}
+          />
         )}
 
         {step === 2 && (
@@ -433,20 +444,11 @@ export function StoreRegisterForm() {
 
         {step === 5 && (
           <div className="space-y-4">
-            <ValidatedField
-              name="business_hours"
-              label="영업시간 (선택)"
-              control={control}
-              errors={errors}
-            >
-              <input
-                type="text"
-                {...register("business_hours")}
-                placeholder="예: 매일 10:00 - 22:00"
-                autoFocus
-                className={inputCls}
-              />
-            </ValidatedField>
+            <BusinessHoursField
+              onChange={(composed) =>
+                setValue("business_hours", composed, { shouldDirty: true })
+              }
+            />
             <ValidatedField
               name="contact"
               label="연락처"
@@ -589,6 +591,364 @@ function useDebounced<T>(value: T, delay = 300): T {
     return () => clearTimeout(id);
   }, [value, delay]);
   return debounced;
+}
+
+interface AddressStepProps {
+  control: Control<FormValues>;
+  register: ReturnType<typeof useForm<FormValues>>["register"];
+  errors: FieldErrors<FormValues>;
+  initialCoords: { lat: number; lng: number } | null;
+  onCommit: (loc: {
+    lat: number;
+    lng: number;
+    main_address: string;
+    detail_address?: string;
+  }) => void;
+}
+
+function AddressStep({
+  control,
+  register,
+  errors,
+  initialCoords,
+  onCommit,
+}: AddressStepProps) {
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchErr, setSearchErr] = useState<string | null>(null);
+  const [pin, setPin] = useState<{
+    lat: number;
+    lng: number;
+    address?: string;
+  } | null>(
+    initialCoords
+      ? { lat: initialCoords.lat, lng: initialCoords.lng }
+      : null
+  );
+
+  async function onSearch() {
+    if (!query.trim()) return;
+    setSearchErr(null);
+    setSearching(true);
+    try {
+      const res = await fetch(
+        `/api/geocode?query=${encodeURIComponent(query)}`
+      );
+      if (!res.ok) {
+        setSearchErr(
+          "정확한 주소가 아니면 검색이 안 돼요. 지도를 이동해 핀을 직접 찍어주세요."
+        );
+        return;
+      }
+      const data = await res.json();
+      const first = data?.addresses?.[0];
+      if (!first) {
+        setSearchErr(
+          "검색 결과가 없어요. 지도에서 직접 핀을 찍어 위치를 지정해주세요."
+        );
+        return;
+      }
+      const lat = parseFloat(first.y);
+      const lng = parseFloat(first.x);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        setSearchErr("좌표를 가져오지 못했어요. 지도에서 직접 지정해주세요.");
+        return;
+      }
+      const addr = first.roadAddress || first.jibunAddress || query;
+      setPin({ lat, lng, address: addr });
+      onCommit({ lat, lng, main_address: addr });
+    } catch {
+      setSearchErr("네트워크 오류로 검색에 실패했어요.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="text-[12px] uppercase tracking-[0.18em] text-cart-ink-60">
+          주소 / 키워드로 검색
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSearch();
+              }
+            }}
+            placeholder="예: 강남구 테헤란로 123"
+            className={inputCls}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={onSearch}
+            disabled={searching || !query.trim()}
+            className="px-3 rounded-md border border-cart-rule text-[12px] tracking-[0.18em] text-cart-ink-60 disabled:opacity-40 flex items-center gap-1.5"
+          >
+            {searching ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Search className="w-3.5 h-3.5" />
+            )}
+            검색
+          </button>
+        </div>
+        <p className="text-[11px] text-cart-ink-40">
+          도로명/지번이 정확하면 자동으로 핀이 이동해요. 검색이 안되면 아래
+          지도에서 직접 핀을 찍거나 드래그해 위치를 지정할 수 있어요.
+        </p>
+        {searchErr && <p className="text-[11px] text-red-500">{searchErr}</p>}
+      </div>
+
+      <CrewLocationPickerMap
+        value={pin}
+        height={300}
+        onChange={(next) => {
+          setPin({ lat: next.lat, lng: next.lng, address: next.address });
+          if (next.address) {
+            onCommit({
+              lat: next.lat,
+              lng: next.lng,
+              main_address: next.address,
+            });
+          } else {
+            // Address not resolved — still commit coords; user can type
+            // the address manually in the field below.
+            onCommit({
+              lat: next.lat,
+              lng: next.lng,
+              main_address: "",
+            });
+          }
+        }}
+      />
+
+      <ValidatedField
+        name="main_address"
+        label="주소 (자동 입력 · 수정 가능)"
+        control={control}
+        errors={errors}
+        required
+      >
+        <input
+          type="text"
+          {...register("main_address")}
+          placeholder="지도에서 위치를 지정하면 자동으로 채워져요"
+          className={inputCls}
+        />
+      </ValidatedField>
+      <ValidatedField
+        name="detail_address"
+        label="상세 주소 (선택)"
+        control={control}
+        errors={errors}
+      >
+        <input
+          type="text"
+          {...register("detail_address")}
+          placeholder="예: 2층, 101호 등"
+          className={inputCls}
+        />
+      </ValidatedField>
+    </div>
+  );
+}
+
+const DAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
+type DayKey = (typeof DAYS)[number];
+
+function summarizeDays(selected: DayKey[]): string {
+  if (selected.length === 0) return "";
+  if (selected.length === 7) return "매일";
+  // Preserve calendar order (월→일) regardless of click order.
+  const ordered = DAYS.filter((d) => selected.includes(d));
+  // Detect contiguous runs (e.g. 월·화·수 → 월–수)
+  const runs: DayKey[][] = [];
+  let cur: DayKey[] = [];
+  ordered.forEach((d) => {
+    const idx = DAYS.indexOf(d);
+    const last = cur[cur.length - 1];
+    if (!last || DAYS.indexOf(last) === idx - 1) {
+      cur.push(d);
+    } else {
+      runs.push(cur);
+      cur = [d];
+    }
+  });
+  if (cur.length) runs.push(cur);
+  return runs
+    .map((run) =>
+      run.length >= 3 ? `${run[0]}–${run[run.length - 1]}` : run.join("·")
+    )
+    .join("·");
+}
+
+function composeBusinessHours(
+  days: DayKey[],
+  open: string,
+  close: string,
+  note: string
+): string {
+  const parts: string[] = [];
+  const daySummary = summarizeDays(days);
+  if (daySummary && open && close) {
+    parts.push(`${daySummary} ${open}–${close}`);
+  } else if (daySummary) {
+    parts.push(daySummary);
+  } else if (open && close) {
+    parts.push(`${open}–${close}`);
+  }
+  const trimmedNote = note.trim();
+  if (trimmedNote) parts.push(trimmedNote);
+  return parts.join(" · ");
+}
+
+function BusinessHoursField({
+  onChange,
+}: {
+  onChange: (composed: string) => void;
+}) {
+  const [days, setDays] = useState<DayKey[]>([]);
+  const [openTime, setOpenTime] = useState("09:00");
+  const [closeTime, setCloseTime] = useState("18:00");
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    onChange(composeBusinessHours(days, openTime, closeTime, note));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days, openTime, closeTime, note]);
+
+  const toggleDay = (d: DayKey) =>
+    setDays((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]
+    );
+
+  const allSelected = days.length === 7;
+  const weekdaysSelected =
+    days.length === 5 &&
+    (["월", "화", "수", "목", "금"] as DayKey[]).every((d) =>
+      days.includes(d)
+    );
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <label className="text-[12px] uppercase tracking-[0.18em] text-cart-ink-60">
+          영업 요일 (선택)
+        </label>
+        <div className="flex flex-row flex-nowrap gap-1.5 w-full">
+          {DAYS.map((d) => {
+            const active = days.includes(d);
+            const isWeekend = d === "토" || d === "일";
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => toggleDay(d)}
+                className={`h-9 flex-1 basis-0 min-w-0 rounded-md border text-sm transition-colors ${
+                  active
+                    ? "border-[hsl(var(--lime))] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))]"
+                    : "border-cart-rule text-cart-ink-60"
+                } ${isWeekend && !active ? "text-red-400" : ""}`}
+              >
+                {d}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setDays(allSelected ? [] : [...DAYS])}
+            className="px-2.5 py-1 rounded-md border border-cart-rule text-[11px] tracking-[0.18em] text-cart-ink-60"
+          >
+            {allSelected ? "전체 해제" : "매일"}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setDays(
+                weekdaysSelected
+                  ? []
+                  : (["월", "화", "수", "목", "금"] as DayKey[])
+              )
+            }
+            className="px-2.5 py-1 rounded-md border border-cart-rule text-[11px] tracking-[0.18em] text-cart-ink-60"
+          >
+            평일
+          </button>
+          <button
+            type="button"
+            onClick={() => setDays(["토", "일"])}
+            className="px-2.5 py-1 rounded-md border border-cart-rule text-[11px] tracking-[0.18em] text-cart-ink-60"
+          >
+            주말
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-[12px] uppercase tracking-[0.18em] text-cart-ink-60">
+            오픈
+          </label>
+          <input
+            type="time"
+            value={openTime}
+            onChange={(e) => setOpenTime(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[12px] uppercase tracking-[0.18em] text-cart-ink-60">
+            마감
+          </label>
+          <input
+            type="time"
+            value={closeTime}
+            onChange={(e) => setCloseTime(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-[12px] uppercase tracking-[0.18em] text-cart-ink-60">
+          비고 · 예외 (선택)
+        </label>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={2}
+          placeholder="예: 격주 화요일 휴무, 공휴일 휴무, 매월 첫째 주 월요일 휴무"
+          className={inputCls}
+        />
+        <p className="text-[11px] text-cart-ink-40">
+          요일/시간으로 표현하기 어려운 휴무 패턴이나 변동 사항을 자유롭게 적어
+          주세요.
+        </p>
+      </div>
+
+      <div className="rounded-md border border-cart-rule/60 bg-cart-paper/40 px-3 py-2">
+        <p className="text-[11px] tracking-[0.18em] text-cart-ink-40">
+          미리보기
+        </p>
+        <p className="text-sm text-cart-ink mt-1 break-keep">
+          {composeBusinessHours(days, openTime, closeTime, note) || (
+            <span className="text-cart-ink-40">
+              아직 입력된 영업시간이 없어요
+            </span>
+          )}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 interface ValidatedFieldProps {

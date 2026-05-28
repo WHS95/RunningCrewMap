@@ -4,7 +4,7 @@ import {
   CartographicHeader,
   KickerLabel,
 } from "@/components/design/cartographic";
-import { Users, ChevronRight, LogOut, CalendarDays } from "lucide-react";
+import { Users, ChevronRight, LogOut, CalendarDays, Store } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "관리자 대시보드 | 런하우스",
@@ -64,6 +64,14 @@ export default function AdminDashboardPage() {
             enLabel='EVENTS'
             count='—'
             icon={<CalendarDays className='w-4 h-4' />}
+          />
+          <AdminMenuItem
+            title='러닝 인증 매장 관리'
+            description='매장 검토 · 정보 수정 · 공개 토글 · PIN/편집 토큰 발급'
+            link='/admin/store'
+            enLabel='STORES'
+            count='—'
+            icon={<Store className='w-4 h-4' />}
           />
         </div>
       </section>
