@@ -1,6 +1,12 @@
 "use client";
 
-import { PlusCircle, MessageCircle, MapPin, ChevronRight } from "lucide-react";
+import {
+  PlusCircle,
+  MessageCircle,
+  MapPin,
+  ChevronRight,
+  Calculator,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CSS_VARIABLES } from "@/lib/constants";
 import {
@@ -20,23 +26,16 @@ const PRIMARY_LINKS: MenuLinkRow[] = [
   { title: "크루 등록", en: "REGISTER", path: "/register" },
   { title: "내 크루 정보 수정", en: "EDIT MY CREW", path: "/crew/edit/login" },
   { title: "지역별 보기", en: "REGIONS", path: "/regions" },
+  { title: "러닝 인증 매장", en: "STORES", path: "/store" },
+  { title: "매장 등록", en: "STORE REGISTER", path: "/store/register" },
+  { title: "내 매장 수정", en: "STORE EDIT", path: "/store/edit/login" },
+  { title: "러닝 계산기", en: "CALCULATORS", path: "/calculator" },
   {
     title: "문의 및 건의",
     en: "CONTACT",
     path: "https://open.kakao.com/me/runhouse",
     isExternal: true,
   },
-];
-
-const CALCULATOR_LINKS: MenuLinkRow[] = [
-  { title: "스플릿 타임 계산기", en: "SPLIT", path: "/calculator/split-time" },
-  { title: "완주 시간 예측기", en: "FORECAST", path: "/calculator/prediction" },
-  {
-    title: "심박수 존 계산기",
-    en: "HEART RATE",
-    path: "/calculator/heart-rate",
-  },
-  { title: "페이스 계산기", en: "PACE", path: "/calculator/pace" },
 ];
 
 export default function MenuPage() {
@@ -59,7 +58,7 @@ export default function MenuPage() {
       }}
     >
       <CartographicHeader
-        kicker={`MENU · ${PRIMARY_LINKS.length + CALCULATOR_LINKS.length} ITEMS`}
+        kicker={`MENU · ${PRIMARY_LINKS.length} ITEMS`}
         title='메뉴'
       />
 
@@ -88,6 +87,11 @@ export default function MenuPage() {
                     className='w-4 h-4 text-[hsl(var(--lime))]'
                     strokeWidth={1.6}
                   />
+                ) : item.en === "CALCULATORS" ? (
+                  <Calculator
+                    className='w-4 h-4 text-[hsl(var(--lime))]'
+                    strokeWidth={1.6}
+                  />
                 ) : (
                   <MessageCircle
                     className='w-4 h-4 text-[hsl(var(--lime))]'
@@ -109,36 +113,6 @@ export default function MenuPage() {
         </div>
       </section>
 
-      {/* Calculators */}
-      <section className='px-[22px] mt-7'>
-        <KickerLabel tone='lime' className='py-2 tracking-[0.22em]'>
-          · 러닝 계산기 · CALCULATORS
-        </KickerLabel>
-        <div>
-          {CALCULATOR_LINKS.map((item, idx) => (
-            <button
-              key={item.path}
-              onClick={() => handleClick(item)}
-              className={`flex items-center gap-3 w-full py-3.5 text-left transition-transform active:scale-[0.99] ${
-                idx === 0 ? "" : "border-t border-cart-rule"
-              }`}
-            >
-              <div className='w-8 font-mono text-[10px] tracking-[0.05em] text-cart-ink-60 tabular-nums'>
-                {String(idx + 1).padStart(2, "0")}
-              </div>
-              <div className='flex-1 min-w-0'>
-                <div className='text-[14px] font-semibold text-cart-ink'>
-                  {item.title}
-                </div>
-              </div>
-              <span className='font-mono text-[9px] tracking-[0.18em] text-[hsl(var(--lime))] font-semibold'>
-                {item.en}
-              </span>
-              <ChevronRight className='w-4 h-4 text-cart-ink-40' />
-            </button>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
