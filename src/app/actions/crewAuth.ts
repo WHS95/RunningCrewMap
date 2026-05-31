@@ -4,6 +4,7 @@ import { serverSupabase } from "@/lib/server/supabase";
 import {
   hashPin,
   isValidPinFormat,
+  isValidNewPinFormat,
   isWeakPin,
   normalizeInstagramHandle,
   verifyPin,
@@ -101,6 +102,7 @@ export async function loginWithPin(
   }
 
   // 실패 카운트 증가
+  // TODO(security): make failed-PIN increment atomic (DB RPC로 read-modify-write 경쟁 제거)
   const nextAttempts = row.failed_pin_attempts + 1;
   if (nextAttempts >= MAX_FAILED_ATTEMPTS) {
     const lockUntil = new Date(Date.now() + LOCK_DURATION_MS).toISOString();
@@ -130,7 +132,8 @@ export async function setCrewPinWithToken(
   token: string,
   pin: string
 ): Promise<SetPinResult> {
-  if (!isValidPinFormat(pin)) return { ok: false, reason: "bad-format" };
+  // 신규 PIN 설정은 정확히 8자리 강제
+  if (!isValidNewPinFormat(pin)) return { ok: false, reason: "bad-format" };
   if (isWeakPin(pin)) return { ok: false, reason: "weak-pin" };
   if (!crewId || !token) return { ok: false, reason: "invalid-token" };
 
@@ -203,7 +206,8 @@ export async function changeCrewPin(
 > {
   const session = await getCrewSession();
   if (!session) return { ok: false, reason: "unauthenticated" };
-  if (!isValidPinFormat(newPin)) return { ok: false, reason: "bad-format" };
+  // PIN 변경도 새 PIN은 정확히 8자리 강제
+  if (!isValidNewPinFormat(newPin)) return { ok: false, reason: "bad-format" };
   if (isWeakPin(newPin)) return { ok: false, reason: "weak-pin" };
 
   const { data, error } = await serverSupabase

@@ -26,11 +26,18 @@ import {
   ACTIVITY_DAYS,
 } from "@/lib/types/crewInsert";
 
-// Weak PIN validation set (mirrored from server)
+// 클라이언트 약한 PIN 목록 — server/pin.ts의 WEAK_PINS와 동기화 유지
 const WEAK_PINS_CLIENT = new Set([
+  // 4자리
   "0000","1111","2222","3333","4444","5555","6666","7777","8888","9999",
   "0123","1234","2345","3456","4567","5678","6789",
   "9876","8765","7654","6543","5432","4321","3210",
+  // 8자리
+  "00000000","11111111","22222222","33333333","44444444",
+  "55555555","66666666","77777777","88888888","99999999",
+  "01234567","12345678","23456789","98765432","87654321","76543210",
+  "00001111","11112222","12341234","11223344",
+  "12121212","01010101",
 ]);
 
 // UI Components - 실제 사용하는 컴포넌트만 임포트
@@ -498,9 +505,9 @@ export default function RegisterPage() {
     // 제출 시도 이벤트 — 유효성 검사 통과 여부와 무관하게 즉시 캡처
     posthog.capture("register_submit_attempt");
 
-    // PIN 검증
-    if (!/^\d{4}$/.test(pin)) {
-      setPinError("4자리 숫자를 입력해주세요.");
+    // PIN 검증 — 신규 등록은 정확히 8자리 강제
+    if (!/^\d{8}$/.test(pin)) {
+      setPinError("8자리 숫자를 입력해주세요.");
       setIsLoading(false);
       return;
     }
@@ -1393,18 +1400,18 @@ export default function RegisterPage() {
               <span className='ml-1 text-[hsl(var(--lime))]'>*</span>
             </label>
             <p className='mb-3 text-sm text-cart-ink-60'>
-              수정/관리에 사용할 4자리 비밀번호입니다. 잊지 않게 안전한 곳에 메모해두세요.
+              수정/관리에 사용할 <span className="font-semibold text-cart-ink">8자리</span> 비밀번호입니다. 잊지 않게 안전한 곳에 메모해두세요.
             </p>
             <div className='grid grid-cols-2 gap-3'>
               <input
                 type='password'
                 inputMode='numeric'
                 pattern='[0-9]*'
-                maxLength={4}
-                placeholder='4자리 숫자'
+                maxLength={8}
+                placeholder='8자리 숫자'
                 value={pin}
                 onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 8);
                   setPin(v);
                   setPinError(null);
                 }}
@@ -1415,11 +1422,11 @@ export default function RegisterPage() {
                 type='password'
                 inputMode='numeric'
                 pattern='[0-9]*'
-                maxLength={4}
+                maxLength={8}
                 placeholder='다시 입력'
                 value={pinConfirm}
                 onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 8);
                   setPinConfirm(v);
                   setPinError(null);
                 }}

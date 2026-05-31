@@ -3,6 +3,15 @@ import withSerwist from "@serwist/next";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   skipTrailingSlashRedirect: true,
+  async headers() {
+    return [
+      {
+        // SSO 토큰이 리다이렉트 URL 쿼리에 포함되므로 Referer 헤더로 유출되지 않도록 차단
+        source: "/sso/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+    ];
+  },
   async rewrites() {
     return [
       // PostHog 인제스트 역방향 프록시 — 광고 차단기 우회

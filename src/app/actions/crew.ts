@@ -60,11 +60,12 @@ export async function notifyCrewRegistration(
   }
 
   // PIN: 등록 폼에서 받은 PIN을 서버에서 해싱하여 저장.
+  // 신규 등록은 정확히 8자리(isValidNewPinFormat)만 허용 — 4자리는 저장하지 않는다.
   // 실패해도 등록은 막지 않는다 — 사용자는 첫 편집 시 다시 설정할 수 있다.
-  if (options?.pin && /^\d{4}$/.test(options.pin)) {
+  if (options?.pin) {
     try {
-      const { isWeakPin, hashPin } = await import("@/lib/server/pin");
-      if (!isWeakPin(options.pin)) {
+      const { isValidNewPinFormat, isWeakPin, hashPin } = await import("@/lib/server/pin");
+      if (isValidNewPinFormat(options.pin) && !isWeakPin(options.pin)) {
         const hash = await hashPin(options.pin);
         const pinSetAt = new Date().toISOString();
         const { error: pinErr } = await serverSupabase
@@ -80,7 +81,7 @@ export async function notifyCrewRegistration(
           console.error("[notifyCrewRegistration] PIN update failed:", pinErr);
         }
       } else {
-        console.warn("[notifyCrewRegistration] Weak PIN supplied; skipping save.");
+        console.warn("[notifyCrewRegistration] PIN 형식 불량 또는 약한 PIN — 저장 건너뜀.");
       }
     } catch (e) {
       console.error("[notifyCrewRegistration] PIN hash failed:", e);
