@@ -10,9 +10,26 @@
  * Hidden on admin and token-edit routes — those are full-focus modes.
  */
 
+import { useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { KickerLabel } from "@/components/design/cartographic";
 import { Award, ShoppingBag, ArrowUpRight } from "lucide-react";
+
+/** localStorage에서 rh_anon을 읽어 크로스앱 추적 파라미터를 URL에 추가 */
+function buildOutboundHref(baseHref: string, medium: string): string {
+    const params = new URLSearchParams({
+        utm_source: "map",
+        utm_medium: medium,
+        utm_campaign: "benefit",
+    });
+    try {
+        const anon = localStorage.getItem("rh_anon");
+        if (anon) params.set("rh_anon", anon);
+    } catch {
+        // localStorage 접근 불가 시 무시
+    }
+    return `${baseHref}?${params.toString()}`;
+}
 
 interface ServiceLink {
   /** Lucide icon component */
@@ -22,6 +39,8 @@ interface ServiceLink {
   title: string;
   description: string;
   href: string;
+  /** UTM medium 값 — 아웃바운드 링크 추적용 */
+  utmMedium: string;
   /** Optional CTA label override */
   ctaLabel?: string;
 }
@@ -34,6 +53,7 @@ const SERVICES: ServiceLink[] = [
     description:
       "완주 기록을 크루 브랜드로 디자인해서 만들어드립니다. 인쇄용 PDF 출력 지원.",
     href: "https://running-crew-certification-maker.vercel.app/",
+    utmMedium: "side_panel",
     ctaLabel: "기록증 만들러 가기",
   },
   {
@@ -43,6 +63,7 @@ const SERVICES: ServiceLink[] = [
     description:
       "크루 로고가 들어간 모자 · 깃발 · 의류 등을 직접 제작 의뢰하세요.",
     href: "https://runhouse-custom.vercel.app/",
+    utmMedium: "side_panel",
     ctaLabel: "커스텀 주문하기",
   },
 ];
@@ -87,10 +108,22 @@ export function DesktopSidePanel() {
 }
 
 function ServiceCard({ service }: { service: ServiceLink }) {
-  const { Icon, kicker, title, description, href, ctaLabel } = service;
+  const { Icon, kicker, title, description, href, utmMedium, ctaLabel } = service;
+
+  // 클릭 시점에 localStorage rh_anon을 읽어 추적 파라미터를 URL에 추가
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      const fullHref = buildOutboundHref(href, utmMedium);
+      window.open(fullHref, "_blank", "noopener,noreferrer");
+    },
+    [href, utmMedium]
+  );
+
   return (
     <a
       href={href}
+      onClick={handleClick}
       target='_blank'
       rel='noopener noreferrer'
       className='group block rounded-[4px] border border-cart-rule bg-cart-paper p-3.5 hover:border-[hsl(var(--lime))]/40 hover:bg-[hsl(var(--lime))]/[0.04] transition-colors'

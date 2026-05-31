@@ -2,6 +2,24 @@ import withSerwist from "@serwist/next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      // PostHog 인제스트 역방향 프록시 — 광고 차단기 우회
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "https://us.i.posthog.com/decide",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+    ];
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts", "@radix-ui/react-dialog", "@radix-ui/react-select", "framer-motion"],
   },
