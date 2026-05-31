@@ -207,7 +207,10 @@ export function StoreEditForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px)+1.5rem)]"
+    >
       {resetVisibilityNotice && (
         <div className="rounded-md border border-cart-rule bg-cart-paper p-3 text-xs text-cart-ink-60">
           좌표/주소가 변경되어 재승인 대기 상태로 전환되었습니다.
