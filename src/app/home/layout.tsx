@@ -1,4 +1,3 @@
-import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,10 +18,10 @@ export default function HomeLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Analytics는 루트 레이아웃(src/app/layout.tsx)에서 전체 앱 커버로 마운트됨
   return (
     <div className='relative pb-16 min-h-screen'>
       {children}
-      <Analytics />
     </div>
   );
 }

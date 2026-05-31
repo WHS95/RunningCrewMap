@@ -7,6 +7,8 @@ import { DesktopSidePanel } from "@/components/layout/DesktopSidePanel";
 import { Toaster } from "@/components/ui/sonner";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { Analytics } from "@vercel/analytics/next";
+import PostHogProvider from "@/components/analytics/PostHogProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -150,20 +152,24 @@ export default function RootLayout({
             opacity: 0.18,
           }}
         />
-        <ClientLayout>
-          <div className='mx-auto max-w-[430px] min-h-screen bg-background relative md:ring-1 md:ring-[hsl(var(--canvas-outer-rule))] md:shadow-[0_10px_60px_-10px_rgba(0,0,0,0.6),0_0_0_1px_rgba(199,255,0,0.04)] z-10'>
-            <Header />
-            <main className='w-full'>
-              <PageTransition>{children}</PageTransition>
-            </main>
-            <MobileNav />
-          </div>
-          {/* Desktop-only side panel — promotional cards parked in the
-              right gutter (lg+ viewports). Hides on admin / token-edit
-              focus routes via its own pathname check. */}
-          <DesktopSidePanel />
-          <Toaster />
-        </ClientLayout>
+        <PostHogProvider>
+          <ClientLayout>
+            <div className='mx-auto max-w-[430px] min-h-screen bg-background relative md:ring-1 md:ring-[hsl(var(--canvas-outer-rule))] md:shadow-[0_10px_60px_-10px_rgba(0,0,0,0.6),0_0_0_1px_rgba(199,255,0,0.04)] z-10'>
+              <Header />
+              <main className='w-full'>
+                <PageTransition>{children}</PageTransition>
+              </main>
+              <MobileNav />
+            </div>
+            {/* Desktop-only side panel — promotional cards parked in the
+                right gutter (lg+ viewports). Hides on admin / token-edit
+                focus routes via its own pathname check. */}
+            <DesktopSidePanel />
+            <Toaster />
+          </ClientLayout>
+        </PostHogProvider>
+        {/* Vercel Analytics — 루트 레이아웃에서 전체 앱 커버 */}
+        <Analytics />
       </body>
     </html>
   );

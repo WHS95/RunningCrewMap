@@ -5,6 +5,7 @@ import { CSS_VARIABLES } from "@/lib/constants";
 import type { Metadata } from "next";
 import { KickerLabel } from "@/components/design/cartographic";
 import { ShoppingBag, MessageCircle } from "lucide-react";
+import { OutboundLink } from "@/components/analytics/OutboundLink";
 
 export const metadata: Metadata = {
   title: "런하우스 러닝 기능성 모자 특가 | 러닝크루맵",
@@ -40,10 +41,9 @@ export default function Event3Page() {
         <KickerLabel tone='lime' className='tracking-[0.22em] mb-1'>
           · ORDER · CUSTOM · RUNHOUSE
         </KickerLabel>
-        <Link
+        <OutboundLink
           href='https://runhouse-custom.vercel.app/'
-          target='_blank'
-          rel='noopener noreferrer'
+          utmMedium='event_page'
           className='flex items-center justify-between w-full py-3.5 px-4 bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] rounded-[4px] font-display text-[15px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90'
         >
           <span className='inline-flex items-center gap-2'>
@@ -53,7 +53,7 @@ export default function Event3Page() {
           <span className='font-mono text-[10px] font-semibold tracking-[0.12em]'>
             CUSTOM →
           </span>
-        </Link>
+        </OutboundLink>
         <Link
           href='https://open.kakao.com/me/runhouse'
           target='_blank'

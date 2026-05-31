@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { crewService } from "@/lib/services/crew.service";
 import { AppError, ErrorCode } from "@/lib/types/error";
 import { ResultDialog } from "@/components/dialog/ResultDialog";
@@ -245,6 +246,17 @@ export default function RegisterPage() {
     Array<{ id: string; lat: number; lng: number; name?: string }>
   >([]);
 
+  // 등록 페이지 조회 이벤트 — UTM 파라미터 포함
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const utmProps: Record<string, string> = {};
+    for (const key of ["utm_source", "utm_medium", "utm_campaign"] as const) {
+      const val = params.get(key);
+      if (val) utmProps[key] = val;
+    }
+    posthog.capture("register_view", utmProps);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     fetch("/api/crews")
@@ -482,6 +494,9 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // 제출 시도 이벤트 — 유효성 검사 통과 여부와 무관하게 즉시 캡처
+    posthog.capture("register_submit_attempt");
 
     // PIN 검증
     if (!/^\d{4}$/.test(pin)) {
@@ -731,6 +746,15 @@ export default function RegisterPage() {
         console.error("Discord notify failed:", err);
       });
 
+      // PostHog: 등록 성공 이벤트 + 인스타그램 핸들로 사용자 식별
+      const normalizedHandle = typeSafeInput.instagram
+        ? typeSafeInput.instagram.replace(/^@/, "")
+        : undefined;
+      if (normalizedHandle) {
+        posthog.identify(normalizedHandle, { crew_name: typeSafeInput.name });
+      }
+      posthog.capture("register_submit_success");
+
       // 성공 팝업 표시
       setDialogState({
         isOpen: true,
@@ -817,6 +841,9 @@ export default function RegisterPage() {
         errorDescription = "크루 개설일은 오늘 이후의 날짜가 될 수 없습니다.";
       }
 
+      // PostHog: 등록 실패 이벤트 — PII 없이 오류 레이블만 포함
+      posthog.capture("register_submit_error", { error_title: errorTitle });
+
       setDialogState({
         isOpen: true,
         title: errorTitle,
@@ -887,7 +914,10 @@ export default function RegisterPage() {
               </AlertDialogCancel>
               {/* Confirm — primary lime CTA */}
               <AlertDialogAction
-                onClick={() => setShowPreCheckModal(false)}
+                onClick={() => {
+                    posthog.capture("register_precheck_confirm");
+                    setShowPreCheckModal(false);
+                }}
                 className='w-full py-3 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-display text-[15px] font-bold tracking-[-0.01em] active:scale-[0.98] transition-transform hover:bg-[hsl(var(--lime))]/90'
               >
                 확인하고 진행하기 →
