@@ -35,6 +35,7 @@ export default async function AdminStoreEditPage({ params }: Props) {
     naver_map_url: store.naver_map_url,
     event_post_url: store.event_post_url,
     main_image_url: store.main_image_url,
+    logo_url: store.logo_url,
     location: {
       main_address: store.location.main_address,
       detail_address: detailAddress,

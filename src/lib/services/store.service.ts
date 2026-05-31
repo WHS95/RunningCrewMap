@@ -87,10 +87,14 @@ class StoreService {
 
     // 3. 메인 사진 업로드 + URL 패치
     const mainUrl = await this.uploadOne(storeId, input.main_image);
-    await supabase
-      .from("stores")
-      .update({ main_image_url: mainUrl })
-      .eq("id", storeId);
+    const storePatch: Record<string, unknown> = { main_image_url: mainUrl };
+
+    // 3-1. 로고(선택) 업로드 + URL 패치 (main_image와 동일 storePhotos 버킷 재사용)
+    if (input.logo) {
+      storePatch.logo_url = await this.uploadOne(storeId, input.logo);
+    }
+
+    await supabase.from("stores").update(storePatch).eq("id", storeId);
 
     // 4. location 1:1 insert
     const { error: locErr } = await supabase.from("store_locations").insert({
@@ -131,7 +135,7 @@ class StoreService {
         id, name, category, description, verification_method,
         reward_description, owner_message, business_hours, contact,
         instagram, naver_map_url, event_post_url, main_image_url,
-        is_visible, created_at,
+        logo_url, is_visible, created_at,
         store_locations (*),
         store_photos ( photo_url, display_order )
         `
@@ -162,6 +166,7 @@ class StoreService {
       naver_map_url?: string;
       event_post_url?: string;
       main_image_url?: string;
+      logo_url?: string;
       created_at: string;
       store_locations: Array<{
         main_address: string;
@@ -186,6 +191,7 @@ class StoreService {
         naver_map_url: r.naver_map_url,
         event_post_url: r.event_post_url,
         main_image_url: r.main_image_url,
+        logo_url: r.logo_url,
         location: {
           lat: loc.latitude,
           lng: loc.longitude,
@@ -217,7 +223,7 @@ class StoreService {
         id, name, category, description, verification_method,
         reward_description, owner_message, business_hours, contact,
         instagram, naver_map_url, event_post_url, main_image_url,
-        is_visible, created_at,
+        logo_url, is_visible, created_at,
         store_locations (*),
         store_photos ( photo_url, display_order )
         `
@@ -246,6 +252,7 @@ class StoreService {
       naver_map_url?: string;
       event_post_url?: string;
       main_image_url?: string;
+      logo_url?: string;
       is_visible: boolean;
       created_at: string;
       store_locations: Array<{
@@ -271,6 +278,7 @@ class StoreService {
         naver_map_url: r.naver_map_url,
         event_post_url: r.event_post_url,
         main_image_url: r.main_image_url,
+        logo_url: r.logo_url,
         is_visible: r.is_visible,
         location: {
           lat: loc?.latitude ?? 0,
@@ -331,6 +339,29 @@ class StoreService {
         ?.main_image_url;
       if (prevUrl) await this.removeByPublicUrl(prevUrl);
       patch.main_image_url = null;
+    }
+
+    // 로고 교체/제거 (main_image와 동일 패턴, storePhotos 버킷 재사용)
+    if (input.logo) {
+      // 기존 로고 URL 가져와 삭제
+      const { data: prev } = await supabase
+        .from("stores")
+        .select("logo_url")
+        .eq("id", id)
+        .single();
+      const newUrl = await this.uploadOne(id, input.logo);
+      patch.logo_url = newUrl;
+      const prevUrl = (prev as { logo_url?: string } | null)?.logo_url;
+      if (prevUrl) await this.removeByPublicUrl(prevUrl);
+    } else if (input.remove_logo) {
+      const { data: prev } = await supabase
+        .from("stores")
+        .select("logo_url")
+        .eq("id", id)
+        .single();
+      const prevUrl = (prev as { logo_url?: string } | null)?.logo_url;
+      if (prevUrl) await this.removeByPublicUrl(prevUrl);
+      patch.logo_url = null;
     }
 
     if (Object.keys(patch).length > 0) {

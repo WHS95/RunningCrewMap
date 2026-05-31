@@ -22,6 +22,7 @@ interface DbStoreRow {
   naver_map_url?: string;
   event_post_url?: string;
   main_image_url?: string;
+  logo_url?: string;
   created_at: string;
   store_locations: Array<{
     main_address: string;
@@ -56,6 +57,7 @@ function transformStore(row: DbStoreRow): Store {
     naver_map_url: row.naver_map_url,
     event_post_url: row.event_post_url,
     main_image_url: row.main_image_url,
+    logo_url: row.logo_url,
     location: {
       lat: loc.latitude,
       lng: loc.longitude,
@@ -75,7 +77,7 @@ async function fetchStoresFromDb(): Promise<Store[]> {
       id, name, category, description, verification_method,
       reward_description, owner_message, business_hours, contact,
       instagram, naver_map_url, event_post_url, main_image_url,
-      created_at,
+      logo_url, created_at,
       store_locations (*),
       store_photos ( photo_url, display_order )
       `
@@ -119,7 +121,7 @@ export const getStoreByIdAdmin = cache(
         id, name, category, description, verification_method,
         reward_description, owner_message, business_hours, contact,
         instagram, naver_map_url, event_post_url, main_image_url,
-        is_visible, created_at,
+        logo_url, is_visible, created_at,
         store_locations (*),
         store_photos ( photo_url, display_order )
         `

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Upload } from "lucide-react";
 import {
   STORE_CATEGORIES,
   STORE_CATEGORY_LABELS,
@@ -14,6 +15,8 @@ import { storeService } from "@/lib/services/store.service";
 import { updateStoreByToken } from "@/app/actions/store";
 import { StoreLocationPickerMap } from "./StoreLocationPickerMap";
 import { StorePhotosUpload, type StorePhotoSlot } from "./StorePhotosUpload";
+import { LogoCropDialog } from "@/components/dialog/LogoCropDialog";
+import { KickerLabel } from "@/components/design/cartographic";
 
 const Schema = z
   .object({
@@ -50,6 +53,7 @@ export interface StoreEditInitial {
   naver_map_url?: string;
   event_post_url?: string;
   main_image_url?: string;
+  logo_url?: string;
   location: {
     main_address: string;
     detail_address?: string;
@@ -72,6 +76,12 @@ export function StoreEditForm({
 
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [removeMainImage, setRemoveMainImage] = useState(false);
+  // 로고 (선택) — 크롭 후 1:1 정사각 JPEG File 보관 + object-URL 미리보기.
+  const [logo, setLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [photos, setPhotos] = useState<StorePhotoSlot[]>(
     initial.photos.map((p) => ({
       url: p.photo_url,
@@ -117,6 +127,35 @@ export function StoreEditForm({
       event_post_url: initial.event_post_url ?? "",
     },
   });
+
+  // 로고 미리보기 object-URL — mainImage 패턴과 동일. logo가 바뀌면 재생성.
+  useEffect(() => {
+    if (!logo) {
+      setLogoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(logo);
+    setLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [logo]);
+
+  // 파일 변경 핸들러 — 선택 즉시 저장하지 않고 크롭 다이얼로그로 넘김.
+  function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = "";
+    if (file) setPendingLogoFile(file);
+  }
+
+  // 크롭 확정 — 잘린 1:1 정사각 JPEG File을 logo state로 교체.
+  function handleLogoCropConfirm(cropped: File) {
+    setLogo(cropped);
+    setRemoveLogo(false);
+    setPendingLogoFile(null);
+  }
+
+  function handleClearLogo() {
+    setLogo(null);
+  }
 
   function diffLocation() {
     const same =
@@ -185,12 +224,16 @@ export function StoreEditForm({
       const hasImagePayload =
         mainImage !== null ||
         removeMainImage ||
+        logo !== null ||
+        removeLogo ||
         removedPhotoUrls.length > 0 ||
         newPhotos.length > 0;
       if (hasImagePayload) {
         await storeService.updateStore(storeId, {
           main_image: mainImage ?? undefined,
           remove_main_image: removeMainImage && !mainImage,
+          logo: logo ?? undefined,
+          remove_logo: removeLogo && !logo,
           new_photos: newPhotos.length > 0 ? newPhotos : undefined,
           removed_photo_urls:
             removedPhotoUrls.length > 0 ? removedPhotoUrls : undefined,
@@ -257,6 +300,96 @@ export function StoreEditForm({
           </label>
         )}
       </Field>
+
+      <Field label="로고 (선택)">
+        <KickerLabel tone="muted" className="tracking-[0.18em]">
+          · 지도 핀의 원형 영역과 동일하게 잘립니다 · 1:1 SQUARE
+        </KickerLabel>
+
+        <input
+          ref={logoInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleLogoFileChange}
+          className="hidden"
+        />
+
+        <div className="mt-2 flex items-center gap-4">
+          {/* 원형 미리보기 — 지도 핀의 로고 영역과 동일하게 보여줌 */}
+          <button
+            type="button"
+            onClick={() => logoInputRef.current?.click()}
+            className="relative w-20 h-20 rounded-full border border-cart-rule bg-cart-paper flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
+            aria-label="로고 업로드"
+          >
+            {logoPreview ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={logoPreview}
+                alt="지도 핀 미리보기"
+                className="w-full h-full object-cover"
+              />
+            ) : initial.logo_url && !removeLogo ? (
+              /* 기존 로고 썸네일 (원형) */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={initial.logo_url}
+                alt="현재 로고"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Upload className="w-5 h-5 text-[hsl(var(--lime))]" />
+            )}
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <KickerLabel tone="muted" className="tracking-[0.18em]">
+              지도 핀 미리보기
+            </KickerLabel>
+            <div className="flex flex-wrap gap-1.5 pt-1.5">
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                className="px-3 py-1.5 rounded-[4px] border border-cart-rule bg-cart-paper text-cart-ink font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform"
+              >
+                {logo ? "다시 선택" : initial.logo_url ? "로고 변경" : "파일 선택"}
+              </button>
+              {logo && (
+                <button
+                  type="button"
+                  onClick={handleClearLogo}
+                  className="px-3 py-1.5 rounded-[4px] border border-cart-rule text-cart-ink-60 font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform"
+                >
+                  제거
+                </button>
+              )}
+            </div>
+            {initial.logo_url && (
+              <label className="mt-2 inline-flex items-center gap-1 text-xs text-cart-ink-60">
+                <input
+                  type="checkbox"
+                  checked={removeLogo}
+                  onChange={(e) => {
+                    setRemoveLogo(e.target.checked);
+                    if (e.target.checked) setLogo(null);
+                  }}
+                />
+                기존 로고 삭제
+              </label>
+            )}
+            <p className="text-[11px] text-cart-ink-60 mt-1.5">
+              로고가 없으면 지도 핀에 카테고리 색 글자 원이 표시돼요.
+            </p>
+          </div>
+        </div>
+      </Field>
+
+      {/* 로고 크롭 다이얼로그 — 파일 선택 시 열리고, 확정하면 logo state로 반영 */}
+      <LogoCropDialog
+        file={pendingLogoFile}
+        onCancel={() => setPendingLogoFile(null)}
+        onConfirm={handleLogoCropConfirm}
+      />
 
       <Field label="위치 *">
         <StoreLocationPickerMap

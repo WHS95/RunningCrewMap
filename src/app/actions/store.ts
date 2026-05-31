@@ -165,6 +165,7 @@ export async function getStoreForEdit(
         naver_map_url?: string;
         event_post_url?: string;
         main_image_url?: string;
+        logo_url?: string;
         location: {
           main_address: string;
           detail_address?: string;
@@ -203,7 +204,7 @@ export async function getStoreForEdit(
       `
       id, name, category, description, verification_method, reward_description,
       owner_message, business_hours, contact, instagram, naver_map_url,
-      event_post_url, main_image_url, is_visible,
+      event_post_url, main_image_url, logo_url, is_visible,
       store_locations (*),
       store_photos ( photo_url, display_order )
     `
@@ -226,6 +227,7 @@ export async function getStoreForEdit(
     naver_map_url?: string;
     event_post_url?: string;
     main_image_url?: string;
+    logo_url?: string;
     is_visible: boolean;
     store_locations: Array<{
       main_address: string;
@@ -252,6 +254,7 @@ export async function getStoreForEdit(
       naver_map_url: row.naver_map_url,
       event_post_url: row.event_post_url,
       main_image_url: row.main_image_url,
+      logo_url: row.logo_url,
       location: row.store_locations[0],
       photos: (row.store_photos ?? []).sort(
         (a, b) => a.display_order - b.display_order

@@ -31,6 +31,8 @@ export default async function StoreEditPage({ params, searchParams }: Props) {
   const initial: StoreEditInitial = {
     ...r.store,
     category: r.store.category as StoreCategory,
+    // 로고 (선택). getStoreForEdit가 logo_url을 반환하면 그대로 전달.
+    logo_url: (r.store as { logo_url?: string }).logo_url,
   };
 
   return (

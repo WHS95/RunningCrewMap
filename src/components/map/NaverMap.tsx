@@ -1083,14 +1083,14 @@ export default function NaverMap({
     stores.forEach((store) => {
       const color = STORE_COLOR[store.category] ?? STORE_COLOR.other;
       const label = STORE_LABEL[store.category] ?? STORE_LABEL.other;
-      const size = 32;
 
       // 카테고리별 색의 원형 핀 + 가운데 모노 글자 1자. counter-filter로
       // 지도 컨테이너의 다크 인버전을 상쇄해서 의도한 색으로 표시.
-      const content = `<div style="
-        filter: ${MARKER_COUNTER_FILTER};
-        width: ${size}px;
-        height: ${size}px;
+      // 로고 fallback(onerror)에서도 동일한 모양을 재사용하므로 문자열로 분리.
+      const fallbackCircleSize = 32;
+      const fallbackCircle = `<div style="
+        width: ${fallbackCircleSize}px;
+        height: ${fallbackCircleSize}px;
         border-radius: 50%;
         background: ${color};
         border: 1.4px solid ${CART_INK};
@@ -1105,6 +1105,89 @@ export default function NaverMap({
         box-shadow: 0 1px 2px rgba(0,0,0,0.25);
       ">${label}</div>`;
 
+      let content: string;
+      let iconSize: naver.maps.Size;
+      let iconAnchor: naver.maps.Point;
+
+      if (store.logo_url) {
+        // 로고가 있으면 크루 마커처럼 티어드롭 핀 + 동그란 로고 이미지.
+        // createMarkerContent(~:469-528) 패턴 재사용: 48×58 흰색 티어드롭 SVG,
+        // 상단 34px 흰색 원형 well, 32px 동그란 <img>. 로드 실패 시(onerror)
+        // 카테고리 색 글자 원으로 fallback.
+        const width = 48;
+        const height = 58;
+        const logoSize = 32; // 내부 로고 한 변
+        const wellSize = logoSize + 2; // 로고를 감싸는 흰색 원형 well
+
+        // ?width=64 (이미 쿼리가 있으면 &width=64) 로 폭 최적화.
+        const optimizedLogoUrl = store.logo_url.includes("?")
+          ? `${store.logo_url}&width=${logoSize * 2}`
+          : `${store.logo_url}?width=${logoSize * 2}`;
+
+        // onerror에서 well 내부를 fallback 원으로 교체.
+        const escapedFallback = fallbackCircle
+          .replace(/"/g, "&quot;")
+          .replace(/\n/g, "");
+
+        content = `<div style="
+          filter: ${MARKER_COUNTER_FILTER};
+          width: ${width}px;
+          height: ${height}px;
+          position: relative;
+          cursor: pointer;
+        ">
+          <svg width="${width}" height="${height}" viewBox="0 0 36 42" style="position:absolute;inset:0;display:block;">
+            <path
+              d="M18 41 C 18 28, 35 28, 35 16 a 17 17 0 1 0 -34 0 c 0 12, 17 12, 17 25 z"
+              fill="${MARKER_BG}"
+              stroke="${CART_INK}"
+              stroke-width="1.4"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <div style="
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: ${wellSize}px;
+            height: ${wellSize}px;
+            background: ${MARKER_BG};
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+          ">
+            <img
+              src="${optimizedLogoUrl}"
+              width="${logoSize}"
+              height="${logoSize}"
+              alt="${store.name}"
+              style="object-fit: cover; width: ${logoSize}px; height: ${logoSize}px; border-radius: 50%; display:block;"
+              loading="lazy"
+              decoding="async"
+              onerror="this.parentElement.innerHTML='${escapedFallback}'"
+            />
+          </div>
+        </div>`;
+
+        // 티어드롭 핀: 끝(아래 중앙)을 위치에 고정.
+        iconSize = new window.naver.maps.Size(width, height);
+        iconAnchor = new window.naver.maps.Point(24, 58);
+      } else {
+        // 로고가 없으면 기존 카테고리 색 글자 원 그대로.
+        content = `<div style="filter: ${MARKER_COUNTER_FILTER};">${fallbackCircle}</div>`;
+        iconSize = new window.naver.maps.Size(
+          fallbackCircleSize,
+          fallbackCircleSize
+        );
+        iconAnchor = new window.naver.maps.Point(
+          fallbackCircleSize / 2,
+          fallbackCircleSize / 2
+        );
+      }
+
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(
           store.location.lat,
@@ -1113,8 +1196,8 @@ export default function NaverMap({
         map: mapInstanceRef.current!,
         icon: {
           content,
-          size: new window.naver.maps.Size(size, size),
-          anchor: new window.naver.maps.Point(size / 2, size / 2),
+          size: iconSize,
+          anchor: iconAnchor,
         },
         zIndex: 50, // 크루 마커보다 약간 아래로
       });
