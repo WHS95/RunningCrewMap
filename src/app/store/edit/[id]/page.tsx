@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getStoreForEdit } from "@/app/actions/store";
 import { serverSupabase } from "@/lib/server/supabase";
+import { CSS_VARIABLES } from "@/lib/constants";
 import type { StoreCategory } from "@/lib/types/store";
 import type { StoreEditInitial } from "@/components/store/StoreEditForm";
 import { StoreEditClient } from "./StoreEditClient";
@@ -33,7 +34,10 @@ export default async function StoreEditPage({ params, searchParams }: Props) {
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6">
+    <main
+      className="mx-auto max-w-2xl px-4 pt-6"
+      style={{ paddingBottom: CSS_VARIABLES.MOBILE_NAV_PADDING }}
+    >
       {!pinSet ? <SetPinForm storeId={id} token={token ?? null} /> : null}
       <StoreEditClient initial={initial} token={token ?? null} />
     </main>
