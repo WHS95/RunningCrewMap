@@ -6,6 +6,7 @@ import {
   MapPin,
   ChevronRight,
   Calculator,
+  Shield,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CSS_VARIABLES } from "@/lib/constants";
@@ -36,6 +37,7 @@ const PRIMARY_LINKS: MenuLinkRow[] = [
     path: "https://open.kakao.com/me/runhouse",
     isExternal: true,
   },
+  { title: "관리자", en: "ADMIN", path: "/admin" },
 ];
 
 export default function MenuPage() {
@@ -89,6 +91,11 @@ export default function MenuPage() {
                   />
                 ) : item.en === "CALCULATORS" ? (
                   <Calculator
+                    className='w-4 h-4 text-[hsl(var(--lime))]'
+                    strokeWidth={1.6}
+                  />
+                ) : item.en === "ADMIN" ? (
+                  <Shield
                     className='w-4 h-4 text-[hsl(var(--lime))]'
                     strokeWidth={1.6}
                   />
