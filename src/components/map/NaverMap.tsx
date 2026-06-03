@@ -11,6 +11,12 @@ import { ListFilter, Target, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { crewService } from "@/lib/services/crew.service";
 
+// /_next/image 최적화 헬퍼 — 마커 HTML 문자열(raw <img>)에서 사용.
+// Supabase 원본 URL(~1MB)을 Next.js Image Optimization 엔드포인트로 우회하여
+// 브라우저가 64px 크기의 최적화된 이미지(~3–5KB)를 한 번만 받도록 한다.
+const markerImg = (url: string, w = 64) =>
+  `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=75`;
+
 // 매장 카테고리별 마커 색 — 디자인 톤 매핑 (계획서 Step 3).
 const STORE_COLOR: Record<StoreCategory, string> = {
   cafe: "#A87E5B",
@@ -372,11 +378,12 @@ export default function NaverMap({
         })
         .slice(0, 10); // 화면에 보이는 이미지 중 최대 10개만 즉시 로드
 
-      // 화면 내 크루 이미지 즉시 로드
+      // 화면 내 크루 이미지 즉시 로드 — markerImg()와 동일한 URL을 사용하여
+      // 브라우저 캐시를 공유하고 원본 1MB 대신 최적화된 ~3-5KB를 받는다.
       priorityCrews.forEach((crew) => {
         if (crew.logo_image && !imageCache.current[crew.id]) {
           const img = new Image();
-          img.src = crew.logo_image;
+          img.src = markerImg(crew.logo_image);
           img.decoding = "async";
           imageCache.current[crew.id] = img;
         }
@@ -391,7 +398,7 @@ export default function NaverMap({
         remainingCrews.forEach((crew) => {
           if (crew.logo_image) {
             const img = new Image();
-            img.src = crew.logo_image;
+            img.src = markerImg(crew.logo_image);
             img.decoding = "async";
             img.loading = "lazy";
             imageCache.current[crew.id] = img;
@@ -475,12 +482,9 @@ export default function NaverMap({
     // Logo or initial inside the teardrop head
     let innerContent = "";
     if (crew.logo_image) {
-      const optimizedLogoUrl = crew.logo_image.includes("?")
-        ? `${crew.logo_image}&width=${logoSize * 2}`
-        : `${crew.logo_image}?width=${logoSize * 2}`;
       innerContent = `
         <img
-          src="${optimizedLogoUrl}"
+          src="${markerImg(crew.logo_image)}"
           width="${logoSize}"
           height="${logoSize}"
           alt="${crew.name}"
@@ -1084,52 +1088,43 @@ export default function NaverMap({
       const color = STORE_COLOR[store.category] ?? STORE_COLOR.other;
       const label = STORE_LABEL[store.category] ?? STORE_LABEL.other;
 
-      // 카테고리별 색의 원형 핀 + 가운데 모노 글자 1자. counter-filter로
-      // 지도 컨테이너의 다크 인버전을 상쇄해서 의도한 색으로 표시.
-      // 로고 fallback(onerror)에서도 동일한 모양을 재사용하므로 문자열로 분리.
-      const fallbackCircleSize = 32;
-      const fallbackCircle = `<div style="
-        width: ${fallbackCircleSize}px;
-        height: ${fallbackCircleSize}px;
-        border-radius: 50%;
-        background: ${color};
-        border: 1.4px solid ${CART_INK};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
-        font-weight: 700;
-        font-size: 13px;
-        color: ${MARKER_BG};
-        cursor: pointer;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.25);
-      ">${label}</div>`;
+      // 매장 마커 = 크루와 동일한 흰색 티어드롭(fill MARKER_BG, stroke CART_INK)
+      // + 흰색 well에 "카테고리 색 링"을 둘러 매장임을 구분하고 카테고리를 알린다.
+      // 크루는 링 없는 plain 흰색 티어드롭 — 이 링이 store ↔ crew 구분자.
+      const width = 48;
+      const height = 58;
+      // 링이 보이도록 well을 키우고 안쪽 로고/글자는 ~30px 유지.
+      const ringWidth = 2.5; // 카테고리 색 링 두께
+      const innerSize = 30; // well 안쪽 로고/글자 한 변 (~30-32px)
+      const wellSize = innerSize + ringWidth * 2 + 2; // 링 + 여백 포함 well 지름
 
-      let content: string;
-      let iconSize: naver.maps.Size;
-      let iconAnchor: naver.maps.Point;
+      // well 안쪽에 들어갈 dark 글자(흰 well이므로 어두운 텍스트). 로고 onerror
+      // fallback도 이 글자를 그대로 재사용한다.
+      const darkLetter = `<span style="font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:15px;color:${CART_INK};line-height:1;">${label}</span>`;
+      const escapedDarkLetter = darkLetter
+        .replace(/"/g, "&quot;")
+        .replace(/\n/g, "");
 
+      let innerContent: string;
       if (store.logo_url) {
-        // 로고가 있으면 크루 마커처럼 티어드롭 핀 + 동그란 로고 이미지.
-        // createMarkerContent(~:469-528) 패턴 재사용: 48×58 흰색 티어드롭 SVG,
-        // 상단 34px 흰색 원형 well, 32px 동그란 <img>. 로드 실패 시(onerror)
-        // 카테고리 색 글자 원으로 fallback.
-        const width = 48;
-        const height = 58;
-        const logoSize = 32; // 내부 로고 한 변
-        const wellSize = logoSize + 2; // 로고를 감싸는 흰색 원형 well
+        innerContent = `<img
+              src="${markerImg(store.logo_url)}"
+              width="${innerSize}"
+              height="${innerSize}"
+              alt="${store.name}"
+              style="object-fit: cover; width: ${innerSize}px; height: ${innerSize}px; border-radius: 50%; display:block;"
+              loading="lazy"
+              decoding="async"
+              onerror="this.style.display='none'; this.parentElement.innerHTML='${escapedDarkLetter}'"
+            />`;
+      } else {
+        // 로고 없는 매장: 흰 well + 카테고리 색 링 + 가운데 dark 글자.
+        innerContent = darkLetter;
+      }
 
-        // ?width=64 (이미 쿼리가 있으면 &width=64) 로 폭 최적화.
-        const optimizedLogoUrl = store.logo_url.includes("?")
-          ? `${store.logo_url}&width=${logoSize * 2}`
-          : `${store.logo_url}?width=${logoSize * 2}`;
-
-        // onerror에서 well 내부를 fallback 원으로 교체.
-        const escapedFallback = fallbackCircle
-          .replace(/"/g, "&quot;")
-          .replace(/\n/g, "");
-
-        content = `<div style="
+      // 크루 티어드롭(createMarkerContent ~:497-527)과 동일한 SVG·구조.
+      // 차이는 well의 `border`(카테고리 색 링) 하나뿐.
+      const content = `<div style="
           filter: ${MARKER_COUNTER_FILTER};
           width: ${width}px;
           height: ${height}px;
@@ -1153,40 +1148,19 @@ export default function NaverMap({
             width: ${wellSize}px;
             height: ${wellSize}px;
             background: ${MARKER_BG};
+            border: ${ringWidth}px solid ${color};
+            box-sizing: border-box;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-          ">
-            <img
-              src="${optimizedLogoUrl}"
-              width="${logoSize}"
-              height="${logoSize}"
-              alt="${store.name}"
-              style="object-fit: cover; width: ${logoSize}px; height: ${logoSize}px; border-radius: 50%; display:block;"
-              loading="lazy"
-              decoding="async"
-              onerror="this.parentElement.innerHTML='${escapedFallback}'"
-            />
-          </div>
+          ">${innerContent}</div>
         </div>`;
 
-        // 티어드롭 핀: 끝(아래 중앙)을 위치에 고정.
-        iconSize = new window.naver.maps.Size(width, height);
-        iconAnchor = new window.naver.maps.Point(24, 58);
-      } else {
-        // 로고가 없으면 기존 카테고리 색 글자 원 그대로.
-        content = `<div style="filter: ${MARKER_COUNTER_FILTER};">${fallbackCircle}</div>`;
-        iconSize = new window.naver.maps.Size(
-          fallbackCircleSize,
-          fallbackCircleSize
-        );
-        iconAnchor = new window.naver.maps.Point(
-          fallbackCircleSize / 2,
-          fallbackCircleSize / 2
-        );
-      }
+      // 티어드롭 핀: 끝(아래 중앙)을 위치에 고정.
+      const iconSize = new window.naver.maps.Size(width, height);
+      const iconAnchor = new window.naver.maps.Point(24, 58);
 
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(
