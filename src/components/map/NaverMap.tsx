@@ -542,11 +542,14 @@ export default function NaverMap({
     const logoSize = 32;
     const wellSize = logoSize + 2;
 
+    // 마커 이미지: 매장 로고(logo_url) 우선, 없으면 대표 사진(main_image_url)을 원형으로.
+    const markerUrl = store.logo_url || store.main_image_url;
+
     let innerContent = "";
-    if (store.logo_url) {
+    if (markerUrl) {
       innerContent = `
         <img
-          src="${markerImg(store.logo_url)}"
+          src="${markerImg(markerUrl)}"
           width="${logoSize}"
           height="${logoSize}"
           alt="${store.name}"

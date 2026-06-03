@@ -265,7 +265,7 @@ export function StoreRegisterForm() {
           longitude: lng,
         },
         main_image: mainImage,
-        logo: logo ?? undefined, // 선택 — 없으면 지도 마커는 카테고리 색 글자 원으로 fallback
+        logo: logo ?? undefined, // 선택 — 없으면 마커는 대표 사진, 그것도 없으면 매장명 첫 글자로 fallback
         photos: photos.filter((p) => p.file).map((p) => p.file as File),
         pin: values.pin,
       });
@@ -577,6 +577,14 @@ export function StoreRegisterForm() {
                       alt="지도 핀 미리보기"
                       className="w-full h-full object-cover"
                     />
+                  ) : mainImagePreview ? (
+                    /* 로고가 없으면 대표 사진을 핀 미리보기로 (마커 fallback과 동일) */
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={mainImagePreview}
+                      alt="지도 핀 미리보기 (대표 사진)"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <Upload className="w-5 h-5 text-[hsl(var(--lime))]" />
                   )}
@@ -605,7 +613,7 @@ export function StoreRegisterForm() {
                     )}
                   </div>
                   <p className="text-[11px] text-cart-ink-60 mt-1.5">
-                    로고가 없으면 지도 핀에 카테고리 색 글자 원이 표시돼요.
+                    로고가 없으면 대표 사진이, 그것도 없으면 매장명 첫 글자가 지도 핀에 표시돼요.
                   </p>
                 </div>
               </div>

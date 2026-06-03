@@ -337,6 +337,14 @@ export function StoreEditForm({
                 alt="현재 로고"
                 className="w-full h-full object-cover"
               />
+            ) : initial.main_image_url && !removeMainImage ? (
+              /* 로고가 없으면 대표 사진을 핀 미리보기로 (마커 fallback과 동일) */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={initial.main_image_url}
+                alt="지도 핀 미리보기 (대표 사진)"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <Upload className="w-5 h-5 text-[hsl(var(--lime))]" />
             )}
@@ -378,7 +386,7 @@ export function StoreEditForm({
               </label>
             )}
             <p className="text-[11px] text-cart-ink-60 mt-1.5">
-              로고가 없으면 지도 핀에 카테고리 색 글자 원이 표시돼요.
+              로고가 없으면 대표 사진이, 그것도 없으면 매장명 첫 글자가 지도 핀에 표시돼요.
             </p>
           </div>
         </div>
