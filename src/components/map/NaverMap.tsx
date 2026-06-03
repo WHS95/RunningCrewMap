@@ -1092,8 +1092,8 @@ export default function NaverMap({
       const content = `<div style="filter: ${MARKER_COUNTER_FILTER}; width:${PIN_W}px; height:${PIN_H}px; position:relative; cursor:pointer;">
           <svg width="${PIN_W}" height="${PIN_H}" viewBox="0 0 32 46" style="display:block;">
             <line x1="16" y1="26" x2="16" y2="45" stroke="#4A5160" stroke-width="2.8" stroke-linecap="round" />
-            <circle cx="16" cy="15" r="14" fill="#E8453B" />
-            <circle cx="11" cy="10" r="4" fill="#F4A7A0" />
+            <circle cx="16" cy="15" r="14" fill="#FC6060" />
+            <circle cx="11" cy="10" r="4" fill="#FFB0B0" />
           </svg>
         </div>`;
 
