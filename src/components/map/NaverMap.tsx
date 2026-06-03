@@ -31,6 +31,9 @@ const STORE_LABEL: Record<StoreCategory, string> = {
   other: "·",
 };
 
+// 매장 핀 색(단색 빨강). 매장 마커는 크루 마커와 동일한 물방울 형태를 쓰되 배경만 이 색.
+const STORE_PIN_COLOR = "#FC6060";
+
 // ======================================
 // 마커 클러스터링 설정 (수정 가능한 기준들)
 // ======================================
@@ -522,6 +525,65 @@ export default function NaverMap({
         width: ${wellSize}px;
         height: ${wellSize}px;
         background: ${MARKER_BG};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      ">${innerContent}</div>
+    </div>`;
+  }, []);
+
+  // 매장 마커 — 크루 마커와 동일한 물방울 형태 + 원형 head, 배경만 핀 색(빨강).
+  // 로고(logo_url)가 있으면 원형으로, 없으면 매장명 첫 글자(흰색).
+  const createStoreMarkerContent = useCallback((store: Store) => {
+    const width = 48;
+    const height = 58;
+    const logoSize = 32;
+    const wellSize = logoSize + 2;
+
+    let innerContent = "";
+    if (store.logo_url) {
+      innerContent = `
+        <img
+          src="${markerImg(store.logo_url)}"
+          width="${logoSize}"
+          height="${logoSize}"
+          alt="${store.name}"
+          style="object-fit: cover; width: ${logoSize}px; height: ${logoSize}px; border-radius: 50%; display:block;"
+          loading="lazy"
+          decoding="async"
+          onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;font-family:Inter,sans-serif;font-weight:700;font-size:18px;color:#FFFFFF&quot;>${store.name.charAt(0)}</span>'"
+        />
+      `;
+    } else {
+      innerContent = `<span style="font-family:Inter,sans-serif;font-weight:700;font-size:18px;color:#FFFFFF;line-height:1;">${store.name.charAt(0)}</span>`;
+    }
+
+    return `<div style="
+      filter: ${MARKER_COUNTER_FILTER};
+      width: ${width}px;
+      height: ${height}px;
+      position: relative;
+      cursor: pointer;
+    ">
+      <svg width="${width}" height="${height}" viewBox="0 0 36 42" style="position:absolute;inset:0;display:block;">
+        <path
+          d="M18 41 C 18 28, 35 28, 35 16 a 17 17 0 1 0 -34 0 c 0 12, 17 12, 17 25 z"
+          fill="${STORE_PIN_COLOR}"
+          stroke="${CART_INK}"
+          stroke-width="1.4"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <div style="
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: ${wellSize}px;
+        height: ${wellSize}px;
+        background: ${STORE_PIN_COLOR};
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -1085,21 +1147,8 @@ export default function NaverMap({
 
     const created: naver.maps.Marker[] = [];
     stores.forEach((store) => {
-      // 매장 마커 = 빨간 둥근 푸시핀(📍). 크루(흰 물방울)와 "모양"으로 구분.
-      // 단색 빨간 공 + 가는 막대 + 좌상단 하이라이트. 로고/카테고리색 표시 안 함.
-      const PIN_W = 32;
-      const PIN_H = 46;
-      const content = `<div style="filter: ${MARKER_COUNTER_FILTER}; width:${PIN_W}px; height:${PIN_H}px; position:relative; cursor:pointer;">
-          <svg width="${PIN_W}" height="${PIN_H}" viewBox="0 0 32 46" style="display:block;">
-            <line x1="16" y1="26" x2="16" y2="45" stroke="#4A5160" stroke-width="2.8" stroke-linecap="round" />
-            <circle cx="16" cy="15" r="14" fill="#FC6060" />
-            <circle cx="11" cy="10" r="4" fill="#FFB0B0" />
-          </svg>
-        </div>`;
-
-      // 푸시핀: 막대 끝(아래 중앙)을 위치에 고정.
-      const iconSize = new window.naver.maps.Size(PIN_W, PIN_H);
-      const iconAnchor = new window.naver.maps.Point(16, PIN_H);
+      // 매장 마커 = 크루 마커와 동일한 물방울 형태(48×58), 배경만 핀 색(빨강 #FC6060).
+      const content = createStoreMarkerContent(store);
 
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(
@@ -1109,8 +1158,9 @@ export default function NaverMap({
         map: mapInstanceRef.current!,
         icon: {
           content,
-          size: iconSize,
-          anchor: iconAnchor,
+          // 크루 마커와 동일: 물방울 끝(아래 중앙)을 위치에 고정.
+          size: new window.naver.maps.Size(48, 58),
+          anchor: new window.naver.maps.Point(24, 58),
         },
         zIndex: 50, // 크루 마커보다 약간 아래로
       });
@@ -1134,7 +1184,7 @@ export default function NaverMap({
         }
       });
     };
-  }, [stores, isMapReady, onStoreSelect]);
+  }, [stores, isMapReady, onStoreSelect, createStoreMarkerContent]);
 
   // 외부에서 선택된 매장이 바뀌면 지도 이동
   useEffect(() => {
