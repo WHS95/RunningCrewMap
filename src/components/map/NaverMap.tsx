@@ -1085,82 +1085,21 @@ export default function NaverMap({
 
     const created: naver.maps.Marker[] = [];
     stores.forEach((store) => {
-      const color = STORE_COLOR[store.category] ?? STORE_COLOR.other;
-      const label = STORE_LABEL[store.category] ?? STORE_LABEL.other;
-
-      // 매장 마커 = 크루와 동일한 흰색 티어드롭(fill MARKER_BG, stroke CART_INK)
-      // + 흰색 well에 "카테고리 색 링"을 둘러 매장임을 구분하고 카테고리를 알린다.
-      // 크루는 링 없는 plain 흰색 티어드롭 — 이 링이 store ↔ crew 구분자.
-      const width = 48;
-      const height = 58;
-      // 링이 보이도록 well을 키우고 안쪽 로고/글자는 ~30px 유지.
-      const ringWidth = 2.5; // 카테고리 색 링 두께
-      const innerSize = 30; // well 안쪽 로고/글자 한 변 (~30-32px)
-      const wellSize = innerSize + ringWidth * 2 + 2; // 링 + 여백 포함 well 지름
-
-      // well 안쪽에 들어갈 dark 글자(흰 well이므로 어두운 텍스트). 로고 onerror
-      // fallback도 이 글자를 그대로 재사용한다.
-      const darkLetter = `<span style="font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:15px;color:${CART_INK};line-height:1;">${label}</span>`;
-      const escapedDarkLetter = darkLetter
-        .replace(/"/g, "&quot;")
-        .replace(/\n/g, "");
-
-      let innerContent: string;
-      if (store.logo_url) {
-        innerContent = `<img
-              src="${markerImg(store.logo_url)}"
-              width="${innerSize}"
-              height="${innerSize}"
-              alt="${store.name}"
-              style="object-fit: cover; width: ${innerSize}px; height: ${innerSize}px; border-radius: 50%; display:block;"
-              loading="lazy"
-              decoding="async"
-              onerror="this.style.display='none'; this.parentElement.innerHTML='${escapedDarkLetter}'"
-            />`;
-      } else {
-        // 로고 없는 매장: 흰 well + 카테고리 색 링 + 가운데 dark 글자.
-        innerContent = darkLetter;
-      }
-
-      // 크루 티어드롭(createMarkerContent ~:497-527)과 동일한 SVG·구조.
-      // 차이는 well의 `border`(카테고리 색 링) 하나뿐.
-      const content = `<div style="
-          filter: ${MARKER_COUNTER_FILTER};
-          width: ${width}px;
-          height: ${height}px;
-          position: relative;
-          cursor: pointer;
-        ">
-          <svg width="${width}" height="${height}" viewBox="0 0 36 42" style="position:absolute;inset:0;display:block;">
-            <path
-              d="M18 41 C 18 28, 35 28, 35 16 a 17 17 0 1 0 -34 0 c 0 12, 17 12, 17 25 z"
-              fill="${MARKER_BG}"
-              stroke="${CART_INK}"
-              stroke-width="1.4"
-              stroke-linejoin="round"
-            />
+      // 매장 마커 = 빨간 둥근 푸시핀(📍). 크루(흰 물방울)와 "모양"으로 구분.
+      // 단색 빨간 공 + 가는 막대 + 좌상단 하이라이트. 로고/카테고리색 표시 안 함.
+      const PIN_W = 32;
+      const PIN_H = 46;
+      const content = `<div style="filter: ${MARKER_COUNTER_FILTER}; width:${PIN_W}px; height:${PIN_H}px; position:relative; cursor:pointer;">
+          <svg width="${PIN_W}" height="${PIN_H}" viewBox="0 0 32 46" style="display:block;">
+            <line x1="16" y1="26" x2="16" y2="45" stroke="#4A5160" stroke-width="2.8" stroke-linecap="round" />
+            <circle cx="16" cy="15" r="14" fill="#E8453B" />
+            <circle cx="11" cy="10" r="4" fill="#F4A7A0" />
           </svg>
-          <div style="
-            position: absolute;
-            top: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: ${wellSize}px;
-            height: ${wellSize}px;
-            background: ${MARKER_BG};
-            border: ${ringWidth}px solid ${color};
-            box-sizing: border-box;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-          ">${innerContent}</div>
         </div>`;
 
-      // 티어드롭 핀: 끝(아래 중앙)을 위치에 고정.
-      const iconSize = new window.naver.maps.Size(width, height);
-      const iconAnchor = new window.naver.maps.Point(24, 58);
+      // 푸시핀: 막대 끝(아래 중앙)을 위치에 고정.
+      const iconSize = new window.naver.maps.Size(PIN_W, PIN_H);
+      const iconAnchor = new window.naver.maps.Point(16, PIN_H);
 
       const marker = new window.naver.maps.Marker({
         position: new window.naver.maps.LatLng(
