@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { loginStoreWithPin } from "@/app/actions/store";
 
 export default function LoginForm() {
@@ -81,6 +82,13 @@ export default function LoginForm() {
         >
           {isPending ? "로그인 중…" : "로그인"}
         </button>
+
+        <Link
+          href="/"
+          className="block text-center w-full mt-4 py-2.5 rounded-[4px] border border-cart-rule bg-background text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold"
+        >
+          홈으로
+        </Link>
       </form>
     </div>
   );
