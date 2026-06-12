@@ -13,7 +13,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LAYOUT } from "@/lib/constants";
-import { LayoutDashboard, Users, CalendarDays, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, CalendarDays, LogOut, Home } from "lucide-react";
 
 interface NavItem {
   href: string;
@@ -95,6 +95,24 @@ export function AdminBottomNav() {
             </Link>
           );
         })}
+
+        {/* 사이트로 나가기 — 로그인 상태 유지, 일반 사용자 앱으로 이동.
+            관리자 작업 끝났지만 로그아웃은 안 하고 싶을 때. */}
+        <Link
+          href='/'
+          className={cn(
+            "flex flex-col items-center justify-center gap-1",
+            "transition-all duration-200 ease-out",
+            "px-4 py-2 rounded-[4px]",
+            "active:scale-[0.92] text-cart-ink-40 hover:text-[hsl(var(--lime))]"
+          )}
+          aria-label='사이트로 가기'
+        >
+          <Home className='w-[22px] h-[22px]' strokeWidth={1.6} />
+          <span className='font-mono text-[9px] tracking-[0.15em] uppercase font-semibold'>
+            사이트
+          </span>
+        </Link>
 
         {/* Logout — POST form clears the auth cookie via /api/admin/logout */}
         <form action='/api/admin/logout' method='POST' className='flex'>
