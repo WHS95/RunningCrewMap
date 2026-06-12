@@ -38,6 +38,12 @@ const nextConfig = {
     },
   },
   images: {
+    // Vercel Image Optimization 전체 비활성화 — Hobby 무료 한도(5K Transformations/월)
+    // 초과로 402 Payment Required가 발생해 이미지 로드 자체가 실패하던 사고 대응.
+    // 모든 next/image 요청은 원본 URL로 직접 서비스(Supabase 등 자체 CDN 통과).
+    // 업로드 파이프라인에서 이미 webp 변환 + 256px 썸네일 사전 생성을 마쳤으므로
+    // 런타임 변환 의존성이 없다. Pro 플랜 전환 시 unoptimized:false로 복귀 가능.
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
