@@ -99,6 +99,13 @@ export default function LoginForm() {
             PIN을 잊으셨나요?
           </Link>
         </div>
+
+        <Link
+          href="/"
+          className="block text-center w-full mt-4 py-2.5 rounded-[4px] border border-cart-rule bg-background text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold"
+        >
+          홈으로
+        </Link>
       </form>
     </div>
   );
