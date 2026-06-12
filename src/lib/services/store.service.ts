@@ -1,6 +1,7 @@
 // src/lib/services/store.service.ts
 import { supabase } from "@/lib/supabase/client";
 import imageCompression from "browser-image-compression";
+import { generateThumbnail } from "@/lib/utils/imageCompression";
 import type {
   Store,
   StoreAdmin,
@@ -49,6 +50,48 @@ class StoreService {
     return `${data.publicUrl}?v=${Date.now()}`;
   }
 
+  // 로고 전용 업로드: 원본 webp + 256px 썸네일을 같은 버킷에 업로드한다.
+  // 썸네일 생성/업로드 실패는 원본 업로드를 막지 않는다(thumb URL은 null).
+  private async uploadLogoWithThumb(
+    storeId: string,
+    file: File
+  ): Promise<{ url: string; thumbUrl: string | null }> {
+    this.validateImage(file);
+    const webp = await this.compressToWebp(file);
+    const ts = Date.now();
+    const name = `${storeId}_${ts}.webp`;
+    const { error } = await supabase.storage
+      .from(this.BUCKET)
+      .upload(name, webp, { upsert: true, contentType: "image/webp" });
+    if (error) throw error;
+    const { data } = supabase.storage.from(this.BUCKET).getPublicUrl(name);
+    const url = `${data.publicUrl}?v=${ts}`;
+
+    let thumbUrl: string | null = null;
+    try {
+      const thumb = await generateThumbnail(webp, 256);
+      const thumbName = `${storeId}_${ts}_thumb.webp`;
+      const { error: thumbErr } = await supabase.storage
+        .from(this.BUCKET)
+        .upload(thumbName, thumb, {
+          upsert: true,
+          contentType: "image/webp",
+        });
+      if (thumbErr) {
+        console.warn("store logo thumbnail upload failed:", thumbErr);
+      } else {
+        const { data: thumbData } = supabase.storage
+          .from(this.BUCKET)
+          .getPublicUrl(thumbName);
+        thumbUrl = `${thumbData.publicUrl}?v=${ts}`;
+      }
+    } catch (e) {
+      console.warn("store logo thumbnail generation failed:", e);
+    }
+
+    return { url, thumbUrl };
+  }
+
   private async removeByPublicUrl(url: string): Promise<void> {
     // 파일명만 추출해 remove
     const last = url.split("?")[0].split("/").pop();
@@ -90,8 +133,14 @@ class StoreService {
     const storePatch: Record<string, unknown> = { main_image_url: mainUrl };
 
     // 3-1. 로고(선택) 업로드 + URL 패치 (main_image와 동일 storePhotos 버킷 재사용)
+    // 로고는 원본과 함께 256px 썸네일도 함께 업로드한다(지도 마커 등 작은 표시용).
     if (input.logo) {
-      storePatch.logo_url = await this.uploadOne(storeId, input.logo);
+      const { url, thumbUrl } = await this.uploadLogoWithThumb(
+        storeId,
+        input.logo
+      );
+      storePatch.logo_url = url;
+      storePatch.logo_thumb_url = thumbUrl;
     }
 
     await supabase.from("stores").update(storePatch).eq("id", storeId);
@@ -342,26 +391,37 @@ class StoreService {
     }
 
     // 로고 교체/제거 (main_image와 동일 패턴, storePhotos 버킷 재사용)
+    // 로고는 원본 + 256px 썸네일 한 쌍으로 관리한다.
     if (input.logo) {
-      // 기존 로고 URL 가져와 삭제
+      // 기존 로고/썸네일 URL 가져와 삭제
       const { data: prev } = await supabase
         .from("stores")
-        .select("logo_url")
+        .select("logo_url, logo_thumb_url")
         .eq("id", id)
         .single();
-      const newUrl = await this.uploadOne(id, input.logo);
-      patch.logo_url = newUrl;
-      const prevUrl = (prev as { logo_url?: string } | null)?.logo_url;
-      if (prevUrl) await this.removeByPublicUrl(prevUrl);
+      const { url, thumbUrl } = await this.uploadLogoWithThumb(id, input.logo);
+      patch.logo_url = url;
+      patch.logo_thumb_url = thumbUrl;
+      const prevRow = prev as
+        | { logo_url?: string; logo_thumb_url?: string }
+        | null;
+      if (prevRow?.logo_url) await this.removeByPublicUrl(prevRow.logo_url);
+      if (prevRow?.logo_thumb_url)
+        await this.removeByPublicUrl(prevRow.logo_thumb_url);
     } else if (input.remove_logo) {
       const { data: prev } = await supabase
         .from("stores")
-        .select("logo_url")
+        .select("logo_url, logo_thumb_url")
         .eq("id", id)
         .single();
-      const prevUrl = (prev as { logo_url?: string } | null)?.logo_url;
-      if (prevUrl) await this.removeByPublicUrl(prevUrl);
+      const prevRow = prev as
+        | { logo_url?: string; logo_thumb_url?: string }
+        | null;
+      if (prevRow?.logo_url) await this.removeByPublicUrl(prevRow.logo_url);
+      if (prevRow?.logo_thumb_url)
+        await this.removeByPublicUrl(prevRow.logo_thumb_url);
       patch.logo_url = null;
+      patch.logo_thumb_url = null;
     }
 
     if (Object.keys(patch).length > 0) {

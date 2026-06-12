@@ -4,6 +4,7 @@ export interface Crew {
   description: string;
   instagram?: string;
   logo_image?: string;
+  logo_thumb_url?: string | null;
   founded_date: string;
   created_at: string;
   activity_day?: string;

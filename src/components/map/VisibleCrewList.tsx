@@ -73,11 +73,12 @@ export function VisibleCrewList({
                     {crew.logo_image ? (
                       <>
                         <Image
-                          src={crew.logo_image}
+                          src={crew.logo_thumb_url ?? crew.logo_image}
                           alt={`${crew.name} 로고`}
                           width={48}
                           height={48}
                           quality={30}
+                          unoptimized
                           className='flex-shrink-0 object-cover transition-opacity rounded-full group-hover:opacity-90'
                           loading='lazy'
                           priority={false}

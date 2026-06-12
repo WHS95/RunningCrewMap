@@ -53,10 +53,10 @@ export default function MenuPage() {
 
   return (
     <div
-      className='flex flex-col bg-background'
+      className='flex flex-col min-h-screen bg-background'
       style={{
-        height: CSS_VARIABLES.CONTENT_HEIGHT_MOBILE,
         paddingTop: CSS_VARIABLES.HEADER_PADDING,
+        paddingBottom: CSS_VARIABLES.MOBILE_NAV_PADDING,
       }}
     >
       <CartographicHeader

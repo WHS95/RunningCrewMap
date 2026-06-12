@@ -8,7 +8,7 @@ import type {
 import { Crew } from "@/lib/types/crew";
 import { logger } from "@/lib/utils/logger";
 import { ErrorCode } from "@/lib/types/error";
-import { compressImageFile } from "@/lib/utils/imageCompression";
+import { compressImageFile, generateThumbnail } from "@/lib/utils/imageCompression";
 import { convertToWebP } from "@/lib/utils/imageConversion";
 
 // Supabase 응답 타입 정의
@@ -18,6 +18,7 @@ interface DbCrew {
   description: string;
   instagram?: string;
   logo_image_url?: string;
+  logo_thumb_url?: string;
   founded_date: string;
   created_at: string;
   updated_at: string;
@@ -59,7 +60,7 @@ class CrewService {
   private async uploadImage(
     file: File,
     crewId: string
-  ): Promise<string | null> {
+  ): Promise<{ logo_image: string; logo_thumb_url: string } | null> {
     try {
       // console.log("=== 이미지 업로드 시작 ===");
       // console.log("파일 정보:", {
@@ -133,7 +134,39 @@ class CrewService {
       // console.log("생성된 공개 URL:", publicUrl.toString());
       console.log("=== 이미지 업로드 완료 ===");
 
-      return publicUrl.toString();
+      // 썸네일 생성 및 업로드 (실패해도 원본 업로드는 유지)
+      let thumbUrlString = publicUrl.toString();
+      try {
+        const thumbFile = await generateThumbnail(file, 256);
+        const baseName = fileName.replace(/\.[^/.]+$/, "");
+        const thumbFileName = `${baseName}_thumb.webp`;
+
+        const { error: thumbUploadError } = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .upload(thumbFileName, thumbFile, {
+            cacheControl: "31536000",
+            contentType: "image/webp",
+            upsert: true,
+          });
+
+        if (thumbUploadError) {
+          console.error("썸네일 업로드 실패:", thumbUploadError);
+        } else {
+          const { data: thumbData } = supabase.storage
+            .from(this.BUCKET_NAME)
+            .getPublicUrl(thumbFileName);
+          const thumbUrl = new URL(thumbData.publicUrl);
+          thumbUrl.searchParams.set("v", timestamp.toString());
+          thumbUrlString = thumbUrl.toString();
+        }
+      } catch (thumbError) {
+        console.error("썸네일 생성/업로드 실패:", thumbError);
+      }
+
+      return {
+        logo_image: publicUrl.toString(),
+        logo_thumb_url: thumbUrlString,
+      };
     } catch (error) {
       console.error("=== 이미지 업로드 실패 ===");
       console.error("에러 상세 정보:", {
@@ -157,7 +190,10 @@ class CrewService {
   }
 
   // 크루 로고 업로드를 위한 공개 메서드 추가
-  async uploadCrewLogo(file: File, crewId: string): Promise<string | null> {
+  async uploadCrewLogo(
+    file: File,
+    crewId: string
+  ): Promise<{ logo_image: string; logo_thumb_url: string } | null> {
     try {
       // 이미지 유효성 검사
       await this.validateImage(file);
@@ -181,7 +217,7 @@ class CrewService {
         }
       }
 
-      // 이미지 업로드
+      // 이미지 업로드 (원본 + 썸네일)
       return await this.uploadImage(processedFile, crewId);
     } catch (error) {
       console.error("로고 업로드 실패:", error);
@@ -284,17 +320,19 @@ class CrewService {
 
       // 이미지 검증 및 압축, 업로드 수행
       let logo_image_url: string | undefined;
+      let logo_thumb_url: string | undefined;
       if (input.logo_image) {
         try {
           console.log("로고 이미지 처리 시작");
-          const uploadedUrl = await this.uploadCrewLogo(
+          const uploaded = await this.uploadCrewLogo(
             input.logo_image,
             crypto.randomUUID()
           );
-          if (!uploadedUrl) {
+          if (!uploaded) {
             throw logger.createError(ErrorCode.UPLOAD_FAILED);
           }
-          logo_image_url = uploadedUrl;
+          logo_image_url = uploaded.logo_image;
+          logo_thumb_url = uploaded.logo_thumb_url;
           console.log("로고 이미지 업로드 완료:", logo_image_url);
         } catch (error) {
           if (
@@ -320,6 +358,7 @@ class CrewService {
           description: input.description,
           instagram: input.instagram,
           logo_image_url,
+          logo_thumb_url,
           founded_date: input.founded_date,
         })
         .select("id")
@@ -509,6 +548,7 @@ class CrewService {
         description: input.description,
         instagram: input.instagram,
         logo_image_url,
+        logo_thumb_url,
         founded_date: input.founded_date,
         location: {
           main_address: input.location.main_address,
@@ -1101,6 +1141,7 @@ class CrewService {
         max_age: number;
       };
       logo_image_url?: string; // 로고 이미지 URL 추가
+      logo_thumb_url?: string; // 로고 썸네일 URL 추가
       use_instagram_dm?: boolean; // 인스타그램 DM 사용 여부 추가
       open_chat_link?: string; // 오픈채팅 링크 추가
       crew_photos?: {
@@ -1124,6 +1165,7 @@ class CrewService {
             instagram: updateData.instagram || null,
             founded_date: updateData.founded_date || undefined,
             logo_image_url: updateData.logo_image_url || undefined,
+            logo_thumb_url: updateData.logo_thumb_url || undefined,
           })
           .eq("id", crewId),
         supabase
@@ -1319,7 +1361,7 @@ class CrewService {
       // 크루 정보 조회 (로고 이미지 URL 확인을 위해)
       const { data: crew, error: getError } = await supabase
         .from("crews")
-        .select("logo_image_url")
+        .select("logo_image_url, logo_thumb_url")
         .eq("id", crewId)
         .single();
 
@@ -1338,10 +1380,23 @@ class CrewService {
           const pathParts = url.pathname.split("/");
           const fileName = pathParts[pathParts.length - 1].split("?")[0]; // 쿼리 파라미터 제거
 
+          // 썸네일 파일명도 함께 삭제 (있는 경우)
+          const filesToRemove: string[] = [fileName];
+          if (crew.logo_thumb_url) {
+            try {
+              const thumbUrl = new URL(crew.logo_thumb_url);
+              const thumbParts = thumbUrl.pathname.split("/");
+              const thumbFileName = thumbParts[thumbParts.length - 1].split("?")[0];
+              filesToRemove.push(thumbFileName);
+            } catch (thumbErr) {
+              console.error("썸네일 URL 파싱 실패:", thumbErr);
+            }
+          }
+
           // 스토리지에서 이미지 삭제
           const { error: deleteImageError } = await supabase.storage
             .from(this.BUCKET_NAME)
-            .remove([fileName]);
+            .remove(filesToRemove);
 
           if (deleteImageError) {
             // 이미지 삭제 실패는 로깅만 하고 크루 삭제는 계속 진행

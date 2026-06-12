@@ -50,3 +50,53 @@ export async function compressImageFile(file: File): Promise<File> {
     throw error;
   }
 }
+
+export async function generateThumbnail(
+  file: File,
+  maxSize = 256
+): Promise<File> {
+  try {
+    const options = {
+      maxSizeMB: 0.1,
+      maxWidthOrHeight: maxSize,
+      useWebWorker: true,
+      fileType: "image/webp",
+      initialQuality: 0.7,
+    };
+
+    const thumbnailBlob = await imageCompression(file, options);
+
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const thumbnailName = `${baseName}_thumb.webp`;
+
+    logger.error(
+      logger.createError(ErrorCode.FILE_COMPRESSED, {
+        metadata: {
+          originalSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+          thumbnailSize: `${(thumbnailBlob.size / 1024 / 1024).toFixed(2)}MB`,
+          maxSize,
+          purpose: "thumbnail",
+        },
+      })
+    );
+
+    return new File([thumbnailBlob], thumbnailName, {
+      type: "image/webp",
+      lastModified: file.lastModified,
+    });
+  } catch (error) {
+    logger.error(
+      logger.createError(ErrorCode.COMPRESSION_FAILED, {
+        originalError: error,
+        metadata: {
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          purpose: "thumbnail",
+          maxSize,
+        },
+      })
+    );
+    throw error;
+  }
+}

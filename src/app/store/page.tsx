@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getVisibleStores } from "@/lib/server/stores";
 import { StoreList } from "@/components/store/StoreList";
 import { CartographicHeader } from "@/components/design/cartographic";
+import { CSS_VARIABLES } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "러닝 인증 매장 — 런하우스",
@@ -13,7 +14,13 @@ export const metadata: Metadata = {
 export default async function StoreIndexPage() {
   const stores = await getVisibleStores();
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6">
+    <main
+      className="mx-auto max-w-5xl px-4 pb-6"
+      style={{
+        paddingTop: `calc(${CSS_VARIABLES.HEADER_PADDING} + 1rem)`,
+        paddingBottom: CSS_VARIABLES.MOBILE_NAV_PADDING,
+      }}
+    >
       {/* 카토그래픽 헤더 — 크루 리스트와 동일한 kicker + title 처리 */}
       <CartographicHeader
         kicker={`STORES · ${stores.length.toString().padStart(3, "0")}`}
