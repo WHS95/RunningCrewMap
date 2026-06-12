@@ -13,12 +13,12 @@ export default function ForgotPinPage() {
         <p className="text-[12px] text-cart-ink-60 leading-relaxed mb-5">
           인스타그램{" "}
           <a
-            href="https://instagram.com/runhouse"
+            href="https://www.instagram.com/run_house_club/"
             target="_blank"
             rel="noreferrer"
             className="underline underline-offset-2"
           >
-            @runhouse
+            @run_house_club
           </a>
           로 크루명과 함께 &quot;PIN 초기화 요청&quot; 메시지를 보내주세요.
           admin이 확인 후 재설정 링크를 보내드립니다.

@@ -7,7 +7,7 @@ import posthog from "posthog-js";
 import { crewService } from "@/lib/services/crew.service";
 import { AppError, ErrorCode } from "@/lib/types/error";
 import { ResultDialog } from "@/components/dialog/ResultDialog";
-import { X, Upload } from "lucide-react";
+import { X, Upload, Eye, EyeOff } from "lucide-react";
 import MImage from "next/image";
 import { notifyCrewRegistration } from "@/app/actions/crew";
 import { KickerLabel } from "@/components/design/cartographic";
@@ -240,6 +240,8 @@ export default function RegisterPage() {
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
+  const [showPin, setShowPin] = useState(false);
+  const [showPinConfirm, setShowPinConfirm] = useState(false);
   const [foundedDate, setFoundedDate] = useState(todayDate);
   const [mainAddress, setMainAddress] = useState("");
 
@@ -1403,36 +1405,60 @@ export default function RegisterPage() {
               수정/관리에 사용할 <span className="font-semibold text-cart-ink">8자리</span> 비밀번호입니다. 잊지 않게 안전한 곳에 메모해두세요.
             </p>
             <div className='grid grid-cols-2 gap-3'>
-              <input
-                type='password'
-                inputMode='numeric'
-                pattern='[0-9]*'
-                maxLength={8}
-                placeholder='8자리 숫자'
-                value={pin}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "").slice(0, 8);
-                  setPin(v);
-                  setPinError(null);
-                }}
-                disabled={isLoading}
-                className='font-mono text-[16px] tracking-[0.4em] text-center bg-cart-paper border border-cart-rule rounded-[4px] px-3 py-2.5'
-              />
-              <input
-                type='password'
-                inputMode='numeric'
-                pattern='[0-9]*'
-                maxLength={8}
-                placeholder='다시 입력'
-                value={pinConfirm}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "").slice(0, 8);
-                  setPinConfirm(v);
-                  setPinError(null);
-                }}
-                disabled={isLoading}
-                className='font-mono text-[16px] tracking-[0.4em] text-center bg-cart-paper border border-cart-rule rounded-[4px] px-3 py-2.5'
-              />
+              <div className='relative'>
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  inputMode='numeric'
+                  pattern='[0-9]*'
+                  maxLength={8}
+                  placeholder='8자리 숫자'
+                  value={pin}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    setPin(v);
+                    setPinError(null);
+                  }}
+                  disabled={isLoading}
+                  aria-label='수정 PIN'
+                  className='w-full font-mono text-[16px] tracking-[0.4em] text-center bg-cart-paper border border-cart-rule rounded-[4px] pl-3 pr-10 py-2.5'
+                />
+                <button
+                  type='button'
+                  onClick={() => setShowPin((v) => !v)}
+                  disabled={isLoading}
+                  aria-label={showPin ? 'PIN 숨기기' : 'PIN 표시'}
+                  className='absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-[4px] text-cart-ink-60 hover:text-cart-ink hover:bg-white/[0.04] active:scale-95 transition-all'
+                >
+                  {showPin ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
+                </button>
+              </div>
+              <div className='relative'>
+                <input
+                  type={showPinConfirm ? 'text' : 'password'}
+                  inputMode='numeric'
+                  pattern='[0-9]*'
+                  maxLength={8}
+                  placeholder='다시 입력'
+                  value={pinConfirm}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    setPinConfirm(v);
+                    setPinError(null);
+                  }}
+                  disabled={isLoading}
+                  aria-label='수정 PIN 확인'
+                  className='w-full font-mono text-[16px] tracking-[0.4em] text-center bg-cart-paper border border-cart-rule rounded-[4px] pl-3 pr-10 py-2.5'
+                />
+                <button
+                  type='button'
+                  onClick={() => setShowPinConfirm((v) => !v)}
+                  disabled={isLoading}
+                  aria-label={showPinConfirm ? 'PIN 숨기기' : 'PIN 표시'}
+                  className='absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-[4px] text-cart-ink-60 hover:text-cart-ink hover:bg-white/[0.04] active:scale-95 transition-all'
+                >
+                  {showPinConfirm ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
+                </button>
+              </div>
             </div>
             {pinError && (
               <p className='text-[11px] text-red-400 mt-1'>{pinError}</p>
