@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { Store } from "@/lib/types/store";
 import { STORE_CATEGORY_LABELS } from "@/lib/types/store";
@@ -14,6 +14,9 @@ import {
   Gift,
   MessageSquare,
   Tag,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { StoreCategoryIcon } from "./StoreCategoryIcon";
 
@@ -21,6 +24,26 @@ type TabType = "info" | "photos";
 
 export function StoreDetailView({ store }: { store: Store }) {
   const [activeTab, setActiveTab] = useState<TabType>("info");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIndex(null);
+      else if (e.key === "ArrowLeft")
+        setLightboxIndex((idx) => (idx === null ? null : (idx - 1 + allPhotos.length) % allPhotos.length));
+      else if (e.key === "ArrowRight")
+        setLightboxIndex((idx) => (idx === null ? null : (idx + 1) % allPhotos.length));
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxIndex]);
 
   const igHandle = store.instagram?.replace(/^@/, "");
 
@@ -300,13 +323,16 @@ export function StoreDetailView({ store }: { store: Store }) {
             {allPhotos.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
                 {allPhotos.map((url, i) => (
-                  <div
+                  <button
+                    type="button"
                     key={url}
-                    className={`relative overflow-hidden rounded-[4px] border border-cart-rule bg-cart-paper ${
+                    onClick={() => setLightboxIndex(i)}
+                    className={`relative overflow-hidden rounded-[4px] border border-cart-rule bg-cart-paper cursor-zoom-in active:scale-[0.98] transition-transform ${
                       i === 0 && allPhotos.length > 1
                         ? "col-span-2 aspect-video"
                         : "aspect-square"
                     }`}
+                    aria-label={`${store.name} 사진 ${i + 1} 크게 보기`}
                   >
                     <Image
                       src={url}
@@ -318,7 +344,7 @@ export function StoreDetailView({ store }: { store: Store }) {
                       priority={i === 0}
                       style={{ objectFit: "cover" }}
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -333,6 +359,74 @@ export function StoreDetailView({ store }: { store: Store }) {
           </div>
         )}
       </div>
+
+      {lightboxIndex !== null && allPhotos[lightboxIndex] && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="사진 크게 보기"
+          className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 animate-fade-in"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex(null);
+            }}
+            className="absolute top-4 right-4 w-10 h-10 rounded-[4px] bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10"
+            aria-label="닫기"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {allPhotos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex - 1 + allPhotos.length) % allPhotos.length);
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-[4px] bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10"
+                aria-label="이전 사진"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex + 1) % allPhotos.length);
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-[4px] bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10"
+                aria-label="다음 사진"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-[11px] tracking-[0.2em] text-white/70 uppercase">
+                {lightboxIndex + 1} / {allPhotos.length}
+              </div>
+            </>
+          )}
+
+          <div
+            className="relative w-[92vw] h-[80vh] max-w-[1100px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={allPhotos[lightboxIndex]}
+              alt={`${store.name} 사진 ${lightboxIndex + 1}`}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              quality={90}
+              unoptimized
+              priority
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

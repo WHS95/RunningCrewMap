@@ -19,6 +19,7 @@ export interface StoreRow {
   event_post_url?: string;
   main_image_url?: string;
   logo_url: string | null; // 매장 로고 (nullable)
+  logo_thumb_url: string | null;
   is_visible: boolean;
   created_at: string;
   updated_at: string;

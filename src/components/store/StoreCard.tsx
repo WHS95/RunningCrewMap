@@ -27,12 +27,14 @@ export function StoreRow({
       {store.logo_url ? (
         <div className="relative flex-shrink-0 w-9 h-9 rounded-[4px] overflow-hidden border border-cart-rule bg-cart-paper">
           <Image
-            src={store.logo_url}
+            src={store.logo_thumb_url ?? store.logo_url}
             alt={store.name}
             width={36}
             height={36}
             className="object-cover w-full h-full"
             sizes="36px"
+            quality={40}
+            unoptimized
           />
         </div>
       ) : (

@@ -206,7 +206,7 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
               {crew.logo_image ? (
                 <div className='relative flex items-center justify-center flex-shrink-0 w-10 h-10 mr-3 overflow-hidden border border-cart-rule rounded-full'>
                   <Image
-                    src={crew.logo_image}
+                    src={crew.logo_thumb_url ?? crew.logo_image}
                     alt={crew.name}
                     width={40}
                     height={40}
@@ -215,6 +215,7 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
                     loading={index < 10 ? "eager" : "lazy"}
                     quality={40}
                     sizes='40px'
+                    unoptimized
                   />
                 </div>
               ) : (

@@ -67,6 +67,7 @@ interface CrewUpdateData {
     max_age: number;
   };
   logo_image_url?: string;
+  logo_thumb_url?: string;
   use_instagram_dm?: boolean;
   open_chat_link?: string;
   crew_photos?: {
@@ -355,10 +356,14 @@ export default function EditCrewPage() {
     try {
       setIsSaving(true);
       let updatedImageUrl = crew?.logo_image;
+      let updatedThumbUrl = crew?.logo_thumb_url ?? undefined;
       if (logoImage) {
         try {
-          const url = await crewService.uploadCrewLogo(logoImage, crewId);
-          if (url) updatedImageUrl = url;
+          const uploaded = await crewService.uploadCrewLogo(logoImage, crewId);
+          if (uploaded) {
+            updatedImageUrl = uploaded.logo_image;
+            updatedThumbUrl = uploaded.logo_thumb_url;
+          }
         } catch (err) {
           console.error("로고 업로드 실패:", err);
           toast.error("로고 이미지 업로드에 실패했습니다.");
@@ -395,6 +400,7 @@ export default function EditCrewPage() {
         founded_date: foundedDate || undefined,
         age_range: { min_age: minAge, max_age: maxAge },
         logo_image_url: updatedImageUrl,
+        logo_thumb_url: updatedThumbUrl,
       };
 
       if (useInstagramDm) updateData.use_instagram_dm = true;

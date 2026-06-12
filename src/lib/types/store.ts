@@ -33,6 +33,7 @@ export interface Store {
   event_post_url?: string;
   main_image_url?: string;
   logo_url?: string; // 매장 로고 (선택). 없으면 지도 마커는 카테고리 색 글자 원으로 fallback.
+  logo_thumb_url?: string | null;
   location: StoreLocation;
   photos: string[]; // display_order 정렬된 URL 배열
   created_at: string;

@@ -79,7 +79,7 @@ export function StoreList({ stores }: { stores: Store[] }) {
       >
         <SheetContent
           side="bottom"
-          className="h-[85vh] overflow-y-auto p-0 sm:max-w-full"
+          className="h-[85vh] p-0 rounded-t-[10px] overflow-hidden z-[10000] bg-background text-cart-ink md:w-[430px] md:left-[calc(50vw-215px)] md:right-auto md:rounded-[4px] md:border md:border-cart-rule md:shadow-2xl"
         >
           <SheetTitle className="sr-only">
             {selectedStore ? selectedStore.name : "매장 상세"}

@@ -29,12 +29,13 @@ export function RegionCrewRow({
       {crew.logo_image ? (
         <div className="relative flex-shrink-0 w-9 h-9 rounded-[4px] overflow-hidden border border-cart-rule bg-cart-paper">
           <Image
-            src={crew.logo_image}
+            src={crew.logo_thumb_url ?? crew.logo_image}
             alt={crew.name}
             width={36}
             height={36}
             className="object-cover w-full h-full"
             sizes="36px"
+            unoptimized
           />
         </div>
       ) : (
