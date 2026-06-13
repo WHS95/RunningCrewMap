@@ -11,11 +11,12 @@ import { ListFilter, Target, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { crewService } from "@/lib/services/crew.service";
 
-// /_next/image 최적화 헬퍼 — 마커 HTML 문자열(raw <img>)에서 사용.
-// Supabase 원본 URL(~1MB)을 Next.js Image Optimization 엔드포인트로 우회하여
-// 브라우저가 64px 크기의 최적화된 이미지(~3–5KB)를 한 번만 받도록 한다.
-const markerImg = (url: string, w = 64) =>
-  `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=75`;
+// 마커 이미지 URL — 이전에는 /_next/image로 우회해 64px로 축소했지만, Vercel
+// Image Optimization 무료 한도 초과(402)로 사용 중단. 대신 호출처에서
+// logo_thumb_url(업로드 시 사전 생성된 256px WebP 썸네일)을 우선 넘기게 했고,
+// 없으면 원본 URL이 그대로 들어와 그래도 동작하도록 한다(체감 비용 ↑, 실패 X).
+// 시그니처는 호환성 위해 유지하되 w 인자는 의미 없음.
+const markerImg = (url: string, _w = 64) => url;
 
 // 매장 카테고리별 마커 색 — 디자인 톤 매핑 (계획서 Step 3).
 const STORE_COLOR: Record<StoreCategory, string> = {
@@ -382,11 +383,13 @@ export default function NaverMap({
         .slice(0, 10); // 화면에 보이는 이미지 중 최대 10개만 즉시 로드
 
       // 화면 내 크루 이미지 즉시 로드 — markerImg()와 동일한 URL을 사용하여
-      // 브라우저 캐시를 공유하고 원본 1MB 대신 최적화된 ~3-5KB를 받는다.
+      // 브라우저 캐시를 공유한다. logo_thumb_url(256px 사전 생성 썸네일)이 있으면
+      // 그것을, 없으면 원본을 사용해 실패 없이 동작.
       priorityCrews.forEach((crew) => {
-        if (crew.logo_image && !imageCache.current[crew.id]) {
+        const src = crew.logo_thumb_url ?? crew.logo_image;
+        if (src && !imageCache.current[crew.id]) {
           const img = new Image();
-          img.src = markerImg(crew.logo_image);
+          img.src = markerImg(src);
           img.decoding = "async";
           imageCache.current[crew.id] = img;
         }
@@ -399,9 +402,10 @@ export default function NaverMap({
           .slice(0, 20); // 최대 20개만 추가 로드
 
         remainingCrews.forEach((crew) => {
-          if (crew.logo_image) {
+          const src = crew.logo_thumb_url ?? crew.logo_image;
+          if (src) {
             const img = new Image();
-            img.src = markerImg(crew.logo_image);
+            img.src = markerImg(src);
             img.decoding = "async";
             img.loading = "lazy";
             imageCache.current[crew.id] = img;
@@ -484,10 +488,11 @@ export default function NaverMap({
 
     // Logo or initial inside the teardrop head
     let innerContent = "";
-    if (crew.logo_image) {
+    const crewLogoSrc = crew.logo_thumb_url ?? crew.logo_image;
+    if (crewLogoSrc) {
       innerContent = `
         <img
-          src="${markerImg(crew.logo_image)}"
+          src="${markerImg(crewLogoSrc)}"
           width="${logoSize}"
           height="${logoSize}"
           alt="${crew.name}"
@@ -542,8 +547,8 @@ export default function NaverMap({
     const logoSize = 32;
     const wellSize = logoSize + 2;
 
-    // 마커 이미지: 매장 로고(logo_url) 우선, 없으면 대표 사진(main_image_url)을 원형으로.
-    const markerUrl = store.logo_url || store.main_image_url;
+    // 마커 이미지: logo_thumb_url(256px 사전 썸네일) → logo_url → 대표 사진(main_image_url).
+    const markerUrl = store.logo_thumb_url || store.logo_url || store.main_image_url;
 
     let innerContent = "";
     if (markerUrl) {
