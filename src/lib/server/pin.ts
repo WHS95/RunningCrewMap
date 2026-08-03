@@ -1,6 +1,7 @@
 // src/lib/server/pin.ts
 import "server-only";
 import bcrypt from "bcryptjs";
+import { randomInt } from "crypto";
 
 const BCRYPT_COST = 12;
 
@@ -63,6 +64,21 @@ export function isValidPinFormat(pin: string): boolean {
 /** 신규 등록·PIN 변경 전용: 정확히 8자리만 허용 */
 export function isValidNewPinFormat(pin: string): boolean {
   return /^\d{8}$/.test(pin);
+}
+
+/**
+ * 관리자 PIN 초기화용 임시 PIN 생성 — 8자리 숫자, 약한 패턴 제외.
+ * crypto.randomInt로 균일 분포 추출 (Math.random 금지).
+ */
+export function generateRandomPin(): string {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const pin = Array.from({ length: 8 }, () => String(randomInt(0, 10))).join(
+      ""
+    );
+    if (!isWeakPin(pin)) return pin;
+  }
+  // 사실상 도달 불가 — 마지막 안전망
+  return String(randomInt(10_000_000, 100_000_000));
 }
 
 export async function hashPin(pin: string): Promise<string> {

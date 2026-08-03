@@ -54,6 +54,13 @@ export default function AdminCrewPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [rotatingTokenFor, setRotatingTokenFor] = useState<string | null>(null);
+  // PIN 초기화 결과 — 평문 임시 PIN은 여기서만 노출된다.
+  const [pinReset, setPinReset] = useState<{
+    crewId: string;
+    crewName: string;
+    instagram: string | null;
+    tempPin: string;
+  } | null>(null);
   const [resettingPinFor, setResettingPinFor] = useState<string | null>(null);
 
   useEffect(() => {
@@ -196,7 +203,7 @@ export default function AdminCrewPage() {
   // Used when crew leader requests PIN reset via Instagram DM.
   const handleClearPin = useCallback(async (crew: AdminCrew) => {
     const ok = window.confirm(
-      `'${crew.name}' 크루의 PIN을 초기화하시겠어요?\n새 수정 링크가 발급되며 기존 세션은 모두 만료됩니다.`
+      `'${crew.name}' 크루의 PIN을 초기화하시겠어요?\n임시 PIN이 새로 발급되며 기존 세션은 모두 만료됩니다.`
     );
     if (!ok) return;
     setResettingPinFor(crew.id);
@@ -210,18 +217,43 @@ export default function AdminCrewPage() {
         );
         return;
       }
-      const url = `${window.location.origin}/crew/edit/${crew.id}?token=${res.newEditToken}`;
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("PIN 초기화 완료. 새 수정 링크가 클립보드에 복사되었습니다.");
-      } catch {
-        toast.success(`PIN 초기화 완료. 새 URL: ${url}`);
-      }
+      // 평문 임시 PIN은 이 응답에서만 볼 수 있다 (DB엔 해시만 저장).
+      setPinReset({
+        crewId: crew.id,
+        crewName: crew.name,
+        instagram: crew.instagram ?? null,
+        tempPin: res.tempPin,
+      });
     } catch (e) {
       console.error("clearCrewPinAdmin failed:", e);
       toast.error("PIN 초기화 중 오류가 발생했습니다.");
     } finally {
       setResettingPinFor(null);
+    }
+  }, []);
+
+  // 크루장에게 그대로 붙여넣을 수 있는 안내문
+  const pinResetMessage = useMemo(() => {
+    if (!pinReset) return "";
+    const origin =
+      typeof window === "undefined" ? "https://www.runhouse.club" : window.location.origin;
+    return [
+      `[런하우스] ${pinReset.crewName} 크루 수정 PIN 안내`,
+      "",
+      `로그인: ${origin}/crew/edit/login`,
+      `인스타그램 아이디: ${pinReset.instagram ?? "(등록된 아이디)"}`,
+      `임시 PIN: ${pinReset.tempPin}`,
+      "",
+      "이 PIN은 외부에 공유하지 말아주세요. 변경이 필요하시면 DM 주세요.",
+    ].join("\n");
+  }, [pinReset]);
+
+  const copyText = useCallback(async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} 복사 완료`);
+    } catch {
+      toast.error("복사에 실패했어요. 직접 선택해 복사해주세요.");
     }
   }, []);
 
@@ -519,6 +551,59 @@ export default function AdminCrewPage() {
               className='flex-1 px-3 py-2.5 rounded-[4px] bg-red-500 text-white font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all disabled:opacity-50'
             >
               {isDeleting ? "DELETING…" : "삭제 · DELETE"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PIN 초기화 결과 — 평문 임시 PIN은 이 화면에서만 볼 수 있다 */}
+      <Dialog
+        open={pinReset !== null}
+        onOpenChange={(open) => {
+          if (!open) setPinReset(null);
+        }}
+      >
+        <DialogContent className='bg-cart-paper border border-cart-rule rounded-[4px] p-0 overflow-hidden'>
+          <DialogHeader className='px-5 pt-5 pb-3 border-b border-cart-rule'>
+            <KickerLabel tone='muted' className='mb-1.5 tracking-[0.22em]'>
+              ● PIN · RESET · ONE-TIME VIEW
+            </KickerLabel>
+            <DialogTitle className='flex gap-2 items-center font-display text-[18px] font-bold tracking-[-0.02em] text-cart-ink'>
+              <KeyRound className='w-4 h-4 text-[hsl(var(--lime))]' />
+              임시 PIN 발급 완료
+            </DialogTitle>
+            <DialogDescription className='text-[12px] text-cart-ink-60 mt-1.5'>
+              <strong className='text-cart-ink'>{pinReset?.crewName}</strong>{" "}
+              크루의 임시 PIN입니다. 이 창을 닫으면 다시 볼 수 없어요 — 지금
+              복사해서 크루장에게 전달해주세요.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className='px-5 py-4 space-y-3'>
+            <div className='rounded-[4px] border border-cart-rule bg-background px-4 py-4 text-center'>
+              <div className='font-mono text-[26px] tracking-[0.35em] text-cart-ink'>
+                {pinReset?.tempPin}
+              </div>
+            </div>
+            <pre className='rounded-[4px] border border-cart-rule bg-background px-3 py-3 text-[11px] leading-relaxed text-cart-ink-60 whitespace-pre-wrap break-all'>
+              {pinResetMessage}
+            </pre>
+          </div>
+
+          <DialogFooter className='gap-2 px-5 py-4'>
+            <button
+              type='button'
+              onClick={() => copyText(pinReset?.tempPin ?? "", "PIN")}
+              className='flex-1 px-3 py-2.5 rounded-[4px] border border-cart-rule bg-background text-cart-ink-60 hover:text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all'
+            >
+              PIN만 복사
+            </button>
+            <button
+              type='button'
+              onClick={() => copyText(pinResetMessage, "안내문")}
+              className='flex-1 px-3 py-2.5 rounded-[4px] bg-[hsl(var(--lime))] text-cart-ink font-mono text-[11px] tracking-[0.18em] uppercase font-semibold active:scale-[0.98] transition-all'
+            >
+              안내문 복사
             </button>
           </DialogFooter>
         </DialogContent>
