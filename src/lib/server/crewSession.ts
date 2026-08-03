@@ -105,7 +105,15 @@ export async function getCrewSession(): Promise<{ crewId: string } | null> {
   const jar = await cookies();
   const raw = jar.get(COOKIE_NAME)?.value;
   if (!raw) return null;
-  const payload = decodeSession(raw);
+  // 시크릿 미설정 등으로 decode가 throw해도 페이지 전체를 죽이지 않는다 —
+  // 세션 없음으로 취급하고 토큰/PIN 로그인 경로로 흘려보낸다.
+  let payload: SessionPayload | null = null;
+  try {
+    payload = decodeSession(raw);
+  } catch (e) {
+    console.error("[crewSession] 세션 검증 실패:", e);
+    return null;
+  }
   if (!payload) return null;
 
   // pin_set_at 일치 확인 — admin이 PIN 초기화한 세션 무효화
