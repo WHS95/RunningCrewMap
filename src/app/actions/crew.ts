@@ -273,19 +273,18 @@ interface CrewRow {
 export async function getCrewForEdit(
   crewId: string,
   token: string | null
-): Promise<{ crew?: CrewForEdit; error?: string }> {
+): Promise<{ crew?: CrewForEdit; error?: string; tokenStale?: boolean }> {
   if (!crewId) {
     return { error: "missing-credentials" };
   }
-  // 세션 fallback: token이 없거나 일치하지 않아도 세션이 같은 crewId면 통과.
+  // 세션 fallback: token이 없어도, 또 토큰이 낡아서 일치하지 않아도
+  // 세션의 crewId가 같으면 통과시킨다. (관리자가 edit_token을 회전한 뒤
+  // 사용자가 예전 링크/localStorage 토큰으로 들어오는 경우가 흔하다.)
   let isSessionAuth = false;
   if (!token) {
     const session = await getCrewSession();
-    if (session?.crewId === crewId) {
-      isSessionAuth = true;
-    } else {
-      return { error: "missing-credentials" };
-    }
+    isSessionAuth = session?.crewId === crewId;
+    if (!isSessionAuth) return { error: "missing-credentials" };
   }
   try {
     const { data, error } = await serverSupabase
@@ -312,9 +311,19 @@ export async function getCrewForEdit(
     }
 
     const row = data as unknown as CrewRow;
+    let tokenStale = false;
     if (!isSessionAuth && row.edit_token !== token) {
-      // Don't leak whether the token was wrong vs the row missing.
-      return { error: "invalid-token" };
+      // 토큰이 낡았을 수 있다 (admin이 edit_token 회전 / PIN 초기화).
+      // PIN 세션이 살아 있으면 그것으로 통과시키고, 클라이언트가 저장해 둔
+      // 무효 토큰을 정리하도록 tokenStale을 알려준다.
+      const session = await getCrewSession();
+      if (session?.crewId === crewId) {
+        isSessionAuth = true;
+        tokenStale = true;
+      } else {
+        // Don't leak whether the token was wrong vs the row missing.
+        return { error: "invalid-token" };
+      }
     }
 
     const loc = row.crew_locations?.[0] ?? null;
@@ -348,6 +357,7 @@ export async function getCrewForEdit(
           longitude: loc?.longitude ?? 0,
         },
       },
+      tokenStale,
     };
   } catch (err) {
     console.error("getCrewForEdit unexpected:", err);

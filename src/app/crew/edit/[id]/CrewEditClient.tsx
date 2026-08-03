@@ -51,6 +51,14 @@ function readStoredToken(id: string): string | null {
     return null;
   }
 }
+function clearStoredToken(id: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(TOKEN_LS_PREFIX + id);
+  } catch {
+    /* quota / privacy mode — ignore */
+  }
+}
 function writeStoredToken(id: string, token: string) {
   if (typeof window === "undefined") return;
   try {
@@ -128,15 +136,21 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
       const res = await getCrewForEdit(crewId, token);
       if (!mounted) return;
       if (res.error || !res.crew) {
+        // 무효 토큰은 정리 — 다음 방문 때 PIN 세션 경로로 붙을 수 있게.
+        if (res.error === "invalid-token") clearStoredToken(crewId);
         setState({
           phase: "denied",
           reason: res.error || "unknown",
         });
         return;
       }
-      if (token) writeStoredToken(crewId, token);
+      // 토큰이 낡았지만 PIN 세션으로 통과한 경우: 저장된 토큰을 버리고
+      // 이후 저장 요청도 세션 경로(token=null)로 보낸다.
+      const effectiveToken = res.tokenStale ? null : token;
+      if (res.tokenStale) clearStoredToken(crewId);
+      else if (token) writeStoredToken(crewId, token);
       const crew = res.crew;
-      setState({ phase: "ready", crew, token: token ?? null });
+      setState({ phase: "ready", crew, token: effectiveToken ?? null });
       // Seed form
       setName(crew.name);
       setDescription(crew.description);
