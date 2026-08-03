@@ -2,6 +2,7 @@
 
 import { serverSupabase } from "@/lib/server/supabase";
 import {
+  generateRandomPin,
   hashPin,
   isValidNewPinFormat,
   isWeakPin,
@@ -86,10 +87,18 @@ async function requireAdmin(): Promise<boolean> {
   return jar.get("auth")?.value === "true";
 }
 
+/**
+ * Admin-only: 크루 PIN을 임시 PIN으로 재발급.
+ *
+ * 예전에는 pin_hash를 null로 비우고 수정 링크만 새로 발급했지만,
+ * 관리자가 크루장에게 바로 전달할 수 있도록 8자리 임시 PIN을 생성해
+ * 설정하고 평문을 딱 한 번 반환한다 (DB에는 해시만 저장).
+ * edit_token도 함께 회전시켜 유출된 예전 링크를 무효화한다.
+ */
 export async function clearCrewPinAdmin(
   crewId: string
 ): Promise<
-  | { ok: true; newEditToken: string }
+  | { ok: true; newEditToken: string; tempPin: string }
   | { ok: false; reason: "unauthorized" | "not-found" }
 > {
   if (!(await requireAdmin())) return { ok: false, reason: "unauthorized" };
@@ -97,11 +106,13 @@ export async function clearCrewPinAdmin(
 
   const newToken = crypto.randomUUID();
   const newPinSetAt = new Date().toISOString();
+  const tempPin = generateRandomPin();
+  const tempPinHash = await hashPin(tempPin);
 
   const { data, error } = await serverSupabase
     .from("crews")
     .update({
-      pin_hash: null,
+      pin_hash: tempPinHash,
       pin_set_at: newPinSetAt, // 기존 세션 즉시 무효화
       failed_pin_attempts: 0,
       pin_locked_until: null,
@@ -112,7 +123,7 @@ export async function clearCrewPinAdmin(
     .maybeSingle();
 
   if (error || !data) return { ok: false, reason: "not-found" };
-  return { ok: true, newEditToken: newToken };
+  return { ok: true, newEditToken: newToken, tempPin };
 }
 
 export async function changeCrewPin(
