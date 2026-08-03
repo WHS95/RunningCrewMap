@@ -10,6 +10,19 @@ Stack: Next.js 15 (App Router) on React 19, TypeScript strict, Tailwind, Radix U
 
 Language: UI copy, commit messages, and most code comments are Korean. Keep that convention when adding strings.
 
+## ⚠️ 아키텍처 문서 갱신 의무 (CRITICAL)
+
+`docs/architecture/`는 ISO/IEC/IEEE 42010 기반 Architecture Description(AD)입니다.
+**모든 개발 작업(기능 추가/변경, 마이그레이션, Server Action·라우트 변경, 캐시 규약·인증 흐름 변경, 컴포넌트/컨테이너 구조 변경)을 완료할 때마다 관련 문서를 반드시 함께 갱신하세요.**
+
+- 테이블/컬럼·마이그레이션 변경 → `02-data/erd.md`, `02-data/tables.md`
+- Server Action·API 라우트·`CREWS_CACHE_TAG`/`STORES_CACHE_TAG` revalidate 규약 변경 → `04-interface/api-and-actions.md`, `03-process/sequences.md`
+- 승인큐·edit_token·매장 PIN 등 도메인 규칙/유스케이스 변경 → `01-domain/*`
+- 외부 연동(Supabase server/client, Naver Maps, Discord webhook, Serwist PWA)·컴포넌트 구조 변경 → `05-architecture/c4-*.md`
+- 이해관계자·품질속성 변경 → `00-overview/*`, `06-quality/quality-attributes.md`
+- 새 View를 추가하면 `architecture-description.md`의 Stakeholder→Concern→Viewpoint→View 매핑표와 `README.md` 링크도 갱신
+- 코드와 문서가 어긋난 채로 작업을 종료하지 마세요. 문서 갱신은 "완료(done)"의 일부입니다.
+
 ## Commands
 
 ```bash
@@ -33,6 +46,7 @@ Both `.env` and `.env.local` are used. Server-side Supabase calls fall back from
 - `ADMIN_USERNAME`, `ADMIN_PASSWORD` — `/admin/login` credentials
 - `DISCORD_REGISTRATION_WEBHOOK_URL` — fire-and-forget webhook for crew register/edit events
 - `DISCORD_STORE_WEBHOOK_URL` — 매장 등록/수정 알림 전용. 미설정 시 `DISCORD_REGISTRATION_WEBHOOK_URL`로 fallback.
+- `CREW_SESSION_SECRET` — **필수(32자 이상)**. 크루 PIN 세션 쿠키 HMAC 시크릿. 미설정이면 PIN 설정/로그인이 실패하고 `/crew/edit/[id]` 서버 렌더가 깨진다.
 - `STORE_SESSION_SECRET` — 매장 PIN 세션 HMAC 시크릿. 미설정 시 `CREW_SESSION_SECRET` fallback.
 - `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_SITE_URL` — used to build absolute URLs in Discord embeds and edit links
 
