@@ -87,6 +87,20 @@ export default {
         "rotate-y-5": "rotateY(5deg)",
         "rotate-y-180": "rotateY(180deg)",
       },
+      /* 모션 토큰 — Apple 스타일 감속 곡선.
+         `ease-*` 유틸은 transition·animation(tailwindcss-animate) 양쪽에 적용된다. */
+      transitionTimingFunction: {
+        // 표준: 빠르게 출발해 부드럽게 멈춤(감속). 대부분의 진입/상태 변화.
+        apple: "cubic-bezier(0.32, 0.72, 0, 1)",
+        // 위 곡선의 거울상. 되돌아가는(퇴장) 경로에 사용해 왕복을 대칭으로.
+        "apple-in": "cubic-bezier(1, 0, 0.68, 0.28)",
+      },
+      transitionDuration: {
+        // fast: 눌림/색 변화, base: 진입·퇴장, slow: 큰 표면(시트)
+        fast: "150ms",
+        base: "200ms",
+        slow: "300ms",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -102,8 +116,8 @@ export default {
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        "accordion-down": "accordion-down 0.2s cubic-bezier(0.32, 0.72, 0, 1)",
+        "accordion-up": "accordion-up 0.2s cubic-bezier(1, 0, 0.68, 0.28)",
         "progress-completion": "progress-completion 2s ease-out forwards",
       },
     },

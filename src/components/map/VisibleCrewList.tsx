@@ -61,7 +61,7 @@ export function VisibleCrewList({
             {crews.map((crew) => (
               <div
                 key={crew.id}
-                className='px-4 py-3 transition-colors border-b hover:bg-accent/50'
+                className='px-4 py-3 transition-colors duration-fast ease-apple border-b hover:bg-accent/50'
               >
                 <div className='flex gap-3'>
                   {/* 로고 이미지 */}
@@ -79,7 +79,7 @@ export function VisibleCrewList({
                           height={48}
                           quality={30}
                           unoptimized
-                          className='flex-shrink-0 object-cover transition-opacity rounded-full group-hover:opacity-90'
+                          className='flex-shrink-0 object-cover transition-opacity duration-fast ease-apple rounded-full group-hover:opacity-90'
                           loading='lazy'
                           priority={false}
                           onError={(e) => {
@@ -90,10 +90,10 @@ export function VisibleCrewList({
                             )}</span></div>`;
                           }}
                         />
-                        <div className='absolute inset-0 transition-all rounded-full ring-2 ring-transparent group-hover:ring-primary' />
+                        <div className='absolute inset-0 transition-all duration-fast ease-apple rounded-full ring-2 ring-transparent group-hover:ring-primary' />
                       </>
                     ) : (
-                      <div className='flex items-center justify-center flex-shrink-0 w-12 h-12 transition-colors rounded-full bg-muted group-hover:bg-muted/80'>
+                      <div className='flex items-center justify-center flex-shrink-0 w-12 h-12 transition-colors duration-fast ease-apple rounded-full bg-muted group-hover:bg-muted/80'>
                         <span className='text-lg font-medium text-muted-foreground'>
                           {crew.name.charAt(0)}
                         </span>
@@ -110,7 +110,7 @@ export function VisibleCrewList({
                         className='text-left group focus:outline-none'
                         title='크루 상세정보 보기'
                       >
-                        <h3 className='flex items-center font-medium truncate transition-colors group-hover:text-primary'>
+                        <h3 className='flex items-center font-medium truncate transition-colors duration-fast ease-apple group-hover:text-primary'>
                           <span className='truncate'>{crew.name}</span>
                           <SquareArrowOutUpRight className='w-3.5 h-3.5 ml-0.5' />
                         </h3>

@@ -288,7 +288,7 @@ export const CrewList = ({ crews, onSelect }: CrewListProps) => {
       {/* 항상 표시되는 스크롤 상단 이동 버튼 */}
       <button
         onClick={scrollToTop}
-        className='fixed bottom-24 right-4 z-[100] flex items-center justify-center w-11 h-11 bg-gray-400 rounded-full shadow-lg focus:outline-none hover:bg-gray-500 active:bg-gray-600 active:scale-95 transition-all duration-200'
+        className='fixed bottom-24 right-4 z-[100] flex items-center justify-center w-11 h-11 bg-gray-400 rounded-full shadow-lg focus:outline-none hover:bg-gray-500 active:bg-gray-600 active:scale-95 transition-all duration-base ease-apple'
         aria-label='맨 위로 스크롤'
       >
         <ChevronUp className='w-6 h-6 text-white' />

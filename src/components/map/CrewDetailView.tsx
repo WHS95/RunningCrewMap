@@ -86,7 +86,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
             <div className='flex items-center justify-between'>
               <button
                 onClick={onClose}
-                className='w-9 h-9 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center active:scale-95 transition-transform'
+                className='w-9 h-9 rounded-[4px] border border-cart-rule bg-cart-paper flex items-center justify-center active:scale-95 transition-transform duration-fast ease-apple'
               >
                 <ArrowLeft className='w-4 h-4 text-cart-ink' />
               </button>
@@ -286,7 +286,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       crew.instagram && (
                         <a
                           href='#'
-                          className='flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase font-semibold px-3.5 py-2 rounded-[4px] bg-cart-paper border border-cart-rule text-cart-ink hover:border-[hsl(var(--lime))]/40 active:scale-95 transition-transform'
+                          className='flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase font-semibold px-3.5 py-2 rounded-[4px] bg-cart-paper border border-cart-rule text-cart-ink hover:border-[hsl(var(--lime))]/40 active:scale-95 transition-transform duration-fast ease-apple'
                           onClick={(e) => {
                             e.preventDefault();
                             if (crew?.instagram) {
@@ -312,7 +312,7 @@ export function CrewDetailView({ crew, isOpen, onClose }: CrewDetailViewProps) {
                       )) && (
                       <a
                         href='#'
-                        className='flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase font-semibold px-3.5 py-2 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] active:scale-95 transition-transform'
+                        className='flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase font-semibold px-3.5 py-2 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] active:scale-95 transition-transform duration-fast ease-apple'
                         onClick={(e) => {
                           e.preventDefault();
                           const otherMethod =

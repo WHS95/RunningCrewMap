@@ -308,7 +308,7 @@ export default function MapPageClient({
                   type='button'
                   onClick={() => setLayer(k)}
                   aria-pressed={layer === k}
-                  className={`rounded-full px-3 py-1.5 transition-colors ${
+                  className={`rounded-full px-3 py-1.5 transition-colors duration-fast ease-apple ${
                     layer === k
                       ? "bg-cart-ink text-cart-paper"
                       : "text-cart-ink-60 hover:text-cart-ink"
@@ -338,7 +338,7 @@ export default function MapPageClient({
                 </p>
                 <a
                   href='/register'
-                  className='inline-flex items-center justify-center gap-1.5 mt-3 px-3 py-1.5 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform'
+                  className='inline-flex items-center justify-center gap-1.5 mt-3 px-3 py-1.5 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-mono text-[10px] tracking-[0.18em] uppercase font-semibold active:scale-95 transition-transform duration-fast ease-apple'
                 >
                   크루 등록 →
                 </a>

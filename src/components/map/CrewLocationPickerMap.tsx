@@ -368,7 +368,7 @@ export default function CrewLocationPickerMap({
         <button
           type="button"
           onClick={handleLocate}
-          className="absolute bottom-2 right-2 z-[10] w-9 h-9 rounded-[4px] border border-cart-rule bg-background/90 backdrop-blur-md flex items-center justify-center text-[hsl(var(--lime))] active:scale-95 transition-transform"
+          className="absolute bottom-2 right-2 z-[10] w-9 h-9 rounded-[4px] border border-cart-rule bg-background/90 backdrop-blur-md flex items-center justify-center text-[hsl(var(--lime))] active:scale-95 transition-transform duration-fast ease-apple"
           aria-label="현재 위치로 이동"
           title="현재 위치로 이동"
         >

@@ -1266,7 +1266,7 @@ export default function NaverMap({
         href='/register'
         aria-label='크루 등록'
         title='크루 등록'
-        className='absolute bottom-52 right-4 z-[101] w-12 h-12 rounded-full bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] shadow-lg flex items-center justify-center active:scale-95 hover:bg-[hsl(var(--lime))]/90 transition-transform'
+        className='absolute bottom-52 right-4 z-[101] w-12 h-12 rounded-full bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] shadow-lg flex items-center justify-center active:scale-95 hover:bg-[hsl(var(--lime))]/90 transition-transform duration-fast ease-apple'
       >
         <Plus className='w-5 h-5' strokeWidth={2.4} />
       </Link>
