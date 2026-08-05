@@ -106,7 +106,7 @@ export default function LocationPicker({
             {searchResults.map((result, index) => (
               <button
                 key={index}
-                className='w-full px-4 py-2 text-left transition-colors hover:bg-accent first:rounded-t-lg last:rounded-b-lg'
+                className='w-full px-4 py-2 text-left transition-colors duration-fast ease-apple hover:bg-accent first:rounded-t-lg last:rounded-b-lg'
                 onClick={() => handleSelectAddress(result)}
               >
                 <div className='font-medium'>{result.roadAddress}</div>
