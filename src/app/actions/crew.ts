@@ -99,7 +99,7 @@ export async function notifyCrewRegistration(
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://running-crew-map.vercel.app";
+    "https://www.runhouse.club";
   const adminEditUrl = `${baseUrl}/admin/crew/edit/${crew.id}`;
   const adminListUrl = `${baseUrl}/admin/crew`;
   // User-facing self-edit URL — admin DMs this to the crew leader on Instagram
@@ -224,6 +224,12 @@ export interface CrewForEdit {
     longitude: number;
   };
   is_visible: boolean;
+  /** 대표 사진(로고) 원본 URL. 미등록이면 null. */
+  logo_image_url: string | null;
+  /** 대표 사진 256px WebP 썸네일 URL. 생성 실패 시 null일 수 있다. */
+  logo_thumb_url: string | null;
+  /** 활동 사진. display_order 오름차순. */
+  photos: { id: string; photo_url: string; display_order: number }[];
 }
 
 interface CrewLocationRow {
@@ -258,6 +264,15 @@ interface CrewRow {
   crew_activity_days: CrewActivityDayRow[] | null;
   crew_age_ranges: CrewAgeRangeRow[] | null;
   crew_activity_locations: CrewActivityLocationRow[] | null;
+  logo_image_url: string | null;
+  logo_thumb_url: string | null;
+  crew_photos: CrewPhotoRow[] | null;
+}
+
+interface CrewPhotoRow {
+  id: string;
+  photo_url: string;
+  display_order: number | null;
 }
 
 /**
@@ -292,8 +307,9 @@ export async function getCrewForEdit(
       .select(
         `
           id, name, description, instagram, founded_date,
-          is_visible, edit_token,
+          is_visible, edit_token, logo_image_url, logo_thumb_url,
           crew_locations ( main_address, detail_address, latitude, longitude ),
+          crew_photos ( id, photo_url, display_order ),
           crew_activity_days ( day_of_week ),
           crew_age_ranges ( min_age, max_age ),
           crew_activity_locations ( location_name )
@@ -356,6 +372,15 @@ export async function getCrewForEdit(
           latitude: loc?.latitude ?? 0,
           longitude: loc?.longitude ?? 0,
         },
+        logo_image_url: row.logo_image_url,
+        logo_thumb_url: row.logo_thumb_url,
+        photos: (row.crew_photos ?? [])
+          .map((ph) => ({
+            id: ph.id,
+            photo_url: ph.photo_url,
+            display_order: ph.display_order ?? 0,
+          }))
+          .sort((a, b) => a.display_order - b.display_order),
       },
       tokenStale,
     };
@@ -388,6 +413,40 @@ export interface CrewEditPayload {
     latitude?: number;
     longitude?: number;
   };
+  /**
+   * 대표 사진(로고). 클라이언트가 Storage 업로드를 마친 뒤 URL만 넘긴다
+   * (압축·WebP 변환은 브라우저 전용이라 서버에서 못 한다).
+   * 교체하지 않으면 undefined, 삭제하면 null.
+   */
+  logo?: { image_url: string; thumb_url: string | null } | null;
+  /**
+   * 활동 사진. existing = 유지할 기존 사진의 id 목록,
+   * new = 새로 업로드해 얻은 public URL 목록.
+   * 필드가 없으면 사진을 건드리지 않은 것으로 본다.
+   */
+  photos?: { existing: string[]; new: string[] };
+}
+
+/**
+ * public URL에서 파일명을 뽑아 해당 버킷에서 지운다.
+ * 사진 교체/삭제 시 Storage에 고아 파일이 남지 않게 하기 위한 것으로,
+ * 실패해도 사용자 흐름을 막지 않는다(로그만 남기고 계속 진행).
+ */
+async function removeStorageObjectByPublicUrl(
+  bucket: string,
+  publicUrl: string | null | undefined
+): Promise<void> {
+  if (!publicUrl) return;
+  try {
+    const fileName = new URL(publicUrl).pathname.split("/").pop()?.split("?")[0];
+    if (!fileName) return;
+    const { error } = await serverSupabase.storage.from(bucket).remove([fileName]);
+    if (error) {
+      console.error(`removeStorageObjectByPublicUrl(${bucket}) failed:`, error);
+    }
+  } catch (err) {
+    console.error(`removeStorageObjectByPublicUrl(${bucket}) parse failed:`, err);
+  }
 }
 
 export async function updateCrewByToken(
@@ -487,12 +546,41 @@ export async function updateCrewByToken(
     }
   }
 
+  // 4-b. 대표 사진(로고) diff — payload.logo가 있을 때만 건드린다.
+  let logoChanged = false;
+  const prevLogoUrl = prev.logo_image_url;
+  const prevLogoThumbUrl = prev.logo_thumb_url;
+  if (payload.logo !== undefined) {
+    const nextUrl = payload.logo?.image_url ?? null;
+    if (nextUrl !== prevLogoUrl) {
+      logoChanged = true;
+      crewUpdate.logo_image_url = nextUrl;
+      crewUpdate.logo_thumb_url = payload.logo?.thumb_url ?? null;
+      changedFields.push("대표 사진");
+    }
+  }
+
+  // 4-c. 활동 사진 diff — 유지 목록(existing)과 신규 URL(new)로 판단.
+  let photosChanged = false;
+  const prevPhotos = prev.photos ?? [];
+  let photosToDelete: { id: string; photo_url: string }[] = [];
+  if (payload.photos) {
+    const keep = new Set(payload.photos.existing);
+    photosToDelete = prevPhotos.filter((ph) => !keep.has(ph.id));
+    if (photosToDelete.length > 0 || payload.photos.new.length > 0) {
+      photosChanged = true;
+      changedFields.push("활동 사진");
+    }
+  }
+
   if (
     Object.keys(crewUpdate).length === 0 &&
     !locationChanged &&
     !activityLocationsChanged &&
     !activityDayChanged &&
-    !ageRangeChanged
+    !ageRangeChanged &&
+    !logoChanged &&
+    !photosChanged
   ) {
     return { success: true, changedFields: [] };
   }
@@ -626,6 +714,57 @@ export async function updateCrewByToken(
     }
   }
 
+  // 7-b. 대표 사진(로고) 교체 — crews row는 위 5단계에서 이미 업데이트됐다.
+  //      이전 파일은 여기서 Storage에서 지운다(실패해도 진행).
+  if (logoChanged) {
+    if (prevLogoUrl && prevLogoUrl !== payload.logo?.image_url) {
+      await removeStorageObjectByPublicUrl("crewLogos", prevLogoUrl);
+    }
+    if (prevLogoThumbUrl && prevLogoThumbUrl !== payload.logo?.thumb_url) {
+      await removeStorageObjectByPublicUrl("crewLogos", prevLogoThumbUrl);
+    }
+  }
+
+  // 7-c. 활동 사진 — 뺀 사진은 DB에서 지우고 Storage 파일도 정리한 뒤,
+  //      남은 사진 뒤에 새 사진을 이어 붙인다(display_order 연속).
+  if (photosChanged && payload.photos) {
+    if (photosToDelete.length > 0) {
+      const { error: delErr } = await serverSupabase
+        .from("crew_photos")
+        .delete()
+        .in(
+          "id",
+          photosToDelete.map((ph) => ph.id)
+        );
+      if (delErr) {
+        console.error("updateCrewByToken crew_photos delete error:", delErr);
+        return { success: false, error: "db-photos" };
+      }
+      for (const ph of photosToDelete) {
+        await removeStorageObjectByPublicUrl("crewActivePicture", ph.photo_url);
+      }
+    }
+
+    if (payload.photos.new.length > 0) {
+      const keep = new Set(payload.photos.existing);
+      const maxOrder = prevPhotos
+        .filter((ph) => keep.has(ph.id))
+        .reduce((max, ph) => Math.max(max, ph.display_order), -1);
+      const rows = payload.photos.new.map((url, i) => ({
+        crew_id: crewId,
+        photo_url: url,
+        display_order: maxOrder + 1 + i,
+      }));
+      const { error: insErr } = await serverSupabase
+        .from("crew_photos")
+        .insert(rows);
+      if (insErr) {
+        console.error("updateCrewByToken crew_photos insert error:", insErr);
+        return { success: false, error: "db-photos-insert" };
+      }
+    }
+  }
+
   // 8. Cache invalidation — map page and home rely on this data. The tag
   // invalidates the `unstable_cache`-wrapped getCrews data layer; the path
   // calls bust the per-route render cache for navigation freshness.
@@ -659,7 +798,7 @@ async function notifyCrewEdit(p: {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://running-crew-map.vercel.app";
+    "https://www.runhouse.club";
   const adminEditUrl = `${baseUrl}/admin/crew/edit/${p.crewId}`;
 
   const payload = {

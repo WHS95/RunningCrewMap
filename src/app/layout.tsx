@@ -32,7 +32,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://running-crew-map.vercel.app"),
+  metadataBase: new URL("https://www.runhouse.club"),
   title: {
     default: "런하우스 | 전국 러닝크루 지도",
     template: "%s | 러닝크루맵",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "https://running-crew-map.vercel.app",
+    url: "https://www.runhouse.club",
     title: "런하우스 | 전국 러닝크루 지도",
     description: "전국의 러닝크루를 한눈에 확인하고 함께 달려보세요.",
     siteName: "런하우스",

@@ -10,6 +10,13 @@ import { SearchBox } from "@/components/search/SearchBox";
 import { ListFilter, Target, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { crewService } from "@/lib/services/crew.service";
+import {
+  CART_INK,
+  MARKER_BG,
+  MARKER_COUNTER_FILTER,
+  MARKER_TEARDROP_PATH,
+  MARKER_SIZE,
+} from "./markerTokens";
 
 // 마커 이미지 URL — 이전에는 /_next/image로 우회해 64px로 축소했지만, Vercel
 // Image Optimization 무료 한도 초과(402)로 사용 중단. 대신 호출처에서
@@ -43,11 +50,8 @@ const STORE_PIN_COLOR = "#FC6060";
 // logo color without clashing with the lime brand accent. The dark
 // stroke keeps the pin visible on the inverted-dark map tiles.
 const CART_LIME = "#C7FF00"; // kept for reference; no longer used in marker fill
-const CART_INK = "#0B0C0A";
-const MARKER_BG = "#FFFFFF";
-// Counter-filter to cancel the map container's dark inversion on marker HTML.
-const MARKER_COUNTER_FILTER =
-  "invert(1) hue-rotate(180deg) saturate(1.8) brightness(1.05) contrast(1.05)";
+// 핀 색·경로·치수는 markerTokens 로 옮겼다 — 크루 수정 페이지의 마커 미리보기가
+// 같은 값을 재사용해 실제 마커와 어긋나지 않게 하기 위함.
 
 void CART_LIME; // suppress "declared but never read" — retained for future tweaks
 
@@ -481,10 +485,7 @@ export default function NaverMap({
   // squinting. The teardrop path keeps its original 36×42 viewBox and just
   // scales up — design proportions remain identical to the prototype.
   const createMarkerContent = useCallback((crew: Crew) => {
-    const width = 48;
-    const height = 58;
-    const logoSize = 32; // inner logo edge length
-    const wellSize = logoSize + 2; // lime circular well around the logo
+    const { width, height, logo: logoSize, well: wellSize } = MARKER_SIZE;
 
     // Logo or initial inside the teardrop head
     let innerContent = "";
@@ -515,7 +516,7 @@ export default function NaverMap({
     ">
       <svg width="${width}" height="${height}" viewBox="0 0 36 42" style="position:absolute;inset:0;display:block;">
         <path
-          d="M18 41 C 18 28, 35 28, 35 16 a 17 17 0 1 0 -34 0 c 0 12, 17 12, 17 25 z"
+          d="${MARKER_TEARDROP_PATH}"
           fill="${MARKER_BG}"
           stroke="${CART_INK}"
           stroke-width="1.4"

@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://running-crew-map.vercel.app";
+  "https://www.runhouse.club";
 
 export default function robots(): MetadataRoute.Robots {
   return {

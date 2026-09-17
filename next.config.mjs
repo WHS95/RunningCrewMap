@@ -12,6 +12,23 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // 정식 도메인(www.runhouse.club)으로 단일화.
+      // 프로덕션 별칭 running-crew-map.vercel.app 로 들어온 요청만 잡는다.
+      // 정확한 호스트 일치라서 브랜치 프리뷰(*-git-*, *-alex-seos-projects)와
+      // localhost 는 그대로 200 으로 남는다.
+      // /api·/sso·/ingest 는 제외 — 위성 앱(커스텀햇·인증서메이커)의
+      // 백채널 POST 와 PostHog 프록시가 크로스 오리진 리다이렉트에
+      // 걸리지 않게 하기 위함.
+      {
+        source: "/:path((?!api/|sso/|ingest/).*)",
+        has: [{ type: "host", value: "running-crew-map.vercel.app" }],
+        destination: "https://www.runhouse.club/:path",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       // PostHog 인제스트 역방향 프록시 — 광고 차단기 우회
