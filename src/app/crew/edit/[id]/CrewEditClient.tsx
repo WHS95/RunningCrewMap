@@ -10,13 +10,15 @@
  *      On failure, show a friendly "권한 없음" wall with a contact hint.
  *   3. Render a cartographic edit form scoped to user-editable fields
  *      (name, description, instagram, days, address, location pin,
- *      activity locations, age range). Logo/photo edits stay out of v1
- *      since they require file upload plumbing.
+ *      activity locations, age range, 대표 사진/활동 사진).
+ *      사진은 브라우저에서 압축·WebP 변환 후 anon 클라이언트로 Storage에
+ *      올리고(등록·어드민과 동일 경로), 얻은 URL만 서버 액션에 넘겨
+ *      토큰 검증 뒤 DB에 반영한다. 교체로 밀려난 파일은 서버가 지운다.
  *   4. Submit → `updateCrewByToken`. If the location coord moved, server
  *      flips is_visible=false so admin re-reviews.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,7 +33,17 @@ import {
   KickerLabel,
 } from "@/components/design/cartographic";
 import { CSS_VARIABLES } from "@/lib/constants";
-import { Loader2, Plus, X, ArrowLeft } from "lucide-react";
+import { Loader2, Plus, X, ArrowLeft, ImagePlus, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { crewService } from "@/lib/services/crew.service";
+import { LogoCropDialog } from "@/components/dialog/LogoCropDialog";
+import { CrewLogoPreview } from "@/components/crew/CrewLogoPreview";
+
+/** 활동 사진 최대 장수 — 어드민 수정 페이지와 동일하게 맞춘다. */
+const MAX_PHOTOS = 5;
+const ACCEPT_IMAGE = "image/jpeg,image/png,image/webp";
+/** 활동 사진 원본 상한. 초과분은 업로드 단계에서 압축된다. */
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 const CrewLocationPickerMap = dynamic(
   () => import("@/components/map/CrewLocationPickerMap"),
@@ -113,6 +125,21 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
   const [activityLocations, setActivityLocations] = useState<string[]>([]);
   const [newActivityLocation, setNewActivityLocation] = useState("");
 
+  // ── 사진 상태 ──
+  // 로고: 새로 고른 파일이 있으면 그것을 업로드하고, 없으면 기존 URL 유지.
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  // 활동 사진: 서버에 이미 있는 것(existingPhotos)과 새로 고른 것(newPhotos)을 분리.
+  const [existingPhotos, setExistingPhotos] = useState<
+    { id: string; photo_url: string }[]
+  >([]);
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+  const photosInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLabel, setUploadingLabel] = useState<string | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<
     | { kind: "success"; message: string }
@@ -159,6 +186,10 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
       setAgeRange(crew.age_range ?? "");
       setMainAddress(crew.location.main_address);
       setActivityLocations(crew.activity_locations);
+      setLogoPreview(crew.logo_image_url);
+      setExistingPhotos(
+        crew.photos.map((ph) => ({ id: ph.id, photo_url: ph.photo_url }))
+      );
       if (crew.location.latitude && crew.location.longitude) {
         setPickedLocation({
           lat: crew.location.latitude,
@@ -196,6 +227,80 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
   const removeActivityLocation = (i: number) =>
     setActivityLocations((prev) => prev.filter((_, idx) => idx !== i));
 
+  // ── 사진 핸들러 ────────────────────────────────────────────────
+  // 로고는 등록 페이지와 같이 크롭 다이얼로그를 거친다(정사각 썸네일 품질).
+  const handleLogoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > MAX_PHOTO_BYTES) {
+      setFeedback({ kind: "error", message: "대표 사진은 5MB 이하만 올릴 수 있어요." });
+      return;
+    }
+    setPendingLogoFile(file);
+  };
+  const handleLogoCropped = (cropped: File) => {
+    setPendingLogoFile(null);
+    setLogoFile(cropped);
+    setLogoPreview((prev) => {
+      if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(cropped);
+    });
+  };
+  const clearLogo = () => {
+    setLogoFile(null);
+    setLogoPreview((prev) => {
+      if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const totalPhotoCount = existingPhotos.length + newPhotos.length;
+  const handlePhotosPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const room = MAX_PHOTOS - totalPhotoCount;
+    if (room <= 0) {
+      setFeedback({
+        kind: "error",
+        message: `활동 사진은 최대 ${MAX_PHOTOS}장까지 올릴 수 있어요.`,
+      });
+      return;
+    }
+    const accepted: File[] = [];
+    for (const f of files.slice(0, room)) {
+      if (f.size > MAX_PHOTO_BYTES) {
+        setFeedback({ kind: "error", message: `${f.name}은(는) 5MB를 넘어요.` });
+        continue;
+      }
+      accepted.push(f);
+    }
+    if (accepted.length === 0) return;
+    setNewPhotos((prev) => [...prev, ...accepted]);
+    setNewPhotoPreviews((prev) => [
+      ...prev,
+      ...accepted.map((f) => URL.createObjectURL(f)),
+    ]);
+  };
+  const removeExistingPhoto = (id: string) =>
+    setExistingPhotos((prev) => prev.filter((ph) => ph.id !== id));
+  const removeNewPhoto = (i: number) => {
+    setNewPhotoPreviews((prev) => {
+      const url = prev[i];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, idx) => idx !== i);
+    });
+    setNewPhotos((prev) => prev.filter((_, idx) => idx !== i));
+  };
+
+  // 언마운트 시 objectURL 정리 (누수 방지)
+  useEffect(() => {
+    return () => {
+      newPhotoPreviews.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [newPhotoPreviews]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (state.phase !== "ready") return;
@@ -224,6 +329,55 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
 
     setIsSaving(true);
     try {
+      // 사진은 먼저 Storage에 올리고 URL만 서버 액션에 넘긴다.
+      // (압축·WebP 변환이 브라우저 전용이라 서버로 못 옮긴다)
+      let logoPayload: CrewEditPayload["logo"];
+      if (logoFile) {
+        setUploadingLabel("대표 사진 업로드 중…");
+        const uploaded = await crewService.uploadCrewLogo(logoFile, crewId);
+        if (!uploaded) {
+          setFeedback({
+            kind: "error",
+            message: "대표 사진 업로드에 실패했어요. 잠시 후 다시 시도해주세요.",
+          });
+          return;
+        }
+        logoPayload = {
+          image_url: uploaded.logo_image,
+          thumb_url: uploaded.logo_thumb_url ?? null,
+        };
+      } else if (state.crew.logo_image_url && logoPreview === null) {
+        // 기존 로고를 지운 경우
+        logoPayload = null;
+      }
+
+      let photosPayload: CrewEditPayload["photos"];
+      const photosTouched =
+        newPhotos.length > 0 ||
+        existingPhotos.length !== state.crew.photos.length;
+      if (photosTouched) {
+        const uploadedUrls: string[] = [];
+        for (let i = 0; i < newPhotos.length; i++) {
+          setUploadingLabel(
+            `활동 사진 업로드 중… (${i + 1}/${newPhotos.length})`
+          );
+          const url = await crewService.uploadCrewPhoto(newPhotos[i], crewId);
+          if (url) uploadedUrls.push(url);
+        }
+        if (uploadedUrls.length < newPhotos.length) {
+          setFeedback({
+            kind: "error",
+            message: "일부 활동 사진 업로드에 실패했어요. 다시 시도해주세요.",
+          });
+          return;
+        }
+        photosPayload = {
+          existing: existingPhotos.map((ph) => ph.id),
+          new: uploadedUrls,
+        };
+      }
+      setUploadingLabel(null);
+
       const payload: CrewEditPayload = {
         name: name.trim(),
         description: description.trim(),
@@ -236,6 +390,8 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
           latitude: pickedLocation.lat,
           longitude: pickedLocation.lng,
         },
+        ...(logoPayload !== undefined ? { logo: logoPayload } : {}),
+        ...(photosPayload ? { photos: photosPayload } : {}),
       };
       const res = await updateCrewByToken(crewId, state.token || null, payload);
       if (!res.success) {
@@ -251,6 +407,28 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
           message: "변경된 내용이 없습니다.",
         });
       } else {
+        // 업로드가 반영됐으니 로컬 대기 목록을 비워 재저장 시 중복 업로드를 막는다.
+        setLogoFile(null);
+        setNewPhotos([]);
+        setNewPhotoPreviews((prev) => {
+          prev.forEach((u) => URL.revokeObjectURL(u));
+          return [];
+        });
+        // 저장 직후 서버 상태를 다시 읽어 사진 id를 최신화한다.
+        // 이걸 건너뛰면 방금 추가한 사진이 existing 목록에 없어서,
+        // 이어서 한 번 더 저장할 때 서버가 그 사진을 지워버린다.
+        const refreshed = await getCrewForEdit(crewId, state.token || null);
+        if (refreshed.crew) {
+          const fresh = refreshed.crew;
+          setState({ phase: "ready", crew: fresh, token: state.token ?? null });
+          setExistingPhotos(
+            fresh.photos.map((ph) => ({ id: ph.id, photo_url: ph.photo_url }))
+          );
+          setLogoPreview((prev) => {
+            if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+            return fresh.logo_image_url;
+          });
+        }
         setFeedback({
           kind: "success",
           message: res.visibilityReset
@@ -268,6 +446,7 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
             : "저장 중 오류가 발생했습니다.",
       });
     } finally {
+      setUploadingLabel(null);
       setIsSaving(false);
     }
   };
@@ -388,6 +567,144 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
               "w-full px-3 py-2 min-h-[120px] border border-cart-rule bg-cart-paper text-cart-ink placeholder:text-cart-ink-40 rounded-[4px] focus:outline-none focus:border-[hsl(var(--lime))] transition-colors disabled:opacity-50"
             }
             placeholder='크루 소개를 자유롭게 작성해주세요.'
+          />
+        </FormSection>
+
+        {/* 대표 사진 (로고) */}
+        <FormSection
+          label='대표 사진'
+          helper='지도 마커와 목록에 쓰이는 사진이에요 · 5MB 이하 · JPG/PNG/WebP'
+        >
+          <div className='flex items-center gap-3'>
+            <div className='relative w-[76px] h-[76px] shrink-0 rounded-[4px] overflow-hidden border border-cart-rule bg-cart-paper'>
+              {logoPreview ? (
+                <Image
+                  src={logoPreview}
+                  alt='대표 사진 미리보기'
+                  fill
+                  sizes='76px'
+                  unoptimized
+                  className='object-cover'
+                />
+              ) : (
+                <div className='w-full h-full flex items-center justify-center text-cart-ink-40'>
+                  <ImagePlus className='w-5 h-5' />
+                </div>
+              )}
+            </div>
+            <div className='flex flex-col gap-1.5'>
+              <button
+                type='button'
+                onClick={() => logoInputRef.current?.click()}
+                disabled={isSaving}
+                className='px-3 py-1.5 rounded-[4px] border border-cart-rule text-[13px] text-cart-ink hover:border-[hsl(var(--lime))] transition-colors disabled:opacity-50'
+              >
+                {logoPreview ? "다른 사진으로 변경" : "사진 선택"}
+              </button>
+              {logoPreview && (
+                <button
+                  type='button'
+                  onClick={clearLogo}
+                  disabled={isSaving}
+                  className='px-3 py-1.5 rounded-[4px] text-[12px] text-cart-ink-60 hover:text-cart-ink transition-colors disabled:opacity-50 text-left'
+                >
+                  사진 삭제
+                </button>
+              )}
+            </div>
+            <input
+              ref={logoInputRef}
+              type='file'
+              accept={ACCEPT_IMAGE}
+              onChange={handleLogoPick}
+              className='hidden'
+            />
+          </div>
+
+          {/* 고른 사진이 지도 마커·크루 목록에서 실제로 어떻게 보이는지 */}
+          <div className='pt-1'>
+            <CrewLogoPreview logoUrl={logoPreview} crewName={name} />
+          </div>
+        </FormSection>
+
+        {/* 활동 사진 */}
+        <FormSection
+          label='활동 사진'
+          helper={`크루 상세에 보여요 · ${totalPhotoCount}/${MAX_PHOTOS}장 · 5MB 이하`}
+        >
+          <div className='grid grid-cols-3 gap-2'>
+            {existingPhotos.map((ph) => (
+              <div
+                key={ph.id}
+                className='relative aspect-square rounded-[4px] overflow-hidden border border-cart-rule'
+              >
+                <Image
+                  src={ph.photo_url}
+                  alt='활동 사진'
+                  fill
+                  sizes='(max-width: 430px) 33vw, 120px'
+                  unoptimized
+                  className='object-cover'
+                />
+                <button
+                  type='button'
+                  onClick={() => removeExistingPhoto(ph.id)}
+                  disabled={isSaving}
+                  aria-label='사진 삭제'
+                  className='absolute top-1 right-1 w-6 h-6 rounded-[3px] bg-black/70 text-white flex items-center justify-center disabled:opacity-50'
+                >
+                  <Trash2 className='w-3.5 h-3.5' />
+                </button>
+              </div>
+            ))}
+            {newPhotoPreviews.map((url, i) => (
+              <div
+                key={url}
+                className='relative aspect-square rounded-[4px] overflow-hidden border border-[hsl(var(--lime))]'
+              >
+                <Image
+                  src={url}
+                  alt='추가한 활동 사진'
+                  fill
+                  sizes='(max-width: 430px) 33vw, 120px'
+                  unoptimized
+                  className='object-cover'
+                />
+                <span className='absolute bottom-1 left-1 px-1 py-0.5 rounded-[2px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] font-mono text-[9px] font-bold tracking-[0.08em]'>
+                  NEW
+                </span>
+                <button
+                  type='button'
+                  onClick={() => removeNewPhoto(i)}
+                  disabled={isSaving}
+                  aria-label='사진 삭제'
+                  className='absolute top-1 right-1 w-6 h-6 rounded-[3px] bg-black/70 text-white flex items-center justify-center disabled:opacity-50'
+                >
+                  <X className='w-3.5 h-3.5' />
+                </button>
+              </div>
+            ))}
+            {totalPhotoCount < MAX_PHOTOS && (
+              <button
+                type='button'
+                onClick={() => photosInputRef.current?.click()}
+                disabled={isSaving}
+                className='aspect-square rounded-[4px] border border-dashed border-cart-rule flex flex-col items-center justify-center gap-1 text-cart-ink-40 hover:border-[hsl(var(--lime))] hover:text-cart-ink transition-colors disabled:opacity-50'
+              >
+                <Plus className='w-4 h-4' />
+                <span className='font-mono text-[10px] tracking-[0.08em]'>
+                  ADD
+                </span>
+              </button>
+            )}
+          </div>
+          <input
+            ref={photosInputRef}
+            type='file'
+            accept={ACCEPT_IMAGE}
+            multiple
+            onChange={handlePhotosPick}
+            className='hidden'
           />
         </FormSection>
 
@@ -544,7 +861,7 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
           {isSaving ? (
             <>
               <Loader2 className='w-4 h-4 animate-spin' />
-              <span>저장 중…</span>
+              <span>{uploadingLabel ?? "저장 중…"}</span>
             </>
           ) : (
             <>
@@ -560,6 +877,14 @@ export function CrewEditClient({ crewId, initialToken, hasSession = false }: Pro
           · 위치를 옮기면 자동으로 재승인 대기로 전환됩니다 ·
         </KickerLabel>
       </form>
+
+      {pendingLogoFile && (
+        <LogoCropDialog
+          file={pendingLogoFile}
+          onCancel={() => setPendingLogoFile(null)}
+          onConfirm={handleLogoCropped}
+        />
+      )}
     </main>
   );
 }
