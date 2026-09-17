@@ -10,6 +10,10 @@ import { crewService } from "@/lib/services/crew.service";
 import { rotateCrewEditToken } from "@/app/actions/crew";
 import { clearCrewPinAdmin } from "@/app/actions/crewAuth";
 import {
+  CrewApprovalDmDialog,
+  type CrewApprovalTarget,
+} from "@/components/crew/CrewApprovalDmDialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -54,6 +58,11 @@ export default function AdminCrewPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [rotatingTokenFor, setRotatingTokenFor] = useState<string | null>(null);
+  // 승인(pending → live) 직후 크루장에게 보낼 환영 DM 문구를 띄운다.
+  // 승인 순간이 크루장과 처음 연락하는 지점이라, 안내를 매번 새로 타이핑하지
+  // 않도록 붙여넣기용 문구를 그 자리에서 만들어준다.
+  const [approval, setApproval] = useState<CrewApprovalTarget | null>(null);
+
   // PIN 초기화 결과 — 평문 임시 PIN은 여기서만 노출된다.
   const [pinReset, setPinReset] = useState<{
     crewId: string;
@@ -110,25 +119,32 @@ export default function AdminCrewPage() {
     async (crewId: string, newValue: boolean) => {
       try {
         await crewService.updateCrewVisibility(crewId, newValue);
-        let crewName = "";
+        // 토글 전 상태는 렌더된 배열에서 먼저 읽는다.
+        // setCrews 업데이터 안에서 읽으면 React가 업데이트를 미룰 때
+        // 값이 채워지지 않은 채로 아래 분기를 지나가 버린다.
+        const target = crews.find((c) => c.id === crewId);
+        const crewName = target?.name ?? "";
+        // 숨김 → 표시로 넘어간 순간만 승인으로 본다.
+        const becameVisible = newValue && !!target && !target.is_visible;
         setCrews((prev) =>
-          prev.map((c) => {
-            if (c.id === crewId) {
-              crewName = c.name;
-              return { ...c, is_visible: newValue };
-            }
-            return c;
-          })
+          prev.map((c) => (c.id === crewId ? { ...c, is_visible: newValue } : c))
         );
         toast.success(
           `${crewName} 크루가 ${newValue ? "표시" : "숨김"} 처리되었습니다.`
         );
+        if (becameVisible) {
+          setApproval({
+            crewId,
+            crewName,
+            instagram: target?.instagram ?? null,
+          });
+        }
       } catch (e) {
         console.error("크루 표시 상태 변경 실패:", e);
         toast.error("크루 표시 상태 변경에 실패했습니다.");
       }
     },
-    []
+    [crews]
   );
 
   const handleCrewClick = useCallback(async (crew: AdminCrew) => {
@@ -555,6 +571,12 @@ export default function AdminCrewPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 승인 완료 — 크루장에게 보낼 환영 DM 문구 */}
+      <CrewApprovalDmDialog
+        target={approval}
+        onClose={() => setApproval(null)}
+      />
 
       {/* PIN 초기화 결과 — 평문 임시 PIN은 이 화면에서만 볼 수 있다 */}
       <Dialog
