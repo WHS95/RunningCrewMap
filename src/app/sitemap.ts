@@ -6,7 +6,7 @@ import { getVisibleStores } from "@/lib/server/stores";
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://running-crew-map.vercel.app";
+  "https://www.runhouse.club";
 
 export const revalidate = 600;
 

@@ -96,7 +96,7 @@ export async function notifyStoreRegistration(
   const base =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://runhouse.kr";
+    "https://www.runhouse.club";
   const editUrl = editToken
     ? `${base}/store/edit/${store.id}?token=${editToken}`
     : null;

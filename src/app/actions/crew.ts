@@ -99,7 +99,7 @@ export async function notifyCrewRegistration(
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://running-crew-map.vercel.app";
+    "https://www.runhouse.club";
   const adminEditUrl = `${baseUrl}/admin/crew/edit/${crew.id}`;
   const adminListUrl = `${baseUrl}/admin/crew`;
   // User-facing self-edit URL — admin DMs this to the crew leader on Instagram
@@ -659,7 +659,7 @@ async function notifyCrewEdit(p: {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://running-crew-map.vercel.app";
+    "https://www.runhouse.club";
   const adminEditUrl = `${baseUrl}/admin/crew/edit/${p.crewId}`;
 
   const payload = {
