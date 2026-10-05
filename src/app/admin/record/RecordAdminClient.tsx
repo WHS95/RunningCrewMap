@@ -61,6 +61,7 @@ export function RecordAdminClient() {
   const [busy, setBusy] = useState<string | null>(null);
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [denied, setDenied] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,6 +69,9 @@ export function RecordAdminClient() {
     if (res.success) {
       setRecords(res.records);
       setOrders(res.orders);
+      setDenied(false);
+    } else if (res.error === "권한이 없습니다.") {
+      setDenied(true);
     } else {
       toast.error(res.error);
     }
@@ -184,13 +188,24 @@ export function RecordAdminClient() {
       </div>
 
       <div className="px-[22px] pt-4">
+        {denied && (
+          <div className="rounded-[4px] border border-cart-rule px-4 py-4 flex flex-col gap-2">
+            <span className="text-[14px] font-bold text-cart-ink">다시 로그인해 주세요</span>
+            <span className="text-[12px] leading-relaxed text-cart-ink-60">
+              기록 관리는 기록증 같은 개인정보를 다뤄서, 이번 업데이트 이후 새로 로그인한 세션에서만 열려요.
+            </span>
+            <a href="/admin/login" className="h-11 inline-flex items-center justify-center rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] text-[13px] font-bold">
+              관리자 로그인
+            </a>
+          </div>
+        )}
         {loading && <p className="py-8 text-center text-[13px] text-cart-ink-60">불러오는 중…</p>}
 
-        {!loading && tab !== "orders" && visible.length === 0 && (
+        {!loading && !denied && tab !== "orders" && visible.length === 0 && (
           <p className="py-8 text-center text-[13px] text-cart-ink-60">항목이 없습니다.</p>
         )}
 
-        {!loading &&
+        {!loading && !denied &&
           tab !== "orders" &&
           visible.map((r) => (
             <div key={r.id} className="py-4 border-t border-cart-rule flex flex-col gap-2.5">
@@ -228,7 +243,8 @@ export function RecordAdminClient() {
                 <AdminBtn onClick={() => copyDm(r)}>
                   <Copy className="w-3.5 h-3.5" /> DM 문구
                 </AdminBtn>
-                {r.status !== "approved" && (
+                {/* 인증번호 발급이 실패한 승인 건도 다시 시도할 수 있게 노출(RPC 는 멱등) */}
+                {(r.status !== "approved" || !r.certNo) && (
                   <AdminBtn tone="lime" disabled={busy === r.id} onClick={() => approve(r)}>
                     승인 · 인증번호 발급
                   </AdminBtn>
@@ -256,11 +272,11 @@ export function RecordAdminClient() {
             </div>
           ))}
 
-        {!loading && tab === "orders" && orders.length === 0 && (
+        {!loading && !denied && tab === "orders" && orders.length === 0 && (
           <p className="py-8 text-center text-[13px] text-cart-ink-60">주문 신청이 없습니다.</p>
         )}
 
-        {!loading &&
+        {!loading && !denied &&
           tab === "orders" &&
           orders.map((o) => {
             const rec = recordById.get(o.entryId);

@@ -2,9 +2,9 @@
 "use server";
 
 import crypto from "crypto";
-import { cookies } from "next/headers";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { serverSupabase } from "@/lib/server/supabase";
+import { isSignedAdmin } from "@/lib/server/adminSession";
 import {
   RECORDS_CACHE_TAG,
   RECORD_CERT_BUCKET,
@@ -34,10 +34,10 @@ type ActionResult<T = object> =
   | ({ success: true } & T)
   | { success: false; error: string };
 
-// 어드민 미들웨어(/admin/**)와 같은 auth=true 쿠키로 판단한다.
+// 기록증·배번 등 개인정보를 다루므로 서명 없는 auth=true 만으로는 통과시키지 않는다.
+// 로그인 때 함께 발급되는 서명 쿠키(admin_sig)까지 확인한다.
 async function isAdminRequest(): Promise<boolean> {
-  const jar = await cookies();
-  return jar.get("auth")?.value === "true";
+  return isSignedAdmin();
 }
 
 // ----- 캐시 무효화 -----

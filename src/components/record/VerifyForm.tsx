@@ -26,11 +26,6 @@ async function shrinkCertificate(file: File): Promise<File> {
   return new File([out], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
-function todayKst(): string {
-  const now = new Date(Date.now() + 9 * 3600 * 1000);
-  return now.toISOString().slice(0, 10);
-}
-
 export function VerifyForm() {
   const router = useRouter();
   const [h, setH] = useState("");
@@ -115,7 +110,7 @@ export function VerifyForm() {
       <div className="grid grid-cols-2 gap-2.5">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="raceDate" className={labelClass}>대회일 *</label>
-          <input id="raceDate" name="raceDate" type="date" required max={todayKst()} className={cn(inputClass, "font-mono [color-scheme:dark]")} />
+          <input id="raceDate" name="raceDate" type="date" required className={cn(inputClass, "font-mono [color-scheme:dark]")} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="bibNumber" className={labelClass}>배번 *</label>

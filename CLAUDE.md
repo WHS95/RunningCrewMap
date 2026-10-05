@@ -88,6 +88,8 @@ Public pages (root `/`, `/map`, etc.) read crews through the **server** path. Th
 
 Cookie-based, dead simple. `src/middleware.ts` gates `/admin/**` on `auth=true` cookie set by `/admin/login`. Do not bolt on RLS-based auth here without rewriting the middleware.
 
+`auth=true` is unsigned (forgeable). `/admin/login` also issues an HMAC-signed `admin_sig` cookie (`src/lib/server/adminSession.ts`, key = `ADMIN_SESSION_SECRET`‖`CREW_SESSION_SECRET` + `ADMIN_PASSWORD`). Admin actions that touch PII — currently every record admin action in `src/app/actions/record.ts` — must check `isSignedAdmin()`, not just `auth`. Sessions from before this change must log in again to use `/admin/record`.
+
 ### Layout of `src/`
 
 - `app/` — App Router. `app/actions/*` are Server Actions; `app/_components/` and `app/<route>/...` hold per-route components.
