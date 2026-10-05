@@ -46,6 +46,7 @@ Both `.env` and `.env.local` are used. Server-side Supabase calls fall back from
 - `ADMIN_USERNAME`, `ADMIN_PASSWORD` — `/admin/login` credentials
 - `DISCORD_REGISTRATION_WEBHOOK_URL` — fire-and-forget webhook for crew register/edit events
 - `DISCORD_STORE_WEBHOOK_URL` — 매장 등록/수정 알림 전용. 미설정 시 `DISCORD_REGISTRATION_WEBHOOK_URL`로 fallback.
+- `DISCORD_RECORD_WEBHOOK_URL` — (선택) 기록 인증 신청·각인 주문 신청 알림. 미설정 시 `DISCORD_REGISTRATION_WEBHOOK_URL`로 fallback — Vercel 에 새 env 추가 없이 동작.
 - `CREW_SESSION_SECRET` — **필수(32자 이상)**. 크루 PIN 세션 쿠키 HMAC 시크릿. 미설정이면 PIN 설정/로그인이 실패하고 `/crew/edit/[id]` 서버 렌더가 깨진다.
 - `STORE_SESSION_SECRET` — 매장 PIN 세션 HMAC 시크릿. 미설정 시 `CREW_SESSION_SECRET` fallback.
 - `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_SITE_URL` — used to build absolute URLs in Discord embeds and edit links
@@ -66,6 +67,16 @@ Public pages (root `/`, `/map`, etc.) read crews through the **server** path. Th
 `src/lib/server/crews.ts` wraps the public crew list in `unstable_cache(..., { revalidate: 60, tags: [CREWS_CACHE_TAG] })` and a per-render `cache()`. **Any server mutation that touches `crews`, `crew_locations`, `crew_activity_locations`, etc. must call `revalidateTag(CREWS_CACHE_TAG)` and the relevant `revalidatePath("/")`, `revalidatePath("/map")`, `revalidatePath("/crew/list")`.** See `src/app/actions/crew.ts` for the established pattern.
 
 `STORES_CACHE_TAG`("stores"): 매장 도메인 전용. `stores`/`store_locations`/`store_photos` 관련 mutation 시 `revalidateTag(STORES_CACHE_TAG)` + `revalidatePath("/", "/map", "/store", "/sitemap.xml")` 호출.
+
+`RECORDS_CACHE_TAG`("records", `src/lib/server/records.ts`): 기록 각인 도메인. 승인·반려·기록장 공개 설정·주문 상태 변경 시 `revalidateTag(RECORDS_CACHE_TAG)` + `revalidatePath("/record", "/record/hall")` (`revalidateRecordsCache`, `src/app/actions/record.ts`).
+
+### 기록 각인 (RECORD) — `/record/**`
+
+- 티어(풀코스 넷 타임): SUB-3 < 3:00:00 · SINGLE ≤ 3:09:59 · SUB-4 ≤ 3:59:59 · SUB-5 ≤ 4:59:59. 규칙은 `src/lib/record/tier.ts` 한 곳이고, **서버가 항상 재판정**한다.
+- `hall_of_fame_entries`/`record_orders`는 RLS 활성 + 정책 없음 → service role(`serverSupabase`) 전용. 기록증은 비공개 버킷 `recordCertificates`, 관리자만 signed URL 로 연다. anon 클라이언트로 이 테이블을 읽지 마세요.
+- 본인 링크 `/record/r/<id>?token=<purchase_token>` — id·token 동시 일치(edit_token 패턴). 각인 문구는 승인된 DB 행에서 서버가 만든다(`buildEngraving`); 클라이언트 입력으로 문구를 받지 마세요.
+- **1차는 비노출 개발 링크 운영**: noindex, sitemap·메뉴·`DesktopSidePanel`·홈에 진입점을 넣지 않는다. 홈 진입점은 검토 후 2차.
+- 결제 연동 없음 — 주문은 "신청"만 받고 DM 으로 안내.
 
 ### Approval queue + self-service edit tokens
 

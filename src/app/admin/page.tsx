@@ -4,7 +4,7 @@ import {
   CartographicHeader,
   KickerLabel,
 } from "@/components/design/cartographic";
-import { Users, ChevronRight, LogOut, CalendarDays, Store } from "lucide-react";
+import { Users, ChevronRight, LogOut, CalendarDays, Store, Award } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "관리자 대시보드 | 런하우스",
@@ -72,6 +72,14 @@ export default function AdminDashboardPage() {
             enLabel='STORES'
             count='—'
             icon={<Store className='w-4 h-4' />}
+          />
+          <AdminMenuItem
+            title='기록 인증 · 각인 관리'
+            description='기록증 대조 후 승인/반려 · 인증번호 발급 · 각인 주문 신청 처리'
+            link='/admin/record'
+            enLabel='RECORDS'
+            count='—'
+            icon={<Award className='w-4 h-4' />}
           />
         </div>
       </section>
