@@ -1,7 +1,7 @@
 // src/app/record/hall/page.tsx — 역대 기록장 목록 (티어 필터)
 import Link from "next/link";
 import { KickerLabel } from "@/components/design/cartographic";
-import { RecordShell, RecordSubHeader } from "@/components/record/RecordShell";
+import { RecordShell } from "@/components/record/RecordShell";
 import { HallRow } from "@/components/record/HallRow";
 import { getHallEntries } from "@/lib/server/records";
 import { TIERS, isRecordTier } from "@/lib/record/tier";
@@ -24,13 +24,22 @@ export default async function RecordHallPage({
 
   return (
     <RecordShell>
-      <RecordSubHeader
-        title="역대 기록장"
-        backHref="/record"
-        meta={`RECORDS · ${String(rows.length).padStart(3, "0")}`}
-      />
-      <div className="px-[22px] pt-4">
-        <nav aria-label="티어 필터" className="flex flex-wrap gap-1.5">
+      <div className="px-[22px] pt-[22px]">
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-2">
+            <KickerLabel tone="lime" className="text-[10px]">
+              · RECORDS · {String(rows.length).padStart(3, "0")}
+            </KickerLabel>
+            <h1 className="text-[30px] font-black tracking-[-0.02em] text-cart-ink">역대 기록장</h1>
+          </div>
+          <Link
+            href="/record/verify"
+            className="h-9 inline-flex items-center px-3 rounded-[2px] border border-cart-rule text-[12px] text-cart-ink active:scale-95 transition-transform duration-fast ease-apple"
+          >
+            기록 인증
+          </Link>
+        </div>
+        <nav aria-label="티어 필터" className="flex flex-wrap gap-1.5 mt-4">
           {filters.map((f) => {
             const on = f.id === active;
             return (
@@ -39,7 +48,7 @@ export default async function RecordHallPage({
                 href={f.id ? `/record/hall?tier=${f.id}` : "/record/hall"}
                 aria-current={on ? "page" : undefined}
                 className={cn(
-                  "h-9 px-3 inline-flex items-center rounded-[2px] border font-mono text-[11px] tracking-[0.06em] transition-colors duration-fast ease-apple",
+                  "h-[34px] px-[11px] inline-flex items-center rounded-[2px] border font-mono text-[11px] tracking-[0.06em] transition-colors duration-fast ease-apple",
                   on
                     ? "bg-cart-ink text-background border-cart-ink"
                     : "border-cart-rule text-cart-ink-60 hover:text-cart-ink"
@@ -51,7 +60,7 @@ export default async function RecordHallPage({
           })}
         </nav>
 
-        <div className="flex justify-between mt-5 pb-2">
+        <div className="flex justify-between mt-5 pb-2.5 border-b border-cart-rule">
           <KickerLabel tone="muted">NO · RUNNER · RACE</KickerLabel>
           <KickerLabel tone="muted">NET TIME</KickerLabel>
         </div>
@@ -59,7 +68,7 @@ export default async function RecordHallPage({
         {rows.length > 0 ? (
           rows.map((e, i) => <HallRow key={e.id} entry={e} rank={i + 1} />)
         ) : (
-          <div className="border-t border-cart-rule py-10 text-center text-[13px] text-cart-ink-60 leading-relaxed">
+          <div className="py-10 text-center text-[13px] text-cart-ink-60 leading-relaxed">
             아직 이 티어에 새겨진 기록이 없어요.
             <br />
             <Link href="/record/verify" className="text-[hsl(var(--lime))]">

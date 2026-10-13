@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 import { KickerLabel } from "@/components/design/cartographic";
 import { Engrave3D, type EngraveText } from "@/components/record/Engrave3D";
+import { RecordSubHeader } from "@/components/record/RecordShell";
 import { createRecordOrder } from "@/app/actions/record";
 import {
   SKUS,
@@ -25,10 +26,12 @@ const PLACEHOLDER: EngraveText = {
 };
 
 export function ShopClient({
+  backHref,
   engraving,
   auth,
   pendingEntry,
 }: {
+  backHref: string;
   engraving: EngravingSnapshot | null;
   auth: { id: string; token: string } | null;
   pendingEntry: boolean;
@@ -68,6 +71,7 @@ export function ShopClient({
 
   return (
     <div>
+      <RecordSubHeader title={cur.label} backHref={backHref} meta="RECORD · LABS" />
       <div className="border-b border-cart-rule">
         <Engrave3D sku={sku} finish={finish} text={text} height={300} />
       </div>
@@ -96,7 +100,7 @@ export function ShopClient({
 
         <div className="flex items-baseline justify-between">
           <span className="text-[13px] text-cart-ink-60">{cur.desc}</span>
-          <span className="font-mono text-[12px] text-cart-ink-60">가격 · DM 안내</span>
+          <span className="font-mono text-[13px] font-bold text-[hsl(var(--lime))]">가격 · DM 안내</span>
         </div>
 
         <div>

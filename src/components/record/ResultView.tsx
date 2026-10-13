@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Copy } from "lucide-react";
+import { ArrowRight, Check, Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { KickerLabel } from "@/components/design/cartographic";
 import { CountUp } from "@/components/record/CountUp";
@@ -68,6 +68,7 @@ export function ResultView({
   const [nameMasked, setNameMasked] = useState(entry.nameMasked);
   const [saving, startSaving] = useTransition();
   const [copied, setCopied] = useState(false);
+  const [round, setRound] = useState(0);
   const tier = entry.tier ? TIER_BY_ID[entry.tier] : null;
 
   const save = (next: { hallPublic: boolean; nameMasked: boolean }) => {
@@ -119,7 +120,7 @@ export function ResultView({
   if (entry.status === "pending") {
     return (
       <div className="px-[22px] pt-6 flex flex-col gap-5">
-        <KickerLabel tone="lime">● PENDING · 검수 중</KickerLabel>
+        <KickerLabel tone="lime" className="text-[10px]">● PENDING · 검수 중</KickerLabel>
         <h1 className="font-display text-[28px] font-bold leading-tight text-cart-ink">
           {isNew ? "신청이 접수됐어요." : "기록을 확인하고 있어요."}
         </h1>
@@ -139,7 +140,7 @@ export function ResultView({
   if (entry.status === "rejected") {
     return (
       <div className="px-[22px] pt-6 flex flex-col gap-5">
-        <KickerLabel tone="muted">REJECTED · 반려</KickerLabel>
+        <KickerLabel tone="muted" className="text-[10px]">REJECTED · 반려</KickerLabel>
         <h1 className="font-display text-[28px] font-bold leading-tight text-cart-ink">
           기록을 확인하지 못했어요.
         </h1>
@@ -159,26 +160,36 @@ export function ResultView({
   return (
     <div className="px-[22px] pt-6 flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <KickerLabel tone="lime">● VERIFIED · 인증 완료</KickerLabel>
+        <KickerLabel tone="lime" className="text-[10px]">● VERIFIED · 인증 완료</KickerLabel>
         <span className="font-mono text-[11px] text-cart-ink-60">{entry.certNo}</span>
       </div>
 
       <div className="flex flex-col gap-3.5 py-6 border-y border-cart-rule">
         <div className="flex items-center gap-2.5">
           {tier && <TierBadge label={tier.label} top={entry.tier === "sub3"} />}
-          <KickerLabel tone="muted">FULL · NET TIME</KickerLabel>
+          <KickerLabel tone="muted" className="text-[10px]">FULL · NET TIME</KickerLabel>
         </div>
-        <div className="font-mono text-[68px] font-bold leading-none tracking-[-0.04em] text-cart-ink">
-          <CountUp to={entry.seconds} format="time" duration={1.8} />
+        <div className="font-mono text-[clamp(56px,18vw,76px)] font-bold leading-none tracking-[-0.04em] text-cart-ink">
+          <CountUp key={round} to={entry.seconds} format="time" duration={1.8} />
         </div>
-        <span className="text-[13px] text-cart-ink-60">
-          {entry.raceName} · <span className="font-mono">{entry.raceDate.replaceAll("-", ".")}</span>
-        </span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[13px] text-cart-ink-60 min-w-0 truncate">
+            {entry.raceName} · <span className="font-mono">{entry.raceDate.replaceAll("-", ".")}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setRound((r) => r + 1)}
+            aria-label="기록 카운트업 다시 재생"
+            className="h-7 px-2.5 shrink-0 inline-flex items-center gap-1 rounded-[2px] border border-cart-rule font-mono text-[10px] tracking-[0.14em] text-cart-ink-60 hover:text-cart-ink transition-colors duration-fast ease-apple"
+          >
+            <RotateCcw className="w-3 h-3" /> REPLAY
+          </button>
+        </div>
       </div>
 
       <div>
         <Row k="러너" v={`${entry.runnerName}${entry.crewName ? ` · ${entry.crewName}` : ""}`} first />
-        <Row k="기록장 표기" v={hallPublic ? (nameMasked ? maskName(entry.runnerName) : entry.runnerName) : "비공개"} />
+        <Row k="배번" v="비공개 보관" mono muted />
         <Row
           k="검수"
           v={
@@ -193,7 +204,11 @@ export function ResultView({
       <div className="flex flex-col gap-2">
         <Toggle
           label="역대 기록장에 각인"
-          hint={hallPublic ? "공개 중 · 기록장에 보여요" : "비공개 · 나만 볼 수 있어요"}
+          hint={
+            hallPublic
+              ? `공개 중 · ${nameMasked ? maskName(entry.runnerName) : entry.runnerName} 로 보여요`
+              : "비공개 · 나만 볼 수 있어요"
+          }
           checked={hallPublic}
           disabled={saving}
           onChange={(v) => save({ hallPublic: v, nameMasked })}
@@ -225,18 +240,18 @@ export function ResultView({
           href="/record/hall"
           className="h-12 inline-flex items-center justify-center rounded-[4px] border border-cart-rule text-[14px] font-semibold text-cart-ink"
         >
-          역대 기록장 보기
+          기록장에서 내 기록 보기
         </Link>
       </div>
     </div>
   );
 }
 
-function Row({ k, v, mono, first }: { k: string; v: string; mono?: boolean; first?: boolean }) {
+function Row({ k, v, mono, first, muted }: { k: string; v: string; mono?: boolean; first?: boolean; muted?: boolean }) {
   return (
     <div className={cn("flex justify-between gap-4 py-3 text-[13px]", !first && "border-t border-cart-rule")}>
       <span className="text-cart-ink-60 shrink-0">{k}</span>
-      <span className={cn("text-cart-ink text-right", mono && "font-mono text-[12px]")}>{v}</span>
+      <span className={cn("text-right", muted ? "text-cart-ink-60" : "text-cart-ink", mono && "font-mono text-[12px]")}>{v}</span>
     </div>
   );
 }

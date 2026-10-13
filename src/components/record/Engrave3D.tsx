@@ -84,6 +84,7 @@ export function Engrave3D({
   finish,
   text,
   height = 300,
+  scale = 1,
   bg = "#10110E",
   className,
 }: {
@@ -91,6 +92,8 @@ export function Engrave3D({
   finish: EngraveFinish;
   text: EngraveText;
   height?: number;
+  /** 작은 제품(레이스 태그)을 쇼케이스에서 키워 보여줄 때 */
+  scale?: number;
   bg?: string;
   className?: string;
 }) {
@@ -132,19 +135,20 @@ export function Engrave3D({
 
   const transform = useTransform(
     [rx, ry],
-    ([x, y]) => `rotateX(${(x as number).toFixed(2)}deg) rotateY(${(y as number).toFixed(2)}deg)`
+    ([x, y]) => `scale(${scale}) rotateX(${(x as number).toFixed(2)}deg) rotateY(${(y as number).toFixed(2)}deg)`
   );
   const frontShade = useTransform(ry, (y) => {
     const c = cosd(norm(y));
-    return c > 0 ? (1 - c) * 0.55 : 0.55;
+    return c > 0 ? Math.round((1 - c) * 550) / 1000 : 0.55;
   });
   const backShade = useTransform(ry, (y) => {
     const c = cosd(norm(y));
-    return c < 0 ? (1 + c) * 0.55 : 0.55;
+    return c < 0 ? Math.round((1 + c) * 550) / 1000 : 0.55;
   });
   const sheenFront = useTransform(ry, (y) => `${(100 - (norm(y) / 360) * 200).toFixed(1)}% 0`);
   const sheenBack = useTransform(ry, (y) => `${(100 - (norm(y + 180) / 360) * 200).toFixed(1)}% 0`);
-  const shadowW = useTransform(ry, (y) => d.w * (0.45 + 0.55 * Math.abs(cosd(norm(y)))) + d.t * 2);
+  // SSR/CSR 직렬화 차이(부동소수 자릿수)로 hydration 경고가 나지 않게 정수로 반올림한다.
+  const shadowW = useTransform(ry, (y) => Math.round(d.w * scale * (0.45 + 0.55 * Math.abs(cosd(norm(y)))) + d.t * 2));
   const degLabel = useTransform(ry, (y) => `${Math.round(norm(y))}°`);
 
   const snap = (base: number) => {
@@ -216,7 +220,7 @@ export function Engrave3D({
         aria-hidden
         className="absolute left-1/2 -translate-x-1/2 rounded-[50%]"
         style={{
-          top: objTop + d.h / 2 + 22,
+          top: objTop + (d.h * scale) / 2 + 22,
           width: shadowW,
           height: 26,
           background: "radial-gradient(ellipse at center, rgba(0,0,0,.6), rgba(0,0,0,0) 70%)",

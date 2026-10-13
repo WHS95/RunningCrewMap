@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export function HallRow({ entry, rank }: { entry: HallEntry; rank: number }) {
   const tier = TIER_BY_ID[entry.tier];
   return (
-    <div className="flex items-center gap-3 py-3 border-t border-cart-rule">
+    <div className="flex items-center gap-3 py-[13px] border-b border-white/[0.06]">
       <span className="w-6 font-mono text-[11px] text-cart-ink-40 tabular-nums">
         {String(rank).padStart(2, "0")}
       </span>
@@ -16,7 +16,7 @@ export function HallRow({ entry, rank }: { entry: HallEntry; rank: number }) {
           <span
             className={cn(
               "font-mono text-[9px] font-bold tracking-[0.08em] shrink-0",
-              entry.tier === "sub3" ? "text-[hsl(var(--lime))]" : "text-cart-ink-60"
+              entry.tier === "sub3" ? "text-[hsl(var(--lime))]" : entry.tier === "single" ? "text-cart-ink" : "text-cart-ink-60"
             )}
           >
             {tier.label}
