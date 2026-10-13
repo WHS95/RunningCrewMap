@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     status: 303,
   });
   response.cookies.delete("auth");
+  response.cookies.delete("admin_sig");
   return response;
 }
 

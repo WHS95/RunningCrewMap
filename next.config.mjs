@@ -10,6 +10,11 @@ const nextConfig = {
         source: "/sso/:path*",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
+      {
+        // 기록 결과·각인 신청 링크는 ?token= 이 본인 열쇠다 — Referer 로 새지 않게 차단
+        source: "/record/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
     ];
   },
   async redirects() {
@@ -47,6 +52,8 @@ const nextConfig = {
     ];
   },
   experimental: {
+    // 기록증 이미지를 Server Action 으로 올린다(클라이언트에서 ~0.9MB 로 압축). Vercel 한도 4.5MB 미만.
+    serverActions: { bodySizeLimit: "4mb" },
     optimizePackageImports: ["lucide-react", "date-fns", "recharts", "@radix-ui/react-dialog", "@radix-ui/react-select", "framer-motion"],
   },
   modularizeImports: {

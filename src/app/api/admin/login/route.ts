@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { ADMIN_SIG_COOKIE, createAdminSignature } from "@/lib/server/adminSession";
 
 // Session lengths.
 // Default (no "remember me"): 2 hours — safe for shared computers.
@@ -34,6 +35,20 @@ export async function POST(request: NextRequest) {
         path: "/",
         sameSite: "lax",
       });
+
+      // 서명된 어드민 쿠키 — 기록 각인 어드민(기록증 등 개인정보)이 추가로 요구한다.
+      const sig = createAdminSignature(maxAge);
+      if (sig) {
+        cookieStore.set(ADMIN_SIG_COOKIE, sig, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge,
+          path: "/",
+          sameSite: "lax",
+        });
+      } else {
+        console.warn("[admin] CREW_SESSION_SECRET/ADMIN_PASSWORD 없음 — admin_sig 미발급");
+      }
 
       return NextResponse.json({
         success: true,
