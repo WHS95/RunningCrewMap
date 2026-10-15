@@ -1,7 +1,7 @@
 "use client";
 
 // src/components/league/JoinActions.tsx — 초대 코드 복사 + 앱 설치/열기 버튼
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { KickerLabel } from "@/components/design/cartographic";
 import {
@@ -19,13 +19,7 @@ export function JoinActions({
   code: string | null;
   description: string;
 }) {
-  // 서버 렌더는 App Store 기본, 안드로이드는 마운트 뒤에 바꾼다(하이드레이션 불일치 방지).
-  const [storeUrl, setStoreUrl] = useState(LEAGUE_APP_STORE_URL);
   const [copyState, setCopyState] = useState<CopyState>("idle");
-
-  useEffect(() => {
-    if (/android/i.test(navigator.userAgent)) setStoreUrl(LEAGUE_PLAY_STORE_URL);
-  }, []);
 
   const copy = async () => {
     if (!code) return;
@@ -67,12 +61,14 @@ export function JoinActions({
       <div className="flex-1 min-h-10" />
 
       <div className="flex flex-col gap-2.5">
-        <a
-          href={storeUrl}
-          className="block text-center rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] py-4 text-[16px] font-bold active:scale-[0.98] transition-transform"
-        >
+        {/* 기기 판별 없이 두 스토어를 나란히 둔다 — 컴퓨터에서 열어도 고를 수 있게. */}
+        <KickerLabel tone="muted" className="pb-0.5">
           앱 설치하고 들어가기
-        </a>
+        </KickerLabel>
+        <div className="grid grid-cols-2 gap-2.5">
+          <StoreButton href={LEAGUE_APP_STORE_URL} platform="아이폰" store="App Store" />
+          <StoreButton href={LEAGUE_PLAY_STORE_URL} platform="안드로이드" store="Google Play" />
+        </div>
         <a
           href={leagueDeepLink(code)}
           className="block text-center rounded-[4px] border border-cart-rule text-cart-ink py-4 text-[15px] font-semibold active:scale-[0.98] transition-transform"
@@ -81,5 +77,17 @@ export function JoinActions({
         </a>
       </div>
     </>
+  );
+}
+
+function StoreButton({ href, platform, store }: { href: string; platform: string; store: string }) {
+  return (
+    <a
+      href={href}
+      className="flex flex-col items-center gap-0.5 rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] py-3 active:scale-[0.98] transition-transform"
+    >
+      <span className="text-[11px] font-semibold opacity-70">{platform}</span>
+      <span className="text-[16px] font-bold">{store}</span>
+    </a>
   );
 }
