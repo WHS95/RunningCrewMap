@@ -74,7 +74,8 @@ export function DesktopSidePanel() {
   // page should fill the user's attention without external CTAs.
   if (
     pathname?.startsWith("/admin") ||
-    pathname?.startsWith("/crew/edit/")
+    pathname?.startsWith("/crew/edit/") ||
+    pathname?.startsWith("/join")
   ) {
     return null;
   }

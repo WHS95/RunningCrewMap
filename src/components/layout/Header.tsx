@@ -10,7 +10,8 @@ export function Header() {
   // user-facing wordmark header doesn't belong there.
   if (
     pathname?.startsWith("/admin") ||
-    pathname?.startsWith("/crew/edit/")
+    pathname?.startsWith("/crew/edit/") ||
+    pathname?.startsWith("/join")
   ) {
     return null;
   }

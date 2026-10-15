@@ -19,7 +19,8 @@ export function MobileNav() {
   // user-facing bottom nav (홈/크루/대회일정/메뉴) doesn't belong there.
   if (
     pathname?.startsWith("/admin") ||
-    pathname?.startsWith("/crew/edit/")
+    pathname?.startsWith("/crew/edit/") ||
+    pathname?.startsWith("/join")
   ) {
     return null;
   }
