@@ -80,7 +80,7 @@ export function JoinActions({
   );
 }
 
-function StoreButton({ href, platform, store }: { href: string; platform: string; store: string }) {
+export function StoreButton({ href, platform, store }: { href: string; platform: string; store: string }) {
   return (
     <a
       href={href}
