@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { DesktopSidePanel } from "@/components/layout/DesktopSidePanel";
+import { DesktopLeaguePanel } from "@/components/layout/DesktopLeaguePanel";
 import { Toaster } from "@/components/ui/sonner";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { PageTransition } from "@/components/layout/PageTransition";
@@ -165,6 +166,8 @@ export default function RootLayout({
                 right gutter (lg+ viewports). Hides on admin / token-edit
                 focus routes via its own pathname check. */}
             <DesktopSidePanel />
+            {/* 왼쪽 거터 — 런하우스 리그 앱 소개(/league) 진입 카드. */}
+            <DesktopLeaguePanel />
             <Toaster />
           </ClientLayout>
         </PostHogProvider>
