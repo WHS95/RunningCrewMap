@@ -166,7 +166,7 @@ export default function RootLayout({
                 right gutter (lg+ viewports). Hides on admin / token-edit
                 focus routes via its own pathname check. */}
             <DesktopSidePanel />
-            {/* 왼쪽 거터 — 런하우스 리그 앱 소개(/league) 진입 카드. */}
+            {/* 왼쪽 거터 — 런하우스 리그 앱 체험판(/league) 진입 카드. */}
             <DesktopLeaguePanel />
             <Toaster />
           </ClientLayout>

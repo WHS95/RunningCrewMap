@@ -36,6 +36,9 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      // 런하우스 리그 앱 체험판 — 단독 정적 HTML(public/league/demo.html)을 /league 주소로 연다.
+      // 앱 레이아웃(모바일 프레임 · 좌우 패널) 밖에서 자체 화면으로 렌더된다.
+      { source: "/league", destination: "/league/demo.html" },
       // PostHog 인제스트 역방향 프록시 — 광고 차단기 우회
       {
         source: "/ingest/static/:path*",
