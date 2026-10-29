@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- /league 로 서빙된다(next.config.mjs rewrites). 원본: runhouse-league/docs/체험판/runhouse-demo.html -->
 <title>런하우스 리그 | 직접 눌러 보기</title>
-<meta name="description" content="런하우스 리그 앱 체험판이에요. 크루원으로 뛰고 기록을 넣어 크루 레벨을 올리거나, 크루장으로 출석을 처리해 볼 수 있어요.">
+<meta name="description" content="런하우스 리그 앱 체험판이에요. 크루원으로 뛰고 크루 레벨을 올리거나, 크루장으로 출석을 처리하고, 크루원 초대와 건강 앱(애플워치 · 삼성 헬스) 연동까지 직접 눌러 볼 수 있어요.">
 <link rel="canonical" href="https://www.runhouse.club/league">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="런하우스 리그">
 <meta property="og:url" content="https://www.runhouse.club/league">
 <meta property="og:title" content="런하우스 리그 | 직접 눌러 보기">
-<meta property="og:description" content="런하우스 리그 앱 체험판이에요. 크루원으로 뛰고 기록을 넣어 크루 레벨을 올리거나, 크루장으로 출석을 처리해 볼 수 있어요.">
+<meta property="og:description" content="런하우스 리그 앱 체험판이에요. 크루원으로 뛰고 크루 레벨을 올리거나, 크루장으로 출석을 처리하고, 크루원 초대와 건강 앱(애플워치 · 삼성 헬스) 연동까지 직접 눌러 볼 수 있어요.">
 <meta property="og:image" content="https://www.runhouse.club/league/intro-og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="런하우스 리그 | 직접 눌러 보기">
-<meta name="twitter:description" content="런하우스 리그 앱 체험판이에요. 크루원으로 뛰고 기록을 넣어 크루 레벨을 올리거나, 크루장으로 출석을 처리해 볼 수 있어요.">
+<meta name="twitter:description" content="런하우스 리그 앱 체험판이에요. 크루원으로 뛰고 크루 레벨을 올리거나, 크루장으로 출석을 처리하고, 크루원 초대와 건강 앱(애플워치 · 삼성 헬스) 연동까지 직접 눌러 볼 수 있어요.">
 <meta name="twitter:image" content="https://www.runhouse.club/league/intro-og.png">
 <link rel="icon" href="/favicon.ico">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
@@ -64,6 +64,23 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .stage { display: flex; justify-content: center; }
 .phone { width: 410px; max-width: 100%; height: 864px; border-radius: 58px; padding: 10px; background: var(--frame); box-shadow: 0 30px 60px -24px rgba(0,0,0,0.45); }
 .note { text-align: center; font-size: 12px; color: var(--page-mute); margin-top: 14px; }
+/* 폰 아래: 자주 헷갈리는 두 가지를 글로도 정리 */
+.more { max-width: 960px; margin: 36px auto 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.mcard { min-width: 0; padding: 20px; border-radius: 20px; background: var(--page-card); border: 1px solid var(--page-line); display: flex; flex-direction: column; gap: 14px; }
+.mcard h2 { margin: 2px 0 0; font-size: 21px; line-height: 1.35; font-weight: 800; }
+.flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.flow li { display: flex; gap: 10px; font-size: 14px; color: var(--page-mute); }
+.flow li > b { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--lime); color: var(--ink); }
+.flow strong { display: block; font-size: 15px; color: var(--page-ink); }
+.fine { margin: 0; font-size: 13px; color: var(--page-mute); }
+.paths { display: grid; gap: 8px; }
+.path { padding: 10px 12px; border-radius: 12px; background: var(--page); font-size: 14px; line-height: 1.7; color: var(--page-mute); }
+.path b { color: var(--page-ink); }
+.path .os { display: inline-block; margin-right: 6px; padding: 0 7px; border-radius: 6px; background: var(--page-ink); color: var(--page); font-size: 12px; font-weight: 700; line-height: 20px; }
+.qa { margin: 0; display: grid; gap: 12px; }
+.qa dt { font-size: 15px; font-weight: 700; }
+.qa dd { margin: 2px 0 0; font-size: 14px; color: var(--page-mute); }
+.go { align-self: flex-start; margin-top: auto; padding: 11px 16px; border-radius: 12px; background: var(--page-ink); color: var(--page); font-size: 14px; font-weight: 700; }
 
 /* ── 폰 화면 ── */
 .screen { position: relative; height: 100%; border-radius: 48px; overflow: hidden; background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.45; isolation: isolate; font-variant-numeric: tabular-nums; }
@@ -176,9 +193,53 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .tip small { display: block; font-size: 12px; font-weight: 500; color: rgba(23,23,25,0.64); margin-top: 2px; }
 @keyframes tipin { from { opacity: 0; transform: translateY(6px); } }
 
-.pick { position: absolute; inset: 0; padding: 104px 20px 36px; display: flex; flex-direction: column; gap: 12px; }
+.pick { position: absolute; inset: 0; padding: 84px 20px 36px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; scrollbar-width: none; }
+.pick::-webkit-scrollbar { display: none; }
+.kick { margin-top: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--fg3b); }
 .role { width: 100%; display: flex; gap: 14px; align-items: center; text-align: left; padding: 18px; border-radius: 20px; background: var(--card); }
 .role .ri { flex: none; width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--lime-soft); color: var(--lime); }
+.role.sm { padding: 14px 16px; }
+.role.sm .ri { width: 40px; height: 40px; border-radius: 12px; }
+
+/* 초대 · 건강 앱 연동 체험 */
+.bbar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 34px; background: var(--bg); box-shadow: 0 -1px 0 var(--div); z-index: 20; display: flex; flex-direction: column; gap: 6px; }
+.iconbtn { flex: none; width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,0.28); color: var(--fg); display: grid; place-items: center; }
+.spin { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 3px solid rgba(23,23,25,0.25); border-top-color: var(--ink); animation: spin .8s linear infinite; }
+.spin.l { border-color: rgba(207,239,104,0.25); border-top-color: var(--lime); }
+.field { flex: 1; min-width: 0; height: 48px; text-align: left; border-radius: 12px; background: var(--card2); display: flex; align-items: center; padding: 0 14px; font-size: 17px; font-weight: 700; letter-spacing: 0.06em; }
+.field.ph { font-weight: 400; letter-spacing: 0; color: var(--fg3); font-size: 15px; }
+.bubble { max-width: 86%; padding: 10px 12px; border-radius: 4px 16px 16px 16px; background: #2e353d; font-size: 14px; line-height: 20px; text-align: left; }
+.linkcard { padding: 0; overflow: hidden; width: 86%; }
+.linkcard img { display: block; width: 100%; height: auto; }
+/* 리그 앱 실제 화면 부품 */
+.hd { height: 56px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hd .bk { width: 44px; height: 44px; margin-left: -12px; margin-right: -4px; display: grid; place-items: center; color: var(--lime); flex: none; }
+.hd.ink .bk { color: var(--ink); }
+.hd h1 { margin: 0; font-size: 20px; font-weight: 700; white-space: nowrap; }
+.hd .hs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 15px; color: var(--fg3b); white-space: nowrap; overflow: hidden; }
+.grp { border-radius: 20px; background: var(--card); padding: 14px 16px 6px; margin-top: 12px; }
+.grp .gl { font-size: 14px; font-weight: 600; color: var(--fg3b); padding-bottom: 4px; }
+.mrow { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 14px; font-size: 16px; font-weight: 700; text-align: left; }
+.mrow .mi { flex: none; width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--lime); display: grid; place-items: center; }
+.plain { width: 100%; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 16px; font-weight: 700; text-align: left; }
+.dock { position: absolute; left: 10px; right: 10px; bottom: 26px; height: 58px; display: flex; gap: 8px; z-index: 20; }
+.dock .dback { flex: none; width: 58px; height: 58px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); display: grid; place-items: center; color: var(--fg2); }
+.dock .dbar { flex: 1; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); display: grid; grid-template-columns: repeat(3, 1fr); padding: 4px; }
+.dock .dbar button { border-radius: 999px; display: grid; justify-items: center; align-content: center; gap: 1px; font-size: 11px; font-weight: 600; color: var(--fg3); }
+.dock .dbar button[aria-current="page"] { background: #2a2b2f; color: var(--lime); }
+.bbar.flat { background: var(--bg); box-shadow: none; }
+.hp { margin: 0; font-size: 15px; line-height: 23px; color: var(--fg2); }
+.coin { flex: none; width: 52px; height: 52px; border-radius: 50%; background: #fff; color: #111; box-shadow: inset 0 0 0 3px #4a4d55; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
+.pastemenu { position: absolute; left: 18px; top: 10px; padding: 9px 14px; border-radius: 10px; background: #3a3a3c; color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 6px 16px rgba(0,0,0,0.4); animation: pop .25s both; }
+.sheet.iosshare { left: 8px; right: 8px; bottom: 8px; border-radius: 34px; background: rgba(28,28,30,0.97); padding: 22px 20px 24px; gap: 16px; }
+.ishr { height: 1px; background: rgba(255,255,255,0.1); }
+.dialog > .iosalert { width: 270px; padding: 0; gap: 0; border-radius: 14px; background: rgba(44,44,46,0.98); text-align: center; align-items: stretch; }
+.iosalert > button { height: 44px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 17px; }
+.screen.still .sheet, .screen.still .scrim, .screen.still .dialog > div { animation: none; }
+.screen:has(.bbar) .toast { bottom: 150px; }
+.screen:has(.sheet) .toast { bottom: auto; top: 56px; }
+.mono { font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace; }
+.osheet { background: #f2f2f7; color: #111; }
 
 @media (max-width: 640px) {
   body { padding-block: 16px 24px; }
@@ -194,14 +255,45 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     <div>
       <div class="eyebrow">RUNHOUSE · 체험판</div>
       <h1>런하우스, <mark>직접 눌러 보기</mark></h1>
-      <p>「런하우스 크루」에 들어와 있어요. 역할을 고르면 그 역할로 앱을 써 볼 수 있어요. 라임색 테두리가 다음에 누를 곳이에요.</p>
+      <p>「런하우스 크루」에 들어와 있어요. 역할이나 기능을 고르면 앱을 직접 눌러 볼 수 있어요. 라임색 테두리가 다음에 누를 곳이에요.</p>
     </div>
-    <button class="reset" id="reset" type="button" hidden>↺ 역할 다시 고르기</button>
+    <button class="reset" id="reset" type="button" hidden>↺ 다시 고르기</button>
   </div>
   <ol class="steps" id="steps" hidden></ol>
 </header>
 <main class="stage"><div class="phone"><div class="screen" id="p"></div></div></main>
 <p class="note">체험용 화면이에요. 이름과 기록은 모두 예시이고, 어디에도 저장되지 않아요.</p>
+
+<section class="more" aria-label="자주 묻는 것">
+  <article class="mcard">
+    <div class="eyebrow">크루장 · 운영진</div>
+    <h2>크루원 초대는 이렇게 해요</h2>
+    <ol class="flow">
+      <li><b>1</b><span><strong>초대 코드 만들기</strong>크루 스페이스 메뉴 → 소식·공유 → 초대 코드에서 만들어요. 코드 하나로 여러 명을 기한 없이 초대할 수 있어요.</span></li>
+      <li><b>2</b><span><strong>초대 보내기</strong>단톡방이나 문자로 보내면 코드와 초대 링크가 함께 가요.</span></li>
+      <li><b>3</b><span><strong>링크 열고 앱 설치</strong>받은 사람은 링크에서 코드를 복사하고 App Store · Google Play에서 앱을 설치해요.</span></li>
+      <li><b>4</b><span><strong>코드 넣고 동의하면 바로 크루원</strong>앱에서 초대 코드를 넣고 가입 안내에 동의하면 승인을 기다리지 않고 바로 크루원이 돼요.</span></li>
+    </ol>
+    <p class="fine">코드를 바꾸면 전에 보낸 코드와 링크는 더 이상 쓸 수 없어요. 바꾼 코드를 다시 보내 주세요.</p>
+    <button type="button" class="go" data-a="tour" data-v="invite">초대 과정 직접 눌러 보기 →</button>
+  </article>
+  <article class="mcard">
+    <div class="eyebrow">애플워치 · 갤럭시 워치 · 가민으로 뛴다면</div>
+    <h2>건강 앱 연동, 이것만 알면 돼요</h2>
+    <div class="paths">
+      <div class="path"><span class="os">아이폰</span>애플워치 · 가민 · 나이키런클럽 → <b>Apple 건강</b> → <b>런하우스</b></div>
+      <div class="path"><span class="os">갤럭시</span>갤럭시 워치 · 삼성 헬스 · 가민 → <b>헬스 커넥트</b> → <b>런하우스</b></div>
+    </div>
+    <dl class="qa">
+      <div><dt>삼성 헬스를 바로 연결하나요?</dt><dd>아니요. 삼성 헬스 기록은 Google 헬스 커넥트를 거쳐 들어와요. 삼성 헬스 설정 → 헬스 커넥트에서 운동과 거리 쓰기를 한 번 허용해 두면 돼요.</dd></div>
+      <div><dt>가져오면 크루 기록에 바로 들어가나요?</dt><dd>아니요. 가져온 러닝은 내 러닝 기록에 먼저 쌓여요. 기록을 열어 크루에 넣어야 크루 거리와 리그에 반영돼요.</dd></div>
+      <div><dt>언제, 얼마나 가져오나요?</dt><dd>처음에는 최근 30일 러닝을 가져와요. 그 뒤로는 앱을 열 때마다 빠진 기록을 이어서 가져와요.</dd></div>
+      <div><dt>무엇을 가져가나요?</dt><dd>러닝 날짜·시각·거리·시간과 기록을 만든 앱 이름이에요. 심박·칼로리·몸무게는 읽지 않아요. 경로는 이 폰에만 저장하고 서버로 보내지 않아요.</dd></div>
+      <div><dt>가민 · 스트라바도 되나요?</dt><dd>각 앱에서 Apple 건강(갤럭시는 헬스 커넥트)으로 보내기를 켜 두면 같은 길로 들어와요.</dd></div>
+    </dl>
+    <button type="button" class="go" data-a="tour" data-v="health">건강 앱 연동 직접 눌러 보기 →</button>
+  </article>
+</section>
 
 <script>
 (() => {
@@ -220,6 +312,29 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
     cog: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M12 2v3M12 19v3M4.9 4.9L7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1",
     heart: "M12 21s-7-4.4-9.3-8.6A5.2 5.2 0 0 1 12 6.6a5.2 5.2 0 0 1 9.3 5.8C19 16.6 12 21 12 21z",
+    key: "M14.5 4a5.5 5.5 0 1 1-4.9 8l-6.6 6.6V21h3v-2h2v-2h2l1.6-1.6A5.5 5.5 0 0 1 14.5 4zM16 8.5v.01",
+    watch: "M7 7h10v10H7zM9 7l1-4h4l1 4M9 17l1 4h4l1-4",
+    phone: "M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2",
+    copy: "M9 9h11v11H9zM5 15H4V4h11v1",
+    refresh: "M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5",
+    lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
+    msg: "M4 5h16v11H9l-5 4z",
+    x: "M6 6l12 12M18 6L6 18",
+    down: "M12 5v14M6 13l6 6 6-6",
+    info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16v-4M12 8h.01",
+    medal: "M7.2 3h9.6l-3 6.2h-3.6zM12 21a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM12 13.5v4",
+    ticket: "M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 7v2M14 11v2M14 15v2",
+    send: "M21 3L10 14M21 3l-7 18-4-7-7-4z",
+    share: "M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4",
+    file: "M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6",
+    user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0",
+    help: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01",
+    chat: "M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z",
+    pulse: "M12 21s-7-4.4-9.3-8.6A5.2 5.2 0 0 1 12 6.6a5.2 5.2 0 0 1 9.3 5.8C19 16.6 12 21 12 21zM3.5 12h4l2-3 3 6 2-3h6",
+    search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5",
+    mail: "M3 6h18v12H3zM3 7l9 6 9-6",
+    folder: "M3 6h6l2 2h10v11H3z",
+    trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6",
   };
   const PLAY = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>`;
   const PAUSE = '<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
@@ -277,12 +392,15 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   ];
   const MEET = MONTH.slice(0, 3).map(m => ({ id: m.id, title: `2026.${m.date} (${m.dow}) · ${m.kind}`, sub: `${m.time} · ${m.place}`, base: m.who.length, short: `${m.date} ${m.kind}` }));
   const ACTIVE_N = 20;
+  const OPS_TOOLS = [["크루원", D.crew, "크루원 관리 · 크루 등급"], ["공유", D.megaphone, "공지 쓰기 · 알림 보내기 · 크루 카드 공유"], ["살펴보기", D.chart, "통계 · 리포트"], ["크루 설정", D.cog, "크루 정보 편집 · 초대 코드 · 운영진"]];
 
   const fresh = role => ({
-    role, lock: !!role, step: 1, toast: null, sheet: null, dialog: null, inapp: null, pushes: [],
+    role, lock: role === "member" || role === "leader", step: 1, toast: null, sheet: null, dialog: null, inapp: null, pushes: [],
     crewKm: CREW_KM,
     m: { tab: "home", run: { st: "idle", t: 0, d: 0, speed: 120 }, mine: null, res: "form", cheer: {}, anim: false, toured: false },
-    l: { screen: "runs", period: "오늘", sel: {}, done: {}, mode: "existing", meeting: "m1", kind: "정기런", seg: "전체", approved: false, promoted: false, sent: false, fromPush: true, added: {}, newMeet: null, meet: "m1", tab: "출석", range: "month", chart: "요일별", rperiod: "week", seen: {}, copied: false },
+    l: { screen: "runs", period: "오늘", sel: {}, done: {}, mode: "existing", meeting: "m1", kind: "정기런", seg: "전체", promoted: false, sent: false, fromPush: true, added: {}, newMeet: null, meet: "m1", tab: "출석", range: "month", chart: "요일별", rperiod: "week", seen: {}, copied: false },
+    i: { screen: "home", code: null, busy: false, webCopied: false, input: "", pasteMenu: false },
+    h: { os: null, screen: "os", linked: false, sync: "idle", imported: false, purged: false, lastSync: null, done: {}, run: null, crewSel: false, tag: null, miss: false, busy: false, guide: null, guideSeen: false, appsSeen: false },
   });
   let S = fresh(null);
 
@@ -295,10 +413,12 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   const sbar = dark => `<div class="island"></div><div class="sbar ${dark ? "dark" : ""}"><span>${clock()}</span><i>●●●● 5G ▮</i></div>`;
   const av = n => `<span class="av">${esc(n.slice(-1))}</span>`;
   const logo = (s = 40, ring) => `<span class="logo" style="width:${s}px;height:${s}px;font-size:${Math.round(s * .36)}px${ring ? ";box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--lime)" : ""}">RH</span>`;
-  const nav = tab => `<nav class="nav" aria-label="하단 탭">${[["home", "홈"], ["run", "러닝"], ["league", "리그"], ["crew", "크루"], ["menu", "메뉴"]].map(([k, l]) =>
-    `<button type="button" data-a="tab" data-v="${k}" ${tab === k ? 'aria-current="page"' : ""}>${svg(D[k])}<span>${l}</span>${k === "run" && (S.m.run.st === "running" || S.m.run.st === "paused") && tab !== "run" ? '<span class="live"></span>' : ""}</button>`).join("")}</nav>`;
+  const nav = (tab, a = "tab") => `<nav class="nav" aria-label="하단 탭">${[["home", "홈"], ["run", "러닝"], ["league", "리그"], ["crew", "크루"], ["menu", "메뉴"]].map(([k, l]) =>
+    `<button type="button" data-a="${a}" data-v="${k}" ${tab === k ? 'aria-current="page"' : ""}>${svg(D[k])}<span>${l}</span>${k === "run" && (S.m.run.st === "running" || S.m.run.st === "paused") && tab !== "run" ? '<span class="live"></span>' : ""}</button>`).join("")}</nav>`;
   const toast = () => S.toast ? `<div class="toast" role="status"><span class="tk">${svg(D.check, 14, 3)}</span>${esc(S.toast)}</div>` : "";
   const pushCard = (p, i, cls = "") => `<button type="button" class="push ${i ? "old" : ""} ${cls}" data-a="push" ${i === 0 ? 'data-g="push"' : ""} style="animation-delay:${i * 80}ms"><span class="pi">${svg(D.run, 20, 2)}</span><span class="grow" style="display:flex;flex-direction:column;gap:2px"><span class="row between" style="gap:8px"><span class="pt">${esc(p.t)}</span><span class="pw">${esc(p.w)}</span></span><span class="pb">${esc(p.b)}</span>${p.s ? `<span class="ps">${esc(p.s)}</span>` : ""}</span></button>`;
+  const roleCard = (a, v, ic, title, sub, sm) => `<button type="button" class="role ${sm ? "sm" : ""}" data-a="${a}" data-v="${v}"><span class="ri">${svg(ic, sm ? 22 : 28)}</span><span class="grow"><span style="display:block;font-size:${sm ? 16 : 17}px;font-weight:700">${title}</span><span class="sub">${sub}</span></span>${svg(D.chev, 18, 2.2)}</button>`;
+  const opsTool = (t, d, names, attrs) => `<button type="button" ${attrs} style="min-height:96px;padding:14px;border-radius:20px;background:var(--card);display:flex;flex-direction:column;gap:6px;text-align:left"><span class="row" style="gap:6px;width:100%"><span style="color:var(--lime)">${svg(d, 20)}</span><span class="grow" style="font-size:16px;font-weight:700">${t}</span><span style="color:var(--fg3)">${svg(D.chev, 14, 2.2)}</span></span><span style="font-size:12px;line-height:17px;color:var(--fg3b)">${names}</span></button>`;
   const ROUTE = "M60 140 C 80 100, 110 80, 150 84 S 220 110, 262 80 S 300 34, 270 30 C 230 26, 190 60, 150 56 S 80 40, 60 70 S 40 120, 60 140";
   const route = () => `<svg viewBox="0 0 350 180" aria-label="달린 경로" role="img">
       <rect width="350" height="180" fill="#eef3e2"/>
@@ -313,11 +433,14 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   // ── 역할 고르기 · 잠금화면 ──
   const pickScreen = () => sbar() + `<div class="pick">
       <div class="num" style="font-size:18px;color:var(--lime)">RUNHOUSE</div>
-      <h1 style="margin:0;font-size:26px;line-height:34px;font-weight:800">${CREW}에서<br>어떤 역할이에요?</h1>
-      <div class="sub" style="margin-bottom:8px">고른 역할로 앱을 직접 눌러 볼 수 있어요.</div>
-      <button type="button" class="role" data-a="pick" data-v="member"><span class="ri">${svg(D.run, 28)}</span><span class="grow"><span style="display:block;font-size:17px;font-weight:700">크루원이에요</span><span class="sub">뛰고 크루에 기록을 넣어 레벨을 올려요</span></span>${svg(D.chev, 18, 2.2)}</button>
-      <button type="button" class="role" data-a="pick" data-v="leader"><span class="ri">${svg(D.crew, 28)}</span><span class="grow"><span style="display:block;font-size:17px;font-weight:700">크루장 · 운영진이에요</span><span class="sub">크루원 러닝 알림을 받고 출석을 처리해요</span></span>${svg(D.chev, 18, 2.2)}</button>
-      <div class="cap" style="margin-top:auto;text-align:center">언제든 위에서 역할을 다시 고를 수 있어요.</div>
+      <h1 style="margin:0;font-size:24px;line-height:32px;font-weight:800">${CREW}에서<br>무엇을 해 볼까요?</h1>
+      <div class="kick">역할로 써 보기</div>
+      ${roleCard("pick", "member", D.run, "크루원이에요", "뛰고 크루에 기록을 넣어 레벨을 올려요")}
+      ${roleCard("pick", "leader", D.crew, "크루장 · 운영진이에요", "크루원 러닝 알림을 받고 출석을 처리해요")}
+      <div class="kick">기능 하나만 보기</div>
+      ${roleCard("pick", "invite", D.key, "크루원 초대하기", "초대 코드 만들기부터 가입까지", true)}
+      ${roleCard("pick", "health", D.watch, "건강 앱 기록 가져오기", "애플워치 · 갤럭시 워치 · 가민", true)}
+      <div class="cap" style="margin-top:auto;padding-top:8px;text-align:center">언제든 위에서 다시 고를 수 있어요.</div>
     </div>`;
   const lockScreen = () => `<div class="island"></div><div class="lock">
       <div class="date">10월 22일 목요일</div>
@@ -456,7 +579,12 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
         </div>
         <div style="position:absolute;inset:0;display:grid;place-items:center"><div class="card" style="padding:22px;text-align:center;max-width:280px;background:var(--card2)"><div style="font-size:18px;font-weight:700">리그 준비 중</div><div class="sub" style="padding-top:6px">시즌 1은 <b class="num" style="color:var(--fg)">2026.11.01</b>에 열려요.<br>함께 달린 거리로 크루 목표를 채워요.</div></div></div>
       </div></div></div>`;
-  const menu = () => `<div class="scroll" data-scroll><div class="pad"><div class="top"><h1>메뉴</h1></div><div class="card" style="padding:4px 16px">${["내 기록", "러너 등급", "건강 앱 연동", "알림 설정", "자주 묻는 질문"].map(t => `<button type="button" class="row between dv" data-a="demo" style="width:100%;min-height:56px;font-size:16px;font-weight:600">${t}<span style="color:var(--fg3)">${svg(D.chev, 16, 2.2)}</span></button>`).join("")}</div></div></div>`;
+  const menu = inHealth => `<div class="scroll" data-scroll><div class="pad" style="padding-bottom:120px">
+      <div class="row" style="height:56px;gap:12px">${av(ME)}<span style="font-size:20px;font-weight:700">${ME}</span></div>
+      ${grp("계정", mrow(D.user, "프로필 편집") + mrow(D.key, "계정 관리", 'data-a="demo"', '<span class="sub" style="font-size:14px">카카오</span>'))}
+      ${grp("러닝", mrow(D.chart, "러닝 기록") + mrow(D.medal, "러너 등급") + mrow(D.cog, "러닝 설정") + mrow(D.pulse, "건강 앱 연동", inHealth ? 'data-a="h-go" data-v="intro" data-g="h-menu"' : 'data-a="tour" data-v="health"'))}
+      ${grp("일반", mrow(D.bell, "알림 설정") + mrow(D.help, "자주 묻는 질문") + mrow(D.chat, "1:1 문의", 'data-a="demo"', `<span style="color:var(--fg2)">${svg("M7 17L17 7M9 7h8v8", 16, 2)}</span>`))}
+    </div></div>`;
 
   // ── 크루장 · 운영진 ──
   function leaderScreen() {
@@ -484,15 +612,14 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     ${sel.length ? `<div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 34px;background:var(--bg);box-shadow:0 -1px 0 var(--div);display:flex;gap:8px;z-index:20"><button type="button" class="btn dark" style="width:auto;padding:0 16px" data-a="clear">선택 해제</button><button type="button" class="btn lime" style="flex:1" data-a="open-attend" data-g="open-attend">${sel.length}개 출석 처리하기</button></div>` : ""}`;
   }
   function opsHome() {
-    const L = S.l, attended = Object.keys(L.done).length, pend = (L.approved ? 0 : 1) + (L.promoted ? 0 : 2);
+    const L = S.l, attended = Object.keys(L.done).length, pend = L.promoted ? 0 : 2;   // 확인 요청은 승급 검토만(앱 안 가입 신청 없음 · 리그 결정 09.24)
     const newRuns = LRUNS.filter(r => r.isNew && !L.done[r.id]).length;
-    const tools = [["크루원", D.crew, "크루원 관리 · 크루 등급", true], ["공유", D.megaphone, "공지 쓰기 · 알림 보내기 · 크루 카드 공유"], ["살펴보기", D.chart, "통계 · 리포트"], ["크루 설정", D.cog, "크루 정보 편집 · 초대 코드 · 운영진"]];
     return `<div class="scroll" data-scroll><div class="pad" style="display:flex;flex-direction:column">
       <div class="top" style="margin-left:-12px"><button type="button" class="back" data-a="to-runs" aria-label="크루 러닝으로">${svg(D.back)}</button><h1>크루 운영</h1></div>
       <div class="sub" style="padding:0 4px">${CREW} · 크루원 24명 · 크루장</div>
       <h2 class="h2l">확인할 일</h2>
       <button type="button" data-a="approvals" data-g="approvals" class="limegrad" style="margin-top:8px;padding:16px 20px;border-radius:20px;display:flex;align-items:center;justify-content:space-between;text-align:left">
-        <span><span style="display:block;font-size:14px;font-weight:700;color:rgba(23,23,25,0.7)">${pend ? "확인이 필요해요" : "밀린 일이 없어요"}</span><span style="display:block;font-size:13px;color:rgba(23,23,25,0.64);padding-top:4px">가입 신청 ${L.approved ? 0 : 1} · 승급 검토 ${L.promoted ? 0 : 2}</span></span>
+        <span><span style="display:block;font-size:14px;font-weight:700;color:rgba(23,23,25,0.7)">${pend ? "확인이 필요해요" : "밀린 일이 없어요"}</span><span style="display:block;font-size:13px;color:rgba(23,23,25,0.64);padding-top:4px">승급 검토 ${pend}</span></span>
         <span class="row" style="gap:4px"><span class="num" style="font-size:40px;line-height:44px">${pend}</span>${svg(D.chev, 20)}</span>
       </button>
       ${[["크루 러닝", D.run, newRuns ? String(newRuns) : "", attended ? `오늘 ${attended}개 출석 처리함` : "기여된 러닝으로 출석 처리", "to-runs"], ["출석 관리", D.calendar, "", `이번 달 모임 ${meets().length}개${attended ? ` · 오늘 ${count(meets()[0])}명` : ""}`, "to-attend"]].map(([l, d, b, desc, a]) =>
@@ -501,7 +628,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
         ${[["이번 달 출석률", pct(rate(meets())), attended ? `방금 +${Math.round((rate(meets()) - rate(MONTH, true)) * 100)}%p` : "지난달보다 +4%p"], ["활동 크루원", "20/24", "최근 30일 기준"], ["크루 레벨", "Lv.4", "2,512.0km · 오늘 올랐어요"], ["이번 주 참여", "15/24", "참여율 63%"]].map(([k, v, s]) => `<div style="padding:14px 16px;border-radius:20px;background:var(--card)"><div class="cap">${k}</div><div class="num" style="font-size:22px;line-height:28px;padding-top:2px">${v}</div><div style="font-size:12px;color:var(--fg2)">${s}</div></div>`).join("")}
       </div>
       <h2 class="h2l" style="margin-top:20px">운영 도구</h2>
-      <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">${tools.map(([t, d, names, real]) => `<button type="button" data-a="${real ? "to-members" : t === "살펴보기" ? "to-stats" : "demo"}" ${real ? 'data-g="tool-members"' : t === "살펴보기" ? 'data-g="tool-stats"' : ""} style="min-height:96px;padding:14px;border-radius:20px;background:var(--card);display:flex;flex-direction:column;gap:6px;text-align:left"><span class="row" style="gap:6px;width:100%"><span style="color:var(--lime)">${svg(d, 20)}</span><span class="grow" style="font-size:16px;font-weight:700">${t}</span><span style="color:var(--fg3)">${svg(D.chev, 14, 2.2)}</span></span><span style="font-size:12px;line-height:17px;color:var(--fg3b)">${names}</span></button>`).join("")}</div>
+      <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">${OPS_TOOLS.map(([t, d, names]) => opsTool(t, d, names, t === "크루원" ? 'data-a="to-members" data-g="tool-members"' : t === "살펴보기" ? 'data-a="to-stats" data-g="tool-stats"' : t === "크루 설정" ? 'data-a="tour" data-v="invite"' : 'data-a="demo"')).join("")}</div>
     </div></div>`;
   }
   // ── 출석부 계산 ──
@@ -583,7 +710,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
         <div style="padding:12px 16px 14px" class="stack">
           ${sec("요즘 뜸해진 분", [["하린", "마지막 10.03 · 지난달 5회 → 최근 2주 0회"], ["우진", "마지막 10.03 · 지난달 4회 → 최근 2주 0회"]], "외 2명")}
           ${sec(wk ? "이번 주 많이 달린 분" : "이번 달 많이 달린 분", wk ? [["도윤", "4회 · 24.6km"], ["민준", "3회 · 18.9km"], ["서연", "3회 · 17.2km"]] : [["도윤", "14회 · 92.4km"], ["민준", "12회 · 81.0km"], ["서연", "11회 · 74.2km"]])}
-          ${sec("크루 소식", [["크루 레벨 4 달성", "10.22 · 함께 달린 거리 2,500km"], ["새로 온 분", L.approved ? "가온 · 10.22 가입" : "가입 신청 1명 대기"]])}
+          ${sec("크루 소식", [["크루 레벨 4 달성", "10.22 · 함께 달린 거리 2,500km"], ["새로 온 분", "가온 · 10.22 초대 코드로 가입"]])}
           <button type="button" class="row" data-a="to-rest" style="width:100%;padding:10px 12px;border-radius:14px;background:rgba(207,239,104,0.08);box-shadow:inset 0 0 0 1px rgba(207,239,104,0.3);color:var(--lime);font-size:13px;font-weight:700;text-align:left"><span class="grow">하린 님, 우진 님께 안부를 전해 보세요</span>${svg(D.chev, 16)}</button>
           <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;color:var(--fg3)">RUNHOUSE CLUB</div>
         </div>
@@ -602,9 +729,285 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     </div></div>`;
   }
 
+  // ── 리그 앱 실제 화면 부품 (2026-10-29 시뮬레이터 캡처 · runhouse-league origin/dev 기준) ──
+  const hd = (title, sub, back, right = "", onLime) => `<div class="hd ${onLime ? "ink" : ""}">${back ? `<button type="button" class="bk" data-a="${back[0]}" ${back[1] ? `data-v="${back[1]}"` : ""} ${back[2] ? `data-g="${back[2]}"` : ""} aria-label="뒤로">${svg(D.back, 24, 2.4)}</button>` : ""}<h1>${title}</h1>${sub ? `<span class="hs">${sub}</span>` : ""}<span class="grow"></span>${right}</div>`;
+  const grp = (label, rows) => `<div class="grp"><div class="gl">${label}</div>${rows}</div>`;
+  const mrow = (ic, label, attrs = 'data-a="demo"', right = "") => `<button type="button" class="mrow" ${attrs}><span class="mi">${svg(ic, 16, 2)}</span><span class="grow">${label}</span>${right}</button>`;
+  const plain = (label, attrs, color) => `<button type="button" class="plain" ${attrs} ${color ? `style="color:${color}"` : ""}><span>${label}</span>${color ? "" : `<span style="color:var(--fg3)">${svg(D.chev, 16, 2.2)}</span>`}</button>`;
+  const dock = (cur, menuAttrs = 'data-a="demo"') => `<nav class="dock" aria-label="크루 스페이스"><button type="button" class="dback" data-a="demo" aria-label="크루 스페이스 나가기">${svg("M19 12H5M11 6l-6 6 6 6", 22, 2)}</button><div class="dbar">${[["home", "홈", D.home], ["act", "활동", D.chart], ["menu", "메뉴", D.menu]].map(([k, l, ic]) =>
+    `<button type="button" ${k === cur ? 'aria-current="page"' : ""} ${k === "menu" ? menuAttrs : 'data-a="demo"'}>${svg(ic, 20)}<span>${l}</span></button>`).join("")}</div></nav>`;
+  const spin = dark => `<span class="spin ${dark ? "" : "l"}"></span>`;
+  // 크루 홈 — 동전 로고 · LV · 함께 달린 거리 5칸 · 공지 · 모임 일정
+  function crewHome(roleLine, n) {
+    const lv = crewLv(S.crewKm), fill = (S.crewKm - lv.lo) / (lv.hi - lv.lo) * 5;
+    return `<div class="scroll" data-scroll><div class="pad stack" style="gap:16px;padding-bottom:140px">
+      ${hd("크루 홈", "", null, `<span class="ic" style="margin-right:-10px">${svg(D.bell)}</span>`)}
+      <div class="row" style="gap:14px">${logo(64, true)}<div class="grow"><div class="row" style="gap:8px;align-items:baseline"><span style="font-size:22px;font-weight:800">${CREW}</span><span class="num" style="font-size:20px;color:var(--lime)">LV.${lv.lv}</span></div><div class="sub" style="font-size:14px">${roleLine}</div></div></div>
+      <div class="stack" style="gap:10px"><div class="row between"><span class="sub" style="font-size:14px">함께 달린 거리</span><span><span class="num" style="font-size:20px">${Math.floor(S.crewKm).toLocaleString("ko-KR")}</span><span class="num" style="font-size:14px;color:var(--fg3b)"> / ${lv.hi.toLocaleString("ko-KR")} km</span></span></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">${[0, 1, 2, 3, 4].map(i => `<i style="height:5px;border-radius:3px;background:${fill > i ? "var(--lime)" : "rgba(112,115,124,0.4)"}"></i>`).join("")}</div></div>
+      <div class="row between" style="padding-top:4px"><span style="font-size:18px;font-weight:700">공지</span><span style="color:var(--lime)">${svg(D.chev, 18, 2.2)}</span></div>
+      <div class="card row" style="padding:14px 16px"><span class="tag" style="background:rgba(255,66,66,0.16);color:#ff6b6b">중요</span><span class="grow ell" style="font-size:15px;font-weight:700">이번 주 정기런 집합 장소 안내</span><span style="color:var(--fg3)">${svg(D.chev, 16, 2.2)}</span></div>
+      <div class="row between" style="padding-top:4px"><span style="font-size:18px;font-weight:700">모임 일정</span><span style="color:var(--lime)">${svg(D.chev, 18, 2.2)}</span></div>
+      <div class="card" style="padding:4px 16px">${MONTH.slice(0, 2).map(m => `<div class="row dv" style="min-height:68px"><div class="grow"><div style="font-size:15px;font-weight:700">2026.${m.date} · ${m.dow}요 ${m.kind}</div><div class="cap" style="font-size:13px">${m.time} · ${m.place}</div></div><span style="color:var(--fg3)">${svg(D.chev, 16, 2.2)}</span></div>`).join("")}</div>
+      <div class="row between"><span style="font-size:18px;font-weight:700">전체 크루원</span><span class="num" style="font-size:18px">${n} <span style="font-family:var(--f-body);font-style:normal;font-size:15px">명</span></span></div>
+    </div></div>`;
+  }
+
+  // ── 크루원 초대: 크루 메뉴 → 초대 코드 → 공유 → (받는 사람) 링크 → 앱 → 코드 확인 → 가입 안내 동의 → 바로 크루원 ──
+  // 정본: app/crew-space/(menu)/menu.tsx · app/crew/ops/invite.tsx · app/crew/join.tsx · app/onboarding/crew.tsx ·
+  // src/ui/kits/consent.tsx · src/domain/invite-link.ts. 앱 안 가입 신청 · 승인은 없다(결정 09.24).
+  const CODES = ["RH-M3J8", "RH-QP41"], FRIEND = "가온";
+  const shareMsg = c => `런하우스 리그에서 「${CREW}」 크루에 들어와 주세요!\n초대 코드: ${c}\nhttps://www.runhouse.club/join/${c}?n=${CREW.replace(/ /g, "%20")}`;
+  function inviteScreen() {
+    const body = { home: invHome, menu: invMenu, code: invCode, chat: invChat, web: invWeb, onboard: invOnboard, find: invFind, crew: invCrew, joined: invJoined }[S.i.screen]();
+    return sbar() + body + overlay() + toast();
+  }
+  const invHome = () => crewHome("크루장", 24) + dock("home", 'data-a="inv-go" data-v="menu" data-g="inv-dock-menu"');
+  const invMenu = () => `<div class="scroll" data-scroll><div class="pad" style="padding-bottom:130px">
+      ${hd("크루 메뉴", `${logo(22)}<span>${CREW}</span>`, null, `<span class="ic" style="margin-right:-10px">${svg(D.bell)}</span>`)}
+      ${grp("크루 운영", mrow(D.info, "크루 정보 수정") + mrow(D.medal, "크루 레벨") + mrow(D.crew, "멤버 관리") + mrow(D.run, "크루 러닝") + mrow(D.calendar, "모임 및 출석"))}
+      ${grp("소식·공유", mrow(D.megaphone, "공지") + mrow(D.send, "단체 메시지 발송") + mrow(D.share, "크루 소개 카드 생성") + mrow(D.ticket, "초대 코드", 'data-a="inv-go" data-v="code" data-g="inv-row"'))}
+      ${grp("통계·리포트", mrow(D.chart, "통계") + mrow(D.file, "리포트"))}
+    </div></div>` + dock("menu");
+  function invCode() {
+    const I = S.i, c = I.code;
+    return `<div class="scroll" data-scroll><div class="pad">
+      ${hd("초대 코드", CREW, ["inv-go", "menu"])}
+      <div class="card row" style="margin-top:8px;padding:16px 16px 16px 20px;min-height:128px;gap:12px">${c
+        ? `<span class="num grow" style="font-size:34px;line-height:40px;letter-spacing:0.02em;color:var(--lime)">${c}</span><span class="stack" style="gap:8px"><button type="button" class="iconbtn" data-a="inv-copy" aria-label="초대 코드 복사">${svg(D.copy, 22)}</button><button type="button" class="iconbtn" data-a="inv-renew" aria-label="초대 코드 변경">${svg(D.refresh, 22)}</button></span>`
+        : `<span class="grow" style="text-align:center;font-size:15px;color:var(--fg3b)">아직 초대 코드가 없어요</span>`}</div>
+    </div></div>
+    <div class="bbar flat"><button type="button" class="btn lime" data-a="${c ? "inv-share" : "inv-create"}" data-g="${c ? "inv-share" : "inv-create"}" ${I.busy ? "disabled" : ""}>${I.busy ? spin(1) : c ? "초대 보내기" : "초대 코드 만들기"}</button></div>`;
+  }
+  const invChat = () => `<div style="position:absolute;inset:0;background:#1d2228">
+      <div style="position:absolute;top:0;left:0;right:0;padding:50px 8px 0;background:#262d35;z-index:2"><div class="top" style="gap:4px"><span class="back" style="color:var(--fg2)">${svg(D.back)}</span><h1 style="font-size:17px">${LEADER}</h1></div></div>
+      <div class="scroll" data-scroll style="top:106px"><div class="stack" style="padding:14px 14px 40px;gap:10px">
+        <div style="align-self:center;padding:6px 12px;border-radius:999px;background:var(--lime);color:var(--ink);font-size:12px;font-weight:700">여기부터 초대받은 ${FRIEND}님 폰이에요</div>
+        <div class="cap" style="text-align:center">오늘 오전 7:20</div>
+        <div class="row" style="align-items:flex-start;gap:8px">${av(LEADER)}<div class="stack grow" style="gap:6px">
+          <div style="font-size:12px;color:var(--fg2)">${LEADER}</div>
+          <div class="bubble">우리 크루 같이 뛰자! 앱 깔고 코드만 넣으면 바로 들어와져</div>
+          <div class="bubble" style="white-space:pre-line;word-break:break-all">${esc(shareMsg(S.i.code))}</div>
+          <button type="button" class="bubble linkcard" data-a="inv-open" data-g="inv-link"><img src="/league/join-og.png" alt="" width="1200" height="630"><span style="display:block;padding:10px 12px"><b style="display:block;font-size:14px">「${CREW}」에 초대받았어요</b><span class="cap" style="display:block">초대 코드를 넣으면 바로 크루원이 돼요.</span><span class="cap">runhouse.club</span></span></button>
+        </div></div>
+      </div></div>
+    </div>`;
+  // runhouse.club/join/<코드> — 이 레포의 src/app/join/[code] 화면 그대로
+  function invWeb() {
+    const I = S.i, c = I.code, L = "#C7FF00";
+    return `<div style="position:absolute;inset:0;background:#0a0a0a">
+      <div style="position:absolute;top:0;left:0;right:0;padding:52px 12px 10px;background:#18181a;z-index:2"><div class="row" style="height:38px;padding:0 12px;border-radius:12px;background:#2a2a2d;gap:6px;font-size:13px;color:var(--fg2);justify-content:center">${svg(D.lock, 13, 2.2)}<span class="ell">runhouse.club</span></div></div>
+      <div class="scroll" data-scroll style="top:100px"><div style="padding:22px 18px 30px;display:flex;flex-direction:column;gap:18px;min-height:100%">
+        <div class="row between"><span class="mono" style="font-size:16px;font-weight:800;letter-spacing:0.14em">RUN HOUSE <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${L};color:#111;letter-spacing:0.08em;vertical-align:3px">CLUB</span></span><span class="mono" style="font-size:9px;letter-spacing:0.22em;color:#777">LEAGUE</span></div>
+        <div class="mono" style="font-size:10px;font-weight:700;letter-spacing:0.2em;color:${L};padding-top:20px">● CREW INVITE</div>
+        <div style="font-size:26px;line-height:34px;font-weight:800;margin-top:-8px">「${CREW}」에<br>초대받았어요</div>
+        <div style="border:1px solid #2a2a2a;border-radius:6px;padding:16px;background:#121212"><div class="mono" style="font-size:9px;letter-spacing:0.2em;color:#777">초대 코드</div><div class="row between" style="padding-top:8px"><span class="mono" style="font-size:24px;font-weight:700;letter-spacing:0.08em">${c}</span><button type="button" data-a="web-copy" data-g="web-copy" class="row" style="gap:6px;height:38px;padding:0 12px;border-radius:4px;border:1px solid #333;font-size:13px;font-weight:700">${svg(D.copy, 14)}${I.webCopied ? "복사했어요" : "복사하기"}</button></div></div>
+        <div style="font-size:14px;line-height:22px;color:#a3a3a3">앱을 설치하고 크루 찾기에서 초대 코드를 넣으면 바로 크루원이 돼요.</div>
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:24px">
+          <div class="mono" style="font-size:9px;letter-spacing:0.2em;color:#777">앱 설치하고 들어가기</div>
+          <div data-g="web-store" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border-radius:4px">${[["아이폰", "App Store"], ["안드로이드", "Google Play"]].map(([pf, st]) => `<button type="button" data-a="web-install" style="height:60px;border-radius:4px;background:${L};color:#111;display:grid;align-content:center;justify-items:center;gap:2px"><span style="font-size:11px;font-weight:600">${pf}</span><span style="font-size:15px;font-weight:800">${st}</span></button>`).join("")}</div>
+          <button type="button" data-a="web-open" style="height:50px;border-radius:4px;border:1px solid #2a2a2a;font-size:14px;font-weight:700">이미 앱이 있어요 · 앱에서 열기</button>
+          <div class="mono" style="text-align:center;font-size:9px;letter-spacing:0.2em;color:#555;padding-top:4px">RUNHOUSE LEAGUE · 러닝 크루 리그</div>
+        </div>
+      </div></div>
+    </div>`;
+  }
+  // 앱을 새로 깐 사람 — 온보딩 2/2 크루 선택(app/onboarding/crew.tsx)
+  function invOnboard() {
+    const I = S.i;
+    return `<div class="scroll" data-scroll><div class="pad" style="display:flex;flex-direction:column;gap:16px">
+      ${hd("추가 정보 입력", "", ["demo"])}
+      <div class="stack" style="gap:6px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><i style="height:4px;border-radius:2px;background:var(--lime)"></i><i style="height:4px;border-radius:2px;background:var(--lime)"></i></div><div class="row between" style="font-size:12px;color:var(--fg3b)"><span>프로필</span><span style="color:var(--lime);font-weight:700">크루 선택</span></div></div>
+      <div class="card stack" style="padding:18px;gap:12px;position:relative">
+        <div style="font-size:17px;font-weight:700">초대 코드로 가입</div>
+        <div class="row" style="gap:8px"><button type="button" class="field ${I.input ? "" : "ph"}" data-a="inv-field" data-g="inv-field">${I.input || "예: RH-7K2Q"}</button><button type="button" class="btn lime sm" style="width:auto;padding:0 18px" data-a="inv-verify" data-g="inv-verify" ${I.input && !I.busy ? "" : "disabled"}>${I.busy ? spin(1) : "확인"}</button></div>
+        ${I.pasteMenu ? `<button type="button" class="pastemenu" data-a="inv-paste" data-g="inv-paste">붙여넣기</button>` : ""}
+      </div>
+      <div class="row" style="gap:12px"><i style="flex:1;height:1px;background:var(--div)"></i><span style="font-size:13px;color:var(--fg3)">또는</span><i style="flex:1;height:1px;background:var(--div)"></i></div>
+      ${[[D.search, "크루 찾기", "함께 달릴 크루를 찾아요."], [D.crew, "크루 만들기", "크루를 만들고 운영해요."], [D.run, "크루 없이 시작", "크루 없이 러닝을 기록해요."]].map(([ic, t, sub]) => `<button type="button" class="card row" data-a="demo" style="padding:16px;gap:14px;text-align:left"><span style="flex:none;width:44px;height:44px;border-radius:12px;background:var(--lime-soft);color:var(--lime);display:grid;place-items:center">${svg(ic, 22)}</span><span class="grow"><span style="display:block;font-size:16px;font-weight:700">${t}</span><span class="sub">${sub}</span></span><span style="color:var(--fg2)">${svg(D.chev, 18, 2.2)}</span></button>`).join("")}
+    </div></div>`;
+  }
+  // 앱이 이미 있는 사람 — 초대 링크가 크루 찾기를 열고 코드 입력창을 띄운다(app/crew/join.tsx)
+  const invFind = () => `<div class="scroll" data-scroll><div class="pad stack" style="gap:14px;padding-bottom:120px">
+      ${hd("크루 찾기", "", ["demo"], `<span class="ic" style="margin-right:-10px">${svg("M12 5v14M5 12h14", 24, 2)}</span>`)}
+      <div style="height:48px;border-radius:14px;background:var(--card);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);display:flex;align-items:center;padding:0 14px;font-size:15px;color:var(--fg3)">크루 이름 · 지역으로 검색</div>
+      <div class="row" style="gap:8px;overflow:hidden">${["전체", "서울", "경기", "인천", "부산"].map((r, i) => `<span class="pill" style="display:inline-flex;align-items:center;flex:none;${i ? "" : "background:var(--lime);color:var(--ink)"}">${r}</span>`).join("")}</div>
+      <div class="cap" style="font-size:13px">크루 12개</div>
+      <div>${[["런하우스 크루", 3, "마포 · 크루원 24명"], ["한강 나이트런", 4, "용산 · 크루원 18명"], ["성수 러닝크루", 2, "성동 · 크루원 12명"], ["반포 나이트런", 4, "서초 · 크루원 12명"]].map(([n, lv, m]) => `<div class="row dv" style="min-height:76px;gap:14px"><span class="coin">${n[0]}</span><div class="grow"><div class="row" style="gap:8px;align-items:baseline"><span style="font-size:16px;font-weight:700">${n}</span><span style="font-size:14px;font-weight:700;color:var(--lime)">Lv.${lv}</span></div><div class="sub">${m}</div></div></div>`).join("")}</div>
+    </div></div>
+    <div style="position:absolute;left:0;right:0;bottom:44px;display:flex;justify-content:center;z-index:20"><button type="button" data-a="inv-codeopen" style="height:44px;padding:0 20px;border-radius:999px;background:var(--lime);color:var(--ink);font-size:15px;font-weight:700">초대 코드 입력</button></div>`;
+  const invCrew = () => crewHome("서울 마포 · 크루원 24명", 24) + `<div class="bbar flat"><button type="button" class="btn lime" data-a="inv-codeopen" data-g="inv-crew-code">초대 코드 입력</button></div>`;
+  const invJoined = () => crewHome("크루원", 25) + dock("home");
+
+  // ── 건강 앱 연동: 메뉴 → 건강 앱 연동 → 동의 → OS 권한 → 가져오기 → 러닝 기록에서 열어 크루에 반영 ──
+  // 정본: app/(tabs)/menu.tsx · app/settings/health/* · app/runs.tsx · app/run/[id].tsx · src/domain/health-link.ts ·
+  // health-apps-guide.ts · consent.ts(HEALTH_IMPORT_*). 삼성 헬스는 헬스 커넥트를 거친다. 가져온 기록은 열어서 크루에 넣어야 쌓인다.
+  const HRUNS = {
+    ios: [["h1", "10.21 (수)", "06:41", 6.42, 2268], ["h2", "10.19 (월)", "20:12", 5.05, 1830], ["h3", "10.17 (토)", "07:03", 10.2, 3790]],
+    android: [["h1", "10.21 (수)", "06:41", 6.42, 2268], ["h2", "10.19 (월)", "20:12", 5.05, 1830], ["h3", "10.17 (토)", "07:03", 10.2, 3790]],
+  };
+  const GUIDES = {
+    ios: [
+      ["apple_watch", "Apple Watch", "Apple Watch · Apple 운동", "운동 앱으로 뛰면 건강 앱에 바로 쌓여요. 따로 켤 것이 없어요.", []],
+      ["garmin", "Garmin", "Garmin", "", [["Garmin Connect 를 열어요", "가민 워치를 관리하는 그 앱이에요"], ["설정 → 연결된 앱", "Settings → Connected Apps"], ["Apple 건강을 켜요", "이미 켜져 있으면 그대로 두면 돼요"]]],
+      ["nrc", "나이키런클럽", "나이키런클럽", "", [["설정 → 개인정보 보호 및 보안 → 건강", ""], ["Nike Run Club → 쓰기 허용", ""]]],
+      ["strava", "Strava", "Strava", "", [["Strava 설정을 열어요", "오른쪽 아래 나 → 톱니바퀴"], ["Manage Apps and Devices", "한국어로는 「앱 및 기기 관리」"], ["Health 를 골라요", "Apple 건강 항목이에요"], ["Send to Health 를 켜요", "「건강에 보내기」 를 켜 주세요"]]],
+      ["other", "그 밖에", "그 밖의 앱 · 워치", "", [["쓰는 앱의 설정을 열어요", ""], ["「건강」 이나 「Health」 를 찾아요", "연결 · 연동 · 기기 메뉴 안에 있어요"], ["건강에 보내기를 켜요", "못 찾으면 런하우스로 재도 돼요"]]],
+    ],
+    android: [
+      ["samsung", "갤럭시 워치", "갤럭시 워치 · 삼성 헬스", "", [["삼성 헬스를 열어요", "갤럭시 워치 기록이 쌓이는 앱이에요"], ["설정 → 헬스 커넥트", "오른쪽 위 메뉴 안에 있어요"], ["운동과 거리 쓰기를 허용해요", "이미 켜져 있으면 그대로 두면 돼요"]]],
+      ["garmin", "Garmin", "Garmin", "", [["Garmin Connect 를 열어요", "가민 워치를 관리하는 그 앱이에요"], ["설정 → 연결된 앱", "Settings → Connected Apps"], ["헬스 커넥트를 켜요", "운동과 거리 쓰기를 허용해 주세요"]]],
+      ["nrc", "나이키런클럽", "나이키런클럽", "", [["헬스 커넥트를 열어요", "설정 → 보안 및 개인정보 보호 안에 있기도 해요"], ["앱 권한", "목록에서 Nike Run Club 을 골라요"], ["운동과 거리 쓰기를 허용해요", "「운동」과 「거리」를 켜 주세요"]]],
+      ["strava", "Strava", "Strava", "", [["Strava 설정을 열어요", "오른쪽 아래 나 → 톱니바퀴"], ["Manage Apps and Devices", "한국어로는 「앱 및 기기 관리」"], ["Health Connect 를 골라요", "헬스 커넥트 항목이에요"], ["운동과 거리 쓰기를 허용해요", "「운동」과 「거리」를 켜 주세요"]]],
+      ["other", "그 밖에", "그 밖의 앱 · 워치", "", [["쓰는 앱의 설정을 열어요", ""], ["「헬스 커넥트」 를 찾아요", "연결 · 연동 · 기기 메뉴 안에 있어요"], ["운동과 거리 쓰기를 허용해요", "못 찾으면 런하우스로 재도 돼요"]]],
+    ],
+  };
+  const PRIVACY = [["저장", "러닝 날짜·시각·거리·시간\n출처 앱·기록 ID·수동 입력 여부"], ["이용", "러닝 저장·중복 확인·크루 반영\n반영한 거리·시간은 크루원에게 보여요."], ["경로", "이 기기에만 저장해 지도에 보여줘요. 서버·분석 서비스로 보내지 않아요. Android는 처음 경로 허용창에서 항상 허용을 선택하면 이후 자동으로 가져와요."], ["미수집", "심박·칼로리·체중·수면"], ["해제·삭제", "언제든 연동을 끊거나 기록을 지울 수 있어요. 반영된 크루 기여·리그 점수와 중복 방지 정보는 남아요. 지운 기록은 다시 가져오지 않아요."]];
+  const TIMING = "처음에는 최근 30일 러닝을 가져와요. 이후 앱을 열면 빠진 기록을 이어서 가져와요.";
+  const hRunOf = id => HRUNS[S.h.os].find(r => r[0] === id);
+  const tod = t => { const h = +t.slice(0, 2); return h < 5 ? "새벽" : h < 11 ? "아침" : h < 17 ? "낮" : h < 22 ? "저녁" : "밤"; };
+  const plusMin = (t, sec) => { const v = +t.slice(0, 2) * 60 + +t.slice(3) + Math.round(sec / 60); return `${pad(Math.floor(v / 60) % 24)}:${pad(v % 60)}`; };
+
+  function healthScreen() {
+    const sc = S.h.screen;
+    const body = { os: hOs, menu: () => menu(true), intro: hIntro, settings: hSettings, apps: hApps, runs: hRuns, run: hRun }[sc]();
+    return sbar(sc === "runs" || sc === "run") + body + (sc === "menu" ? nav("menu", "demo") : "") + overlay() + toast();
+  }
+  // 체험판 안내 화면(앱에는 없다) — 폰마다 기록이 들어오는 길을 먼저 보여 준다
+  const hOs = () => `<div class="pick">
+      <div class="num" style="font-size:18px;color:var(--lime)">HEALTH</div>
+      <h1 style="margin:0;font-size:24px;line-height:32px;font-weight:800">어떤 폰을 쓰세요?</h1>
+      <div class="sub" style="margin-bottom:8px">폰마다 기록이 들어오는 길이 달라요.</div>
+      <div class="stack" data-g="h-os" style="gap:10px;border-radius:20px">
+        ${roleCard("h-os", "ios", D.phone, "아이폰", "애플워치 · 가민 · 나이키런클럽 → Apple 건강 → 런하우스")}
+        ${roleCard("h-os", "android", D.phone, "갤럭시 · 안드로이드", "갤럭시 워치 · 삼성 헬스 → 헬스 커넥트 → 런하우스")}
+      </div>
+      <div class="cap" style="margin-top:auto;text-align:center">런하우스는 건강 앱에 쌓인 러닝만 읽어 와요.</div>
+    </div>`;
+  const hIntro = () => `<div class="scroll" data-scroll><div class="pad stack" style="gap:14px">
+      ${hd("건강 앱 연동", "", ["h-go", "menu"])}
+      <div style="font-size:21px;font-weight:700;padding-top:4px">${S.h.os === "ios" ? "Apple 건강" : "헬스 커넥트"}</div>
+      <p class="hp">${TIMING}</p>
+      <p class="hp">러닝 날짜·시각·거리·시간·출처 앱·기록 ID·수동 입력 여부를 런하우스에 저장해요. 경로는 이 기기에만 저장해 지도에 보여주고, 서버로 보내지 않아요.</p>
+      <div class="cap" style="font-size:13px">연동은 선택이며 언제든 끊을 수 있어요.</div>
+      ${plain("수집·이용 안내", 'data-a="h-privacy"')}
+    </div></div>
+    <div class="bbar flat"><button type="button" class="btn lime" data-a="h-agree" data-g="h-agree">동의하고 계속</button></div>`;
+  function hSettings() {
+    const H = S.h, loading = H.sync === "loading";
+    return `<div class="scroll" data-scroll><div class="pad stack" style="gap:14px">
+      ${hd("건강 앱 연동", "", ["h-go", "menu"])}
+      <div class="row" style="min-height:44px;gap:10px"><span class="grow" style="font-size:21px;font-weight:700">${H.os === "ios" ? "Apple 건강" : "Google 헬스 커넥트"}</span><span style="font-size:13px;color:var(--ok-text)">연동 켜짐</span><button type="button" data-a="h-sync" aria-label="기록 새로고침" style="width:44px;height:44px;margin-right:-10px;display:grid;place-items:center;color:var(--fg3b)" ${loading ? "disabled" : ""}>${loading ? spin() : svg(D.refresh, 22, 2)}</button></div>
+      <p class="hp">${TIMING}</p>
+      <div class="cap" style="font-size:13px">${H.lastSync ? `최근 가져오기 ${H.lastSync}` : "아직 가져온 기록이 없어요"}</div>
+      <div>${plain("러닝 기록", 'data-a="h-go" data-v="runs" data-g="h-see"')}${plain("연동 도움말", 'data-a="h-go" data-v="apps" data-g="h-apps"')}${plain("수집·이용 안내", 'data-a="h-privacy"')}${plain("연동 끊기", 'data-a="h-disc"', "#ff6b6b")}</div>
+    </div></div>`;
+  }
+  const hApps = () => `<div class="scroll" data-scroll><div class="pad stack">
+      ${hd("앱별 연동 안내", "", ["h-go", "settings"])}
+      <div class="card" style="padding:2px 16px">${GUIDES[S.h.os].map(([k, chip], i) => `<button type="button" class="plain dv" data-a="h-guide" data-v="${k}" ${i === (S.h.os === "ios" ? 1 : 0) ? 'data-g="h-guide-first"' : ""}><span>${chip}</span><span style="color:var(--fg3)">${svg(D.chev, 16, 2.2)}</span></button>`).join("")}</div>
+    </div></div>`;
+  function hRuns() {
+    const H = S.h, rows = H.imported ? HRUNS[H.os] : [];
+    const km = 48.6 + rows.reduce((a, r) => a + r[3], 0), sec = 17532 + rows.reduce((a, r) => a + r[4], 0), n = 8 + rows.length;
+    const days = { 1: 6.2, 3: 10.4, 4: 5.1, 8: 6.0, 10: 6.3, 12: 4.2, 15: 6.1, 17: rows.length ? 10.2 : 0, 19: rows.length ? 5.05 : 0, 21: rows.length ? 6.42 : 0 };
+    const avg = km / 22;
+    return `<div class="scroll" data-scroll>
+      <div class="limegrad" style="padding:50px 16px 54px">
+        ${hd("러닝 기록", "", ["h-go", "settings", "h-back-runs"], "", true)}
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:4px;border-radius:14px;background:rgba(23,23,25,0.08);margin-top:4px">${["주", "월", "년", "전체"].map(t => `<span style="height:38px;border-radius:11px;display:grid;place-items:center;font-size:15px;font-weight:700;${t === "월" ? "background:var(--ink);color:var(--lime)" : "color:var(--ink2)"}">${t}</span>`).join("")}</div>
+        <div class="row between" style="padding:18px 6px 0;color:var(--ink)">${svg(D.back, 20, 2.4)}<span style="font-size:16px;font-weight:700">2026년 10월</span><span style="opacity:.35">${svg(D.chev, 20, 2.4)}</span></div>
+        <div class="row" style="justify-content:center;align-items:baseline;gap:8px;padding-top:8px"><span class="num" style="font-size:64px;line-height:72px;letter-spacing:-0.04em">${km.toFixed(2)}</span><span class="num" style="font-size:24px">km</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);padding-top:8px">${[[n, "러닝"], [fmtPace(sec, km), "평균 페이스"], [fmtTime(sec), "시간"]].map(([v, k]) => `<div><div class="num" style="font-size:24px;line-height:30px">${v}</div><div style="font-size:13px;color:var(--ink2)">${k}</div></div>`).join("")}</div>
+      </div>
+      <div class="stack" style="margin-top:-28px;border-radius:28px 28px 0 0;background:var(--bg);position:relative;padding:20px 16px 60px;gap:14px">
+        <div class="card" style="padding:16px 14px 10px;position:relative"><div style="height:110px;display:flex;align-items:flex-end;gap:2px">${Array.from({ length: 31 }, (_, i) => `<i style="flex:1;border-radius:2px 2px 0 0;height:${(days[i + 1] || 0) / 12 * 100}%;background:var(--lime)"></i>`).join("")}</div>
+          <div style="position:absolute;left:14px;right:14px;bottom:${10 + avg / 12 * 110}px;border-top:1.5px dashed rgba(207,239,104,0.7)"></div>
+          <div class="row between cap" style="padding-top:6px"><span>1</span><span>10</span><span>20</span><span>30</span></div></div>
+        <div class="row between"><span style="font-size:18px;font-weight:700">기록</span><span class="sub">${n}개</span></div>
+        <div>${rows.map(([id, d, st, k, s]) => runRow(d, st, k, s, H.done[id], `data-a="h-open" data-v="${id}" data-g="h-run-${id}"`)).join("")}${runRow("10.15 (수)", "06:30", 6.1, 2196, true, 'data-a="demo"')}</div>
+      </div></div>`;
+  }
+  const runRow = (d, st, km, sec, done, attrs) => `<button type="button" class="dv" ${attrs} style="width:100%;text-align:left;padding:16px 0;display:flex;flex-direction:column;gap:14px">
+      <span class="row" style="gap:14px;width:100%"><span style="flex:none;width:44px;height:44px;border-radius:12px;background:var(--lime-soft);color:var(--lime);display:grid;place-items:center">${svg(D.run, 22)}</span><span class="grow"><span style="display:block;font-size:17px;font-weight:700">2026.${d}</span><span class="sub" style="font-size:14px">${tod(st)} 러닝</span></span>${done ? '<span class="tag soft">반영 완료</span>' : '<span class="tag mute">반영 전</span>'}</span>
+      <span style="display:grid;grid-template-columns:repeat(3,1fr);width:100%">${[[km.toFixed(2), "킬로미터"], [fmtPace(sec, km), "평균 페이스"], [fmtTime(sec), "시간"]].map(([v, k]) => `<span><span class="num" style="display:block;font-size:22px;line-height:28px">${v}</span><span class="cap" style="font-size:13px">${k}</span></span>`).join("")}</span></button>`;
+  function hRun() {
+    const H = S.h, [id, d, st, km, sec] = hRunOf(H.run), done = H.done[id], meet = H.tag === "정기런" || H.tag === "번개";
+    return `<div class="scroll" data-scroll>
+      <div class="limegrad" style="padding:50px 16px 22px">
+        ${hd("러닝 기록 상세", "", ["h-go", "runs", "h-back-run"], `<span class="ic">${svg(D.share, 22)}</span><span class="ic" style="margin-right:-10px">${svg(D.trash, 22)}</span>`, true)}
+        <div style="font-size:14px;color:var(--ink2)">2026.${d.slice(0, 5)} ${st} – ${plusMin(st, sec)}</div>
+        <div class="row" style="align-items:baseline;gap:8px"><span class="num" style="font-size:64px;line-height:72px;letter-spacing:-0.04em">${km.toFixed(2)}</span><span class="num" style="font-size:24px;color:rgba(23,23,25,0.7)">km</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;padding-top:6px">${[[fmtTime(sec), "시간"], [fmtPace(sec, km), "평균 페이스"]].map(([v, k]) => `<div><div class="num" style="font-size:28px;line-height:34px">${v}</div><div style="font-size:13px;color:var(--ink2)">${k}</div></div>`).join("")}</div>
+      </div>
+      <div class="stack" style="padding:20px 16px 160px;gap:18px">
+        ${done ? `<div class="card p16 stack" style="gap:10px"><div class="row">${logo(32)}<div class="grow" style="font-size:15px;font-weight:700">${CREW}에 반영했어요.</div><span class="num" style="font-size:22px;color:var(--lime)">+${kmShort(km)}km</span></div>${meet ? `<div class="row" style="gap:8px;align-items:flex-start"><span class="tag warn">출석 대기</span><span class="cap" style="font-size:13px">운영진이 출석을 확인하면 출석 포인트가 더해져요</span></div>` : ""}</div>`
+        : `<div class="stack" style="gap:12px">
+          <div style="font-size:18px;font-weight:700">러닝 기록을 크루에 반영할까요?</div>
+          <div class="sub" style="font-size:14px;font-weight:600">① 반영할 크루</div>
+          <button type="button" data-a="h-crew" data-g="h-crew" class="row" style="min-height:52px;padding:0 12px;border-radius:14px;gap:10px;font-size:15px;font-weight:700;background:${H.crewSel ? "var(--lime)" : "var(--card)"};color:${H.crewSel ? "var(--ink)" : "var(--fg)"};box-shadow:${H.miss && !H.crewSel ? "inset 0 0 0 1px var(--red)" : "none"}"><span class="logo" style="width:26px;height:26px;font-size:9px;${H.crewSel ? "background:var(--ink);color:var(--lime)" : ""}">RH</span>${CREW}</button>
+          <div class="sub" style="font-size:14px;font-weight:600;padding-top:6px">② 러닝 태그</div>
+          <div class="row" data-g="h-tag" style="gap:8px;flex-wrap:wrap;border-radius:999px;${H.miss && !H.tag ? "box-shadow:0 0 0 1px var(--red)" : ""}">${["정기런", "번개", "대회", "개인 러닝"].map(t => `<button type="button" class="pill" data-a="h-tag" data-v="${t}" aria-pressed="${H.tag === t}">${t}</button>`).join("")}</div>
+          <div class="cap" style="font-size:13px">정기런·번개로 등록하면 운영진이 모임 출석을 확인할 수 있어요.</div></div>`}
+        <div class="map">${route()}</div>
+      </div></div>
+      ${done ? "" : `<div class="bbar flat"><button type="button" class="btn lime" data-a="h-contribute" data-g="h-contribute" ${H.busy ? "disabled" : ""}>${H.busy ? spin(1) : "지금 반영"}</button></div>`}`;
+  }
+
   // ── 겹쳐 뜨는 것 ──
   function overlay() {
     const sh = S.sheet, dl = S.dialog;
+    const confirmBox = (label, title, body, buttons) => `<div class="scrim" data-a="close"></div><div class="dialog" role="dialog" aria-label="${label}"><div style="align-items:stretch;text-align:left"><div style="font-size:19px;font-weight:700">${title}</div><div style="font-size:14px;line-height:21px;color:var(--fg2)">${body}</div>${buttons}</div></div>`;
+    // iOS 공유 시트(초대 보내기 → Share.share)
+    if (sh?.type === "share") return `<div class="scrim" data-a="close" style="background:rgba(0,0,0,0.35)"></div><div class="sheet iosshare" role="dialog" aria-label="공유">
+        <div class="row" style="gap:14px"><span style="flex:none;width:58px;height:58px;border-radius:14px;background:#fff;color:#8a8a8e;display:grid;place-items:center;font-size:24px">가</span><span class="ell grow" style="font-size:13px;color:#a1a1a6">${esc(shareMsg(S.i.code).split("\n")[0])}</span></div>
+        <div class="ishr"></div>
+        <div class="row" style="gap:18px;align-items:flex-start">${[["메시지", "#34c759", D.msg, "inv-send", "inv-send"], ["메일", "#1a8cff", D.mail, "inv-send", ""], ["더 보기", "#fff", "", "demo", ""]].map(([t, bg, ic, a, g]) => `<button type="button" data-a="${a}" ${g ? `data-g="${g}"` : ""} style="display:grid;justify-items:center;gap:6px;font-size:12px;color:#e5e5ea;border-radius:14px"><span style="width:58px;height:58px;border-radius:14px;background:${bg};color:${ic ? "#fff" : "#636366"};display:grid;place-items:center">${ic ? svg(ic, 28, 2) : '<b style="font-size:18px;letter-spacing:2px">•••</b>'}</span>${t}</button>`).join("")}</div>
+        <div class="ishr"></div>
+        <div class="row" style="gap:18px">${[["복사", D.copy, "inv-copylink"], ["파일에 저장", D.folder, "demo"]].map(([t, ic, a]) => `<button type="button" data-a="${a}" style="display:grid;justify-items:center;gap:6px;font-size:12px;color:#e5e5ea"><span style="width:58px;height:58px;border-radius:50%;background:#2c2c2e;color:#fff;display:grid;place-items:center">${svg(ic, 24)}</span>${t}</button>`).join("")}</div>
+      </div>`;
+    if (sh?.type === "renew") return confirmBox("초대 코드 변경", "초대 코드를 변경할까요?", "기존 코드와 초대 링크는 더 이상 쓸 수 없어요. 변경한 코드를 다시 보내 주세요.",
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn dark sm" data-a="close">취소</button><button type="button" class="btn lime sm" data-a="inv-renew-ok">코드 변경</button></div>`);
+    // 초대 코드로 가입(CrewInviteDialog) — 링크로 열면 코드가 채워져 있다
+    if (sh?.type === "code") {
+      const I = S.i;
+      return confirmBox("초대 코드로 가입", "초대 코드로 가입", `<button type="button" class="field ${I.input ? "" : "ph"}" style="width:100%;margin-top:4px;color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--lime)" ${I.input ? "" : 'data-a="inv-paste" data-g="inv-dialog-field"'}>${I.input || "예: RH-7K2Q"}</button>`,
+        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn dark sm" data-a="close">닫기</button><button type="button" class="btn lime sm" data-a="inv-verify" data-g="inv-verify" ${I.input && !I.busy ? "" : "disabled"}>${I.busy ? spin(1) : "확인"}</button></div>`);
+    }
+    // 가입 안내 사항(CrewShareConsentSheet) — 초대 코드 · 초대 링크 가입이 모두 지난다
+    if (sh?.type === "consent") return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="가입 안내 사항"><div class="grab"></div>
+        <div style="font-size:19px;font-weight:700">가입 안내 사항</div>
+        <div style="font-size:15px;line-height:22px;color:var(--fg2)">내 러닝 기록을 크루에 기여할 수 있어요.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn dark" data-a="close">가입 취소</button><button type="button" class="btn lime" data-a="inv-join" data-g="inv-join" ${S.i.busy ? "disabled" : ""}>${S.i.busy ? spin(1) : "동의하고 가입"}</button></div></div>`;
+    if (sh?.type === "perm") {
+      const ios = S.h.os === "ios", items = ios ? ["운동", "운동 경로"] : ["운동", "거리", "운동 경로"];
+      return `<div class="scrim"></div><div class="sheet osheet" role="dialog" aria-label="권한 요청"><div class="grab" style="background:#c7c7cc"></div>
+        <div style="font-size:12px;font-weight:700;color:#8a8a8e;text-align:center">${ios ? "iOS" : "헬스 커넥트"} 권한 창 · 예시</div>
+        <div style="font-size:19px;line-height:26px;font-weight:700;text-align:center">${ios ? "런하우스가 건강 데이터를<br>읽으려고 해요" : "런하우스가 헬스 커넥트 데이터를<br>읽도록 허용할까요?"}</div>
+        <div style="border-radius:14px;background:#fff;padding:0 14px">${items.map((t, i) => `<div class="row between" style="min-height:48px;font-size:15px;${i ? "box-shadow:inset 0 1px 0 #e5e5ea" : ""}">${t}<span aria-hidden="true" style="flex:none;width:48px;height:28px;border-radius:999px;background:#34c759;position:relative"><span style="position:absolute;top:3px;left:23px;width:22px;height:22px;border-radius:50%;background:#fff"></span></span></div>`).join("")}</div>
+        <div style="font-size:13px;line-height:19px;color:#6b6b70">${ios ? "심박 · 칼로리 · 몸무게는 요청 목록에 없어요." : "경로 허용창에서 「항상 허용」을 고르면 이후 자동으로 가져와요. 심박 · 칼로리 · 몸무게는 요청하지 않아요."}</div>
+        <button type="button" class="btn" style="background:#111;color:#fff" data-a="h-allow" data-g="h-allow">허용</button></div>`;
+    }
+    // 수집·이용 안내(HealthPrivacySheet) — 왼쪽 항목 · 오른쪽 설명
+    if (sh?.type === "privacy") return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="수집·이용 안내"><div class="grab"></div>
+        <div style="font-size:19px;font-weight:700">수집·이용 안내</div>
+        <div style="display:grid;grid-template-columns:76px 1fr;gap:14px 10px;font-size:14px;line-height:21px">${PRIVACY.map(([t, b]) => `<b>${t}</b><span style="color:var(--fg2);white-space:pre-line">${b}</span>`).join("")}</div>
+        <div class="cap" style="font-size:13px">동의하지 않아도 런하우스를 쓸 수 있어요.</div>
+        <button type="button" class="btn dark" data-a="close">닫기</button></div>`;
+    // 앱별 켜는 법(HealthGuideCard) — 번호 동그라미 + 할 일 · 위치
+    if (sh?.type === "guide") {
+      const [, , title, lead, steps] = GUIDES[S.h.os].find(g => g[0] === S.h.guide);
+      return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="${title}"><div class="grab"></div>
+        <div style="font-size:19px;font-weight:700">${title}</div>
+        ${steps.length ? steps.map(([w, wh], i) => `<div class="row" style="gap:14px;align-items:flex-start"><span style="flex:none;width:30px;height:30px;border-radius:50%;background:rgba(207,239,104,0.16);color:var(--lime);display:grid;place-items:center;font-size:15px;font-weight:700">${i + 1}</span><span><span style="display:block;font-size:16px;font-weight:600">${w}</span>${wh ? `<span class="sub" style="font-size:14px">${wh}</span>` : ""}</span></div>`).join("") : `<div style="font-size:15px;line-height:22px;color:var(--fg2)">${lead}</div>`}
+        <button type="button" class="btn dark" data-a="close">닫기</button></div>`;
+    }
+    // 연동 끊기(Alert.alert) — iOS 알림 창, 취소는 맨 아래
+    if (sh?.type === "disc") {
+      const n = S.h.imported ? HRUNS[S.h.os].length : 0;
+      const btns = n ? [["기록 유지", "keep", "#0a84ff"], ["기록도 삭제", "purge", "#ff453a"]] : [["연동 끊기", "keep", "#0a84ff"]];
+      return `<div class="scrim"></div><div class="dialog" role="alertdialog" aria-label="연동 끊기"><div class="iosalert"><div style="padding:18px 16px 14px"><div style="font-size:17px;font-weight:600">연동을 끊을까요?</div><div style="font-size:13px;line-height:18px;padding-top:4px">${n ? `가져온 ${n}건은 남기거나 지울 수 있어요. 삭제해도 크루 기여·리그 점수는 남아요. 지운 기록은 복원하거나 다시 가져올 수 없어요.` : "새 기록을 가져오지 않아요."}</div></div>${btns.map(([t, v, col]) => `<button type="button" data-a="h-unlink" data-v="${v}" style="color:${col}">${t}</button>`).join("")}<button type="button" data-a="close" style="color:#0a84ff;font-weight:600">취소</button></div></div>`;
+    }
     if (sh?.type === "attend") {
       const L = S.l, sel = LRUNS.filter(r => L.sel[r.id]), names = [...new Set(sel.map(r => r.name))];
       return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="출석 처리"><div class="grab"></div>
@@ -621,9 +1024,6 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
       const L = S.l;
       return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="확인 요청"><div class="grab"></div>
         <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--lime)">확인 요청</h2>
-        <div class="stack" style="gap:8px"><div style="font-size:13px;font-weight:700;color:var(--fg2)">가입 신청</div>
-          <div style="padding:14px;border-radius:14px;background:var(--card2)" class="stack"><div class="row">${av("가온")}<div class="grow"><div style="font-size:15px;font-weight:700">가온</div><div class="cap">“주 3회 새벽에 뛰어요. 정기런 같이 하고 싶어요.”</div></div></div>
-          ${L.approved ? '<span class="tag ok" style="align-self:flex-start">크루원이 됐어요</span>' : `<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px"><button type="button" class="btn dark sm" data-a="demo">거절</button><button type="button" class="btn lime sm" data-a="approve" data-g="approve">받기</button></div>`}</div></div>
         <div class="stack" style="gap:8px"><div style="font-size:13px;font-weight:700;color:var(--fg2)">승급 검토 · 크루 등급</div>
           <div style="padding:14px;border-radius:14px;background:var(--card2)" class="stack"><div style="font-size:14px;line-height:20px">하은 · 준호님이 <b>정회원</b> 조건(누적 100km · 출석 8회)을 채웠어요.</div>
           ${L.promoted ? '<span class="tag ok" style="align-self:flex-start">2명 승급했어요</span>' : `<button type="button" class="btn lime sm" data-a="promote" data-g="promote">2명 승급하기</button>`}</div></div>
@@ -656,6 +1056,8 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   // ── 안내: 지금 누를 곳 하나 ──
   function guide() {
     if (!S.role) return null;
+    if (S.role === "invite") return inviteGuide();
+    if (S.role === "health") return healthGuide();
     if (S.lock) return S.pushes.length ? ["push", "알림을 눌러 보세요", S.role === "member" ? "크루원이 뛰었다는 알림이에요" : "크루원이 러닝을 크루에 기여했어요"] : null;
     if (S.role === "member") {
       const m = S.m, r = m.run;
@@ -671,7 +1073,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     }
     const L = S.l;
     if (S.sheet?.type === "attend") return ["commit", "여기를 눌러 출석을 넣어 보세요", L.mode === "existing" ? "고른 모임에 출석이 들어가요" : "모임을 만들고 출석을 넣어요"];
-    if (S.sheet?.type === "approvals") return !L.approved ? ["approve", "가입 신청을 받아 보세요", ""] : !L.promoted ? ["promote", "승급도 한 번에 처리해요", ""] : ["close-approvals", "닫기를 눌러 보세요", ""];
+    if (S.sheet?.type === "approvals") return !L.promoted ? ["promote", "승급도 한 번에 처리해요", ""] : ["close-approvals", "닫기를 눌러 보세요", ""];
     if (S.sheet) return null;
     if (L.screen === "runs") {
       if (!Object.keys(L.done).length) {
@@ -690,10 +1092,47 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     if (L.screen === "stats") return L.range !== "week" && !L.seen.report ? ["range-week", "이번 주로 바꿔 보세요", "주간 출석을 따로 볼 수 있어요"] : !L.seen.report ? ["to-report", "주간 리포트를 열어 보세요", "운영진 카톡방에 붙일 글로 정리돼요"] : null;
     if (L.screen === "report") return !L.copied ? ["copy", "글로 복사해 보세요", "카톡방에 그대로 붙이면 돼요"] : ["back-report", "다 둘러봤어요", "뒤로 가서 다른 운영 기능도 눌러 볼 수 있어요"];
     if (L.screen === "ops") {
-      if (!L.approved || !L.promoted) return ["approvals", "확인할 일을 눌러 보세요", "가입 신청과 승급 검토가 있어요"];
+      if (!L.promoted) return ["approvals", "확인할 일을 눌러 보세요", "승급 검토가 있어요"];
       if (!L.sent) return ["tool-members", "크루원 관리도 둘러보세요", ""];
     }
     if (L.screen === "members" && !L.sent) return L.seg !== "오래 쉬는 크루원" ? ["seg-rest", "오래 쉬는 크루원을 눌러 보세요", ""] : ["hi", "안부를 보내 보세요", "쉬는 크루원 4명에게 한 번에 가요"];
+    return null;
+  }
+  function inviteGuide() {
+    const I = S.i, t = S.sheet?.type;
+    if (t === "share") return ["inv-send", "메시지로 보내 보세요", "단톡방에 보내도 돼요"];
+    if (t === "code") return I.input ? (I.busy ? null : ["inv-verify", "확인을 눌러 보세요", I.screen === "find" ? "링크로 열어서 코드가 채워져 있어요" : ""]) : ["inv-dialog-field", "입력칸을 눌러 코드를 붙여넣어요", ""];
+    if (t === "consent") return I.busy ? null : ["inv-join", "동의하고 가입을 눌러 보세요", "운영진 승인을 기다리지 않아요"];
+    if (S.sheet || I.busy) return null;
+    if (I.screen === "home") return ["inv-dock-menu", "메뉴를 눌러 보세요", "크루 스페이스 아래 메뉴예요"];
+    if (I.screen === "menu") return ["inv-row", "초대 코드를 눌러 보세요", "소식·공유 안에 있어요"];
+    if (I.screen === "code") return I.code ? ["inv-share", "초대 보내기를 눌러 보세요", "코드와 초대 링크가 함께 가요"] : ["inv-create", "초대 코드를 만들어 보세요", "코드 하나로 여러 명을 기한 없이 초대해요"];
+    if (I.screen === "chat") return ["inv-link", "받은 링크를 눌러 보세요", "여기부터 초대받은 사람 입장이에요"];
+    if (I.screen === "web") return I.webCopied ? ["web-store", "앱을 설치해요", "체험판은 바로 설치된 걸로 칠게요"] : ["web-copy", "초대 코드를 복사해 두세요", "앱에서 붙여넣으면 돼요"];
+    if (I.screen === "onboard") return I.input ? ["inv-verify", "확인을 눌러 보세요", ""] : I.pasteMenu ? ["inv-paste", "붙여넣기를 눌러요", ""] : ["inv-field", "입력칸을 눌러 보세요", "웹에서 복사한 코드를 붙여넣어요"];
+    if (I.screen === "crew") return ["inv-crew-code", "초대 코드 입력으로 다시 가입할 수 있어요", ""];
+    return null;
+  }
+  function healthGuide() {
+    const H = S.h, done = Object.keys(H.done).length, android = H.os === "android";
+    if (S.sheet?.type === "perm") return ["h-allow", "허용을 눌러 보세요", "러닝 기록을 읽을 권한만 받아요"];
+    if (S.sheet || H.busy) return null;
+    if (H.screen === "os") return ["h-os", "쓰는 폰을 골라 보세요", "폰마다 기록이 들어오는 길이 달라요"];
+    if (H.screen === "menu") return ["h-menu", "건강 앱 연동을 눌러 보세요", "메뉴 → 러닝 안에 있어요"];
+    if (H.screen === "intro") return ["h-agree", "동의하고 계속을 눌러 보세요", android ? "삼성 헬스 기록은 헬스 커넥트를 거쳐 와요" : "애플워치 · 가민 기록이 Apple 건강을 거쳐 와요"];
+    if (H.screen === "settings" && H.sync !== "loading") {
+      if (H.imported && !done) return ["h-see", "러닝 기록을 눌러 보세요", "가져온 기록은 아직 크루에 들어가지 않았어요"];
+      if (done && !H.appsSeen) return ["h-apps", "연동 도움말도 볼까요?", android ? "삼성 헬스에서 헬스 커넥트를 켜는 법이 있어요" : "가민 · 나이키런클럽 · 스트라바 켜는 법이 있어요"];
+    }
+    if (H.screen === "runs") {
+      if (H.imported && !done) return ["h-run-h1", "가져온 기록을 열어 보세요", "「반영 전」은 아직 크루에 안 들어간 기록이에요"];
+      if (done && !H.appsSeen) return ["h-back-runs", "뒤로 가면 연동 설정이에요", ""];
+    }
+    if (H.screen === "run") {
+      if (!H.done[H.run]) return !H.crewSel ? ["h-crew", "반영할 크루를 골라요", ""] : !H.tag ? ["h-tag", "러닝 태그를 골라요", "정기런 · 번개면 운영진이 출석을 확인해요"] : ["h-contribute", "지금 반영을 눌러 보세요", "가져오기만 해서는 크루 거리에 쌓이지 않아요"];
+      if (!H.appsSeen) return ["h-back-run", "뒤로 가 볼까요?", "기록 목록에서 「반영 완료」로 바뀌었어요"];
+    }
+    if (H.screen === "apps" && !H.guideSeen) return ["h-guide-first", android ? "갤럭시 워치를 눌러 보세요" : "Garmin을 눌러 보세요", android ? "삼성 헬스에서 헬스 커넥트를 켜는 법이에요" : "쓰는 앱마다 켜는 법이 달라요"];
     return null;
   }
   function placeGuide() {
@@ -723,13 +1162,21 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   const STEPS = {
     member: ["알림 누르기", "러닝하고 끝내기", "크루에 기록 넣기", "레벨 오르는 것 보기"],
     leader: ["크루원 러닝 알림 누르기", "함께 뛴 기록 체크하기", "출석 넣기", "출석 모임 둘러보기", "이번 달 · 주간 통계 보기"],
+    invite: ["초대 코드 만들기", "초대 보내기", "받은 링크 열기", "동의하고 가입"],
+    health: ["폰 고르기", "연동 동의하기", "기록 가져오기", "크루에 반영하기"],
   };
   function paint() {
     const s0 = $p.querySelector("[data-scroll]"), y = s0 ? s0.scrollTop : 0;
-    $p.innerHTML = !S.role ? pickScreen() : S.lock ? lockScreen() : S.role === "member" ? memberScreen() : leaderScreen();
+    // 같은 시트를 다시 그릴 때는 올라오는 움직임을 되풀이하지 않는다
+    const ovKey = S.sheet?.type || S.dialog?.type || null;
+    $p.classList.toggle("still", !!ovKey && ovKey === paint.ov); paint.ov = ovKey;
+    $p.innerHTML = !S.role ? pickScreen() : S.lock ? lockScreen() : S.role === "member" ? memberScreen() : S.role === "invite" ? inviteScreen() : S.role === "health" ? healthScreen() : leaderScreen();
     const s1 = $p.querySelector("[data-scroll]"); if (s1 && !paint.reset) s1.scrollTop = y; paint.reset = false;
     if (S.m.anim) { S.m.anim = false; countUp(); } else $p.querySelectorAll("[data-count]").forEach(el => el.textContent = comma(+el.dataset.count.split("|")[1]));
     placeGuide();
+    // 시트 · 다이얼로그는 올라오는 중에 재면 말풍선이 화면 밖에 붙는다 — 다 올라온 뒤 다시 잰다
+    const ov = $p.querySelector(".sheet, .dialog > div");
+    if (ov) ov.addEventListener("animationend", e => { if (e.target === ov) placeGuide(); });
     const steps = document.getElementById("steps");
     document.getElementById("reset").hidden = !S.role; steps.hidden = !S.role;
     if (S.role) { steps.style.gridTemplateColumns = innerWidth > 640 ? `repeat(${STEPS[S.role].length}, minmax(0, 1fr))` : "1fr 1fr"; steps.innerHTML = STEPS[S.role].map((t, i) => `<li class="${i + 1 < S.step ? "done" : i + 1 === S.step ? "now" : ""}"><b>${i + 1 < S.step ? "✓" : i + 1}</b><span>${t}</span></li>`).join(""); }
@@ -771,6 +1218,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   const act = {
     pick(v) {
       clearAll(); S = fresh(v); paint.reset = true; paint();
+      if (v !== "member" && v !== "leader") return;
       const list = v === "member"
         ? [{ t: `${CREW} · 크루원 러닝`, b: `${CREW}에 민준님이 5.8km 뛰었어요.`, s: "07:05 · 오늘 뛰면 크루가 레벨 4가 돼요", w: "지금" }]
         : [{ t: `${CREW} · 크루원 러닝`, b: `${ME}님이 ${kmShort(6.24)}km 러닝을 했어요.`, s: "06:32 시작 · 6.24km", w: "지금" },
@@ -841,10 +1289,86 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     "save-img"() { showToast("리포트 카드를 사진으로 저장했어요 (체험)"); },
     "to-rest"() { S.l.seg = "오래 쉬는 크루원"; S.l.screen = "members"; paint.reset = true; paint(); },
     approvals() { S.sheet = { type: "approvals" }; paint(); },
-    approve() { S.l.approved = true; paint(); showToast("가온님이 크루원이 됐어요"); },
     promote() { S.l.promoted = true; paint(); showToast("하은 · 준호님을 정회원으로 올렸어요"); },
     seg(v) { S.l.seg = v; paint(); },
     hi() { S.l.sent = true; paint(); showToast("쉬는 크루원 4명에게 안부를 보냈어요"); },
+    // 체험 바꾸기(화면 안 버튼 · 폰 아래 안내 카드)
+    tour(v) {
+      act.pick(v);
+      const r = $p.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > innerHeight) $p.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    // 크루원 초대
+    "inv-go"(v) { S.i.screen = v; S.sheet = null; paint.reset = true; paint(); },
+    "inv-create"() {
+      const I = S.i; I.busy = true; paint();
+      later("inv", 800, () => { I.busy = false; I.code = CODES[0]; S.step = 2; paint(); showToast("초대 코드를 만들었어요"); });
+    },
+    "inv-copy"() { showToast("초대 코드를 복사했어요"); },
+    "inv-renew"() { S.sheet = { type: "renew" }; paint(); },
+    "inv-renew-ok"() { S.sheet = null; S.i.code = S.i.code === CODES[0] ? CODES[1] : CODES[0]; paint(); showToast("초대 코드를 변경했어요"); },
+    "inv-share"() { S.sheet = { type: "share" }; paint(); },
+    "inv-copylink"() { S.sheet = null; paint(); showToast("초대 글을 복사했어요 (체험)"); },
+    "inv-send"() { S.sheet = null; S.i.screen = "chat"; S.step = 3; paint.reset = true; paint(); },
+    "inv-open"() { S.i.screen = "web"; paint.reset = true; paint(); },
+    "web-copy"() { S.i.webCopied = true; paint(); },
+    "web-install"() { Object.assign(S.i, { screen: "onboard", input: "", pasteMenu: false }); S.step = 4; paint.reset = true; paint(); showToast("앱을 설치하고 로그인했어요 (체험)"); },
+    "web-open"() { Object.assign(S.i, { screen: "find", input: S.i.code }); S.step = 4; S.sheet = { type: "code" }; paint.reset = true; paint(); },
+    "inv-field"() { if (!S.i.input) { S.i.pasteMenu = true; paint(); } },
+    "inv-paste"() { Object.assign(S.i, { input: S.i.code, pasteMenu: false }); paint(); },
+    "inv-codeopen"() { S.sheet = { type: "code" }; paint(); },
+    "inv-verify"() {
+      const I = S.i; if (!I.input || I.busy) return;
+      I.busy = true; paint();
+      later("inv", 700, () => { I.busy = false; I.screen = "crew"; S.sheet = { type: "consent" }; paint.reset = true; paint(); });
+    },
+    "inv-join"() {
+      const I = S.i; if (I.busy) return;
+      I.busy = true; paint();
+      later("inv", 600, () => { I.busy = false; S.sheet = null; I.screen = "joined"; S.step = 5; paint.reset = true; paint(); showToast(`${CREW}에 가입했어요`); });
+    },
+    // 건강 앱 연동
+    "h-os"(v) { S.h.os = v; S.h.screen = "menu"; S.step = 2; paint.reset = true; paint(); },
+    "h-go"(v) {
+      const H = S.h; H.screen = v === "intro" && H.linked ? "settings" : v;
+      if (v === "apps") H.appsSeen = true;
+      paint.reset = true; paint();
+    },
+    "h-agree"() { S.sheet = { type: "perm" }; paint(); },
+    "h-allow"() { const H = S.h; S.sheet = null; H.linked = true; H.screen = "settings"; if (S.step < 3) S.step = 3; paint.reset = true; act["h-sync"](); },
+    "h-sync"() {
+      const H = S.h; if (H.sync === "loading") return;
+      H.sync = "loading"; paint();
+      later("sync", 1400, () => {
+        // 이미 가져온 기록 · 지운 기록은 다시 들어오지 않는다
+        const added = H.imported || H.purged ? 0 : HRUNS[H.os].length;
+        if (added) { H.imported = true; if (S.step < 4) S.step = 4; }
+        H.sync = "done"; H.lastSync = `2026.10.22 ${clock()}`; paint();
+        showToast(added ? `${added}건을 가져왔어요` : "새로 가져올 기록이 없어요");
+      });
+    },
+    "h-open"(v) { Object.assign(S.h, { run: v, screen: "run", crewSel: false, tag: null, miss: false }); paint.reset = true; paint(); },
+    "h-crew"() { S.h.crewSel = !S.h.crewSel; paint(); },
+    "h-tag"(v) { S.h.tag = v; paint(); },
+    "h-contribute"() {
+      const H = S.h, id = H.run; if (H.busy) return;
+      if (!H.crewSel || !H.tag) { H.miss = true; paint(); return; }
+      H.busy = true; paint();
+      later("hc", 900, () => {
+        S.crewKm = Math.round((S.crewKm + hRunOf(id)[3]) * 10) / 10; H.done[id] = true; H.busy = false; S.step = 5; paint();
+        showToast(`${CREW}에 반영했어요`);
+      });
+    },
+    "h-guide"(v) { S.h.guide = v; S.h.guideSeen = true; S.sheet = { type: "guide" }; paint(); },
+    "h-privacy"() { S.sheet = { type: "privacy" }; paint(); },
+    "h-disc"() { S.sheet = { type: "disc" }; paint(); },
+    "h-unlink"(v) {
+      const H = S.h, n = H.imported ? HRUNS[H.os].length : 0;
+      if (v === "purge") { H.imported = false; H.purged = true; H.done = {}; }
+      Object.assign(H, { linked: false, sync: "idle", lastSync: null, screen: "intro" });
+      S.sheet = null; paint.reset = true; paint();
+      showToast(v === "purge" ? `연동을 끄고 가져온 기록 ${n}건을 지웠어요` : "연동을 끊었어요. 가져온 기록은 그대로 있어요");
+    },
     demo() { S.sheet = { type: "demo" }; paint(); },
     close() { S.sheet = null; paint(); },
   };
