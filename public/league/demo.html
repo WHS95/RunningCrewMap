@@ -48,12 +48,10 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .num { font-family: var(--f-num); font-style: italic; font-weight: 900; font-stretch: 125%; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 
 /* ── 페이지 ── */
-.intro { max-width: 760px; margin: 0 auto 20px; display: grid; gap: 14px; }
-.intro-top { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-end; justify-content: space-between; }
+.intro { max-width: 760px; margin: 0 auto 12px; display: grid; gap: 12px; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.intro-top { display: flex; justify-content: flex-end; }
 .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--page-mute); }
-.intro h1 { margin: 4px 0 6px; font-size: clamp(26px, 4vw, 32px); line-height: 1.25; font-weight: 800; text-wrap: balance; }
-.intro h1 mark { background: linear-gradient(transparent 58%, var(--page-soft) 58%); color: inherit; padding: 0 2px; }
-.intro p { margin: 0; color: var(--page-mute); max-width: 60ch; }
 .reset { padding: 10px 16px; border-radius: 12px; border: 1px solid var(--page-line); background: var(--page-card); font-weight: 600; font-size: 14px; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .steps li { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--page-card); border: 1px solid var(--page-line); font-size: 13px; color: var(--page-mute); min-width: 0; }
@@ -193,7 +191,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .tip small { display: block; font-size: 12px; font-weight: 500; color: rgba(23,23,25,0.64); margin-top: 2px; }
 @keyframes tipin { from { opacity: 0; transform: translateY(6px); } }
 
-.pick { position: absolute; inset: 0; padding: 84px 20px 36px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; scrollbar-width: none; }
+.pick { position: absolute; inset: 0; padding: 66px 18px 28px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; scrollbar-width: none; }
 .pick::-webkit-scrollbar { display: none; }
 .kick { margin-top: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--fg3b); }
 .role { width: 100%; display: flex; gap: 14px; align-items: center; text-align: left; padding: 18px; border-radius: 20px; background: var(--card); }
@@ -242,8 +240,11 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .osheet { background: #f2f2f7; color: #111; }
 
 @media (max-width: 640px) {
-  body { padding-block: 16px 24px; }
-  .phone { height: min(864px, max(680px, calc(100dvh - 40px))); border-radius: 50px; padding: 8px; }
+  body { padding-block: 12px 24px; }
+  .steps { display: none !important; }
+  .reset { padding: 8px 14px; font-size: 13px; }
+  .phone { height: max(540px, min(864px, calc(100dvh - 24px))); border-radius: 50px; padding: 8px; }
+  .intro:has(.reset:not([hidden])) + .stage .phone { height: max(540px, min(864px, calc(100dvh - 72px))); }
   .screen { border-radius: 42px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
@@ -252,11 +253,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 <body>
 <header class="intro">
   <div class="intro-top">
-    <div>
-      <div class="eyebrow">RUNHOUSE · 체험판</div>
-      <h1>런하우스, <mark>직접 눌러 보기</mark></h1>
-      <p>「런하우스 크루」에 들어와 있어요. 역할이나 기능을 고르면 앱을 직접 눌러 볼 수 있어요. 라임색 테두리가 다음에 누를 곳이에요.</p>
-    </div>
+    <h1 class="sr">런하우스 리그 체험판</h1>
     <button class="reset" id="reset" type="button" hidden>↺ 다시 고르기</button>
   </div>
   <ol class="steps" id="steps" hidden></ol>
@@ -417,7 +414,7 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     `<button type="button" data-a="${a}" data-v="${k}" ${tab === k ? 'aria-current="page"' : ""}>${svg(D[k])}<span>${l}</span>${k === "run" && (S.m.run.st === "running" || S.m.run.st === "paused") && tab !== "run" ? '<span class="live"></span>' : ""}</button>`).join("")}</nav>`;
   const toast = () => S.toast ? `<div class="toast" role="status"><span class="tk">${svg(D.check, 14, 3)}</span>${esc(S.toast)}</div>` : "";
   const pushCard = (p, i, cls = "") => `<button type="button" class="push ${i ? "old" : ""} ${cls}" data-a="push" ${i === 0 ? 'data-g="push"' : ""} style="animation-delay:${i * 80}ms"><span class="pi">${svg(D.run, 20, 2)}</span><span class="grow" style="display:flex;flex-direction:column;gap:2px"><span class="row between" style="gap:8px"><span class="pt">${esc(p.t)}</span><span class="pw">${esc(p.w)}</span></span><span class="pb">${esc(p.b)}</span>${p.s ? `<span class="ps">${esc(p.s)}</span>` : ""}</span></button>`;
-  const roleCard = (a, v, ic, title, sub, sm) => `<button type="button" class="role ${sm ? "sm" : ""}" data-a="${a}" data-v="${v}"><span class="ri">${svg(ic, sm ? 22 : 28)}</span><span class="grow"><span style="display:block;font-size:${sm ? 16 : 17}px;font-weight:700">${title}</span><span class="sub">${sub}</span></span>${svg(D.chev, 18, 2.2)}</button>`;
+  const roleCard = (a, v, ic, title, sub, sm) => `<button type="button" class="role ${sm ? "sm" : ""}" data-a="${a}" data-v="${v}"><span class="ri">${svg(ic, sm ? 22 : 28)}</span><span class="grow"><span style="display:block;font-size:${sm ? 16 : 17}px;font-weight:700">${title}</span>${sub ? `<span class="sub">${sub}</span>` : ""}</span>${svg(D.chev, 18, 2.2)}</button>`;
   const opsTool = (t, d, names, attrs) => `<button type="button" ${attrs} style="min-height:96px;padding:14px;border-radius:20px;background:var(--card);display:flex;flex-direction:column;gap:6px;text-align:left"><span class="row" style="gap:6px;width:100%"><span style="color:var(--lime)">${svg(d, 20)}</span><span class="grow" style="font-size:16px;font-weight:700">${t}</span><span style="color:var(--fg3)">${svg(D.chev, 14, 2.2)}</span></span><span style="font-size:12px;line-height:17px;color:var(--fg3b)">${names}</span></button>`;
   const ROUTE = "M60 140 C 80 100, 110 80, 150 84 S 220 110, 262 80 S 300 34, 270 30 C 230 26, 190 60, 150 56 S 80 40, 60 70 S 40 120, 60 140";
   const route = () => `<svg viewBox="0 0 350 180" aria-label="달린 경로" role="img">
@@ -432,15 +429,13 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 
   // ── 역할 고르기 · 잠금화면 ──
   const pickScreen = () => sbar() + `<div class="pick">
-      <div class="num" style="font-size:18px;color:var(--lime)">RUNHOUSE</div>
-      <h1 style="margin:0;font-size:24px;line-height:32px;font-weight:800">${CREW}에서<br>무엇을 해 볼까요?</h1>
+      <h1 style="margin:0 0 6px;font-size:24px;line-height:32px;font-weight:800">${CREW}에서<br>무엇을 해 볼까요?</h1>
       <div class="kick">역할로 써 보기</div>
-      ${roleCard("pick", "member", D.run, "크루원이에요", "뛰고 크루에 기록을 넣어 레벨을 올려요")}
-      ${roleCard("pick", "leader", D.crew, "크루장 · 운영진이에요", "크루원 러닝 알림을 받고 출석을 처리해요")}
+      ${roleCard("pick", "member", D.run, "크루원", "", true)}
+      ${roleCard("pick", "leader", D.crew, "크루장 · 운영진", "", true)}
       <div class="kick">기능 하나만 보기</div>
-      ${roleCard("pick", "invite", D.key, "크루원 초대하기", "초대 코드 만들기부터 가입까지", true)}
-      ${roleCard("pick", "health", D.watch, "건강 앱 기록 가져오기", "애플워치 · 갤럭시 워치 · 가민", true)}
-      <div class="cap" style="margin-top:auto;padding-top:8px;text-align:center">언제든 위에서 다시 고를 수 있어요.</div>
+      ${roleCard("pick", "invite", D.key, "크루원 초대하기", "", true)}
+      ${roleCard("pick", "health", D.watch, "건강 앱 기록 가져오기", "", true)}
     </div>`;
   const lockScreen = () => `<div class="island"></div><div class="lock">
       <div class="date">10월 22일 목요일</div>
