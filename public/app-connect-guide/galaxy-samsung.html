@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>갤럭시 기록 연동 안내 (갤럭시 워치, 삼성 헬스 편)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="사진 속 빨간 네모를 순서대로 누르면 돼요. 연동은 한 번만 하면 돼요.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="런하우스">
+<meta property="og:title" content="갤럭시 기록 연동 안내 (갤럭시 워치, 삼성 헬스 편)">
+<meta property="og:description" content="사진 속 빨간 네모를 순서대로 누르면 돼요. 연동은 한 번만 하면 돼요.">
+<meta property="og:url" content="https://www.runhouse.club/app-connect-guide/galaxy-samsung">
+<meta property="og:image" content="https://www.runhouse.club/app-connect-guide/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="canonical" href="https://www.runhouse.club/app-connect-guide/galaxy-samsung">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<style>
+/* 흑백 한 줄 흐름. 빨간색은 누를 곳에만 쓴다. 70대가 돋보기 없이 읽는 크기. */
+:root {
+  --bg: #ffffff;
+  --ink: #111111;
+  --soft: #3a3a3a;
+  --line: #dcdcdc;
+  --mark: #d9261c;
+  --bar-h: 68px;
+  --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d0d0d; --ink: #f2f2f2; --soft: #cfcfcf; --line: #333333; --mark: #ff4d42; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d0d0d; --ink: #f2f2f2; --soft: #cfcfcf; --line: #333333; --mark: #ff4d42; color-scheme: dark }
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 20px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
+.wrap { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 36px; padding-bottom: calc(var(--bar-h) + 56px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 64px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.35; font-weight: 900; }
+h1 { font-size: 30px; letter-spacing: -0.5px; }
+h2 { font-size: 26px; letter-spacing: -0.4px; }
+h3 { font-size: 22px; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; text-underline-offset: 4px; }
+b.mark, .mark { color: var(--mark); font-weight: 700; }
+section { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 12px; }
+.tag { align-self: flex-start; font-size: 18px; font-weight: 900; border: 2px solid var(--ink); border-radius: 999px; padding: 2px 14px; }
+
+/* 처음 고르는 칸 */
+.choose { display: flex; flex-direction: column; gap: 12px; }
+.choose a { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; border: 2px solid var(--ink); border-radius: 14px; padding: 18px 20px; min-height: 64px; box-sizing: border-box; }
+.choose b { font-size: 22px; }
+.choose span { font-size: 17px; color: var(--soft); text-align: right; flex: none; }
+.choose a:focus-visible, .next:focus-visible, .bar:focus-visible { outline: 3px solid var(--mark); outline-offset: 3px; }
+
+/* 단계 */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.step { padding: 28px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; }
+.step:last-child { border-bottom: 1px solid var(--line); }
+.step-head { display: flex; gap: 14px; align-items: flex-start; }
+.num { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--bg); font-weight: 900; font-size: 22px; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.step-head div { min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 3px; }
+.step-head strong { font-size: 22px; line-height: 1.45; }
+.step-head p { font-size: 18px; color: var(--soft); }
+.shot { display: block; width: 100%; max-width: 440px; margin: 0 auto; border-radius: 12px; border: 1px solid var(--line); }
+.path { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 700; font-size: 20px; }
+.path li { border: 2px solid var(--ink); border-radius: 8px; padding: 2px 10px; }
+.path li.arrow { border: 0; padding: 0; }
+
+.next { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-weight: 900; font-size: 21px; border: 2px solid var(--ink); border-radius: 14px; padding: 16px; }
+.done { font-weight: 700; font-size: 21px; padding: 18px 0; border-block: 3px solid var(--ink); }
+.small { font-size: 18px; color: var(--soft); }
+.trouble { display: flex; flex-direction: column; gap: 14px; padding-top: 28px; border-top: 1px solid var(--line); scroll-margin-top: 12px; }
+.trouble ol { margin: 0; padding-left: 26px; display: flex; flex-direction: column; gap: 10px; }
+
+/* 도움 */
+.help { border: 3px solid var(--ink); border-radius: 14px; padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; }
+.btn { display: flex; justify-content: center; align-items: center; background: var(--ink); color: var(--bg); font-weight: 900; font-size: 21px; min-height: 60px; border-radius: 12px; text-decoration: none; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: var(--bar-h); padding: 0 16px env(safe-area-inset-bottom, 0px); box-sizing: content-box; background: var(--ink); color: var(--bg); text-decoration: none; font-weight: 900; font-size: 20px; }
+footer { font-size: 15px; color: var(--soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:16px">
+  <a class="small" href="https://www.runhouse.club/app-connect-guide" style="color:inherit">← 다른 기기 안내 보기</a>
+  <span class="tag">갤럭시</span>
+  <h1>갤럭시 기록 연동 안내<br><span style="font-size:24px">(갤럭시 워치, 삼성 헬스 편)</span></h1>
+  <p>사진 속 <b class="mark">빨간 네모</b>를 순서대로 누르면 돼요. 연동은 한 번만 하면 돼요.</p>
+</header>
+
+
+<section id="samsung" aria-labelledby="sm">
+  <span class="tag">1단계</span>
+  <h2 id="sm">러닝 기록을 헬스 커넥트로</h2>
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><span class="num">1</span><div><strong>「삼성 헬스」 앱 → 오른쪽 위 메뉴 → 「설정」을 눌러요</strong></div></div>
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">2</span><div><strong>아래로 내려 <span class="mark">헬스 커넥트</span>에 「접근 허용됨」이 있는지 봐요</strong><p>「접근 허용됨」이 없으면 「헬스 커넥트」를 눌러 모두 허용해 주세요.</p></div></div>
+      <img class="shot" src="img/g1-samsung-hc.jpg" alt="삼성 헬스 설정, 헬스 커넥트 접근 허용됨에 빨간 네모" loading="lazy">
+    </li>
+  </ol>
+  <a class="next" href="#connect">다음 단계 ↓</a>
+</section>
+
+<section id="connect" aria-labelledby="cn">
+  <span class="tag">2단계</span>
+  <h2 id="cn">런하우스와 헬스 커넥트 연동</h2>
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><span class="num">1</span><div><strong>런하우스 앱 맨 아래 「메뉴」 → <span class="mark">건강 앱 연동</span>을 눌러요</strong></div></div>
+      <img class="shot" src="img/02-menu.jpg" alt="메뉴 화면, 건강 앱 연동에 빨간 네모" loading="lazy">
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">2</span><div><strong>맨 아래 <span class="mark">동의하고 계속</span>을 눌러요</strong></div></div>
+      <img class="shot" src="img/g-consent.jpg" alt="헬스 커넥트 연동 안내, 아래 동의하고 계속 버튼에 빨간 네모" loading="lazy">
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">3</span><div><strong>헬스 커넥트 화면이 뜨면 <span class="mark">모두 허용</span>을 켜요</strong><p>「거리」와 「운동」이 켜지면 돼요. 아래에 「허용」이 있으면 그것도 눌러 주세요.</p></div></div>
+      <img class="shot" src="img/g4-hc-runhouse.jpg" alt="헬스 커넥트의 런하우스 화면, 모두 허용에 빨간 네모" loading="lazy">
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">4</span><div><strong>런하우스로 돌아와 <span class="mark">연동 켜짐</span>이 보이면 다 됐어요</strong></div></div>
+      <img class="shot" src="img/g-connected.jpg" alt="헬스 커넥트 연동 켜짐 화면" loading="lazy">
+    </li>
+  </ol>
+  <p class="done">연동 끝이에요. 달린 뒤 런하우스를 열면 기록이 자동으로 들어와요.</p>
+  <a class="next" href="#reflect">다음 단계 ↓</a>
+</section>
+
+<section id="reflect" aria-labelledby="rf">
+  <span class="tag">3단계 · 달릴 때마다</span>
+  <h2 id="rf">러닝 기록을 크루에 반영</h2>
+  <p>기록이 들어와도 크루 점수엔 바로 안 올라가요. <b>기록마다 한 번씩</b> 「지금 반영」을 눌러 주세요.</p>
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><span class="num">1</span><div><strong>「메뉴」 → 「러닝 기록」을 눌러요</strong><p>기록이 안 보이면 오른쪽 위 <span class="mark">동그라미</span>를 눌러 주세요. 새 기록을 다시 불러와요.</p></div></div>
+      <img class="shot" src="img/08-runs.jpg" alt="러닝 기록 목록, 오른쪽 위 새로고침 동그라미에 빨간 표시" loading="lazy">
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">2</span><div><strong>「반영 전」이라고 적힌 기록을 눌러요</strong></div></div>
+      <img class="shot" src="img/09-tap-run.jpg" alt="반영 전 표시가 붙은 러닝 기록 한 칸에 빨간 네모" loading="lazy">
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">3</span><div><strong>크루와 러닝 종류를 고르고 <span class="mark">지금 반영</span>을 눌러요</strong><p>러닝 종류는 정기런 · 번개 · 대회 · 개인 러닝 중에 골라요.</p></div></div>
+      <img class="shot" src="img/11-reflect.jpg" alt="반영할 크루와 러닝 종류를 고르는 칸, 지금 반영 버튼에 빨간 네모" loading="lazy">
+    </li>
+    <li class="step">
+      <div class="step-head"><span class="num">4</span><div><strong>「○○에 반영했어요」가 보이면 다 됐어요</strong><p>기록 옆 표시가 「반영 완료」로 바뀌어요.</p></div></div>
+      <img class="shot" src="img/12-reflected.jpg" alt="숲길러너스에 반영했어요 결과 화면" loading="lazy">
+    </li>
+  </ol>
+</section>
+
+<section id="trouble" aria-labelledby="tr">
+  <h2 id="tr">자주 묻는 질문</h2>
+
+  <div class="trouble" id="nobutton">
+    <h3>「지금 반영」 버튼이 없어요</h3>
+    <p><b>크루 가입 전에 달린 기록이에요.</b> 크루에는 가입한 뒤에 달린 기록만 반영돼요.</p>
+    <img class="shot" src="img/10-no-crew.jpg" alt="기록 화면의 이 러닝을 반영할 수 있는 크루가 없어요 안내" loading="lazy">
+    <p class="small">가입 뒤에 달린 기록인데도 없다면 화면을 캡처해 <a href="#ask">1:1 문의</a>로 보내 주세요.</p>
+  </div>
+  <div class="trouble" id="missing">
+    <h3>기록이 안 들어와요</h3>
+    <ol>
+      <li>「삼성 헬스」 앱을 한 번 열어 주세요.</li>
+      <li>런하우스 「러닝 기록」 오른쪽 위 동그라미를 눌러 주세요.</li>
+      <li>「헬스 커넥트」 → 「데이터 및 액세스」 → 「운동」에 그 기록이 있는지 봐 주세요. 없다면 1단계를 다시 해 주세요.</li>
+    </ol>
+    <img class="shot" src="img/g6-hc-exercise.jpg" alt="헬스 커넥트 운동 항목, Garmin Connect 달리기 기록에 빨간 네모" loading="lazy">
+  </div>
+  <div class="trouble" id="old">
+    <h3>예전 기록이 안 들어와요</h3>
+    <p>헬스 커넥트는 <b>처음 연결한 날보다 30일 앞선 기록부터</b> 런하우스에 보여 줘요. 그보다 앞선 기록은 가져올 수 없어요.</p>
+    <img class="shot" src="img/g5-hc-since.jpg" alt="런하우스 앱은 2026년 10월 1일 이후 추가된 데이터를 읽을 수 있다는 헬스 커넥트 안내" loading="lazy">
+  </div>
+  <div class="trouble" id="auto">
+    <h3>「달리기(자동)」 기록이 들어왔어요</h3>
+    <p>삼성 헬스가 걸음을 보고 <b>알아서 잡은 기록</b>이에요. 실제 거리와 다를 수 있어요.</p>
+    <img class="shot" src="img/g7-samsung-auto.jpg" alt="삼성 헬스의 달리기(자동) 기록 두 개에 빨간 네모" loading="lazy">
+    <p><b>달릴 때는 워치에서 운동을 직접 시작해 주세요.</b> 자동 기록이 필요 없다면 삼성 헬스 「설정」 → 「운동 자동 인식」을 꺼도 돼요.</p>
+    <img class="shot" src="img/g8-auto-toggle.jpg" alt="삼성 헬스 설정의 운동 자동 인식 스위치에 빨간 네모" loading="lazy">
+  </div>
+  <div class="trouble">
+    <h3>기록 옆 표시 뜻</h3>
+    <p><b>반영 완료</b> 크루에 반영됐어요<br><b>반영 전</b> 아직 반영 전이에요<br><b>검증 필요</b> 확인을 받은 뒤 반영할 수 있어요</p>
+  </div>
+</section>
+
+<section id="ask" class="help" aria-labelledby="ak">
+  <h2 id="ak">그래도 어려우면 1:1 문의</h2>
+  <p>카카오톡으로 답해 드려요. 막힌 화면을 캡처해서 보내 주시면 더 빨라요.</p>
+  <p>런하우스 앱 <b>메뉴 → 1:1 문의</b>로 들어오면 내 계정 정보가 자동으로 복사돼요. 채팅창에 붙여 넣어 주세요.</p>
+  <img class="shot" src="img/16-ask.jpg" alt="런하우스 메뉴의 1:1 문의에 빨간 네모" loading="lazy">
+  <p class="small">앱이 안 열리면 아래 버튼으로 들어와 주세요. 이름과 크루 이름을 함께 적어 주세요.</p>
+  <a class="btn" href="https://pf.kakao.com/_DpsFX/chat" target="_blank" rel="noopener">카카오톡 문의</a>
+</section>
+
+<footer>런하우스 · 2026.11.05 앱 화면 기준이에요. 헬스 커넥트 · 삼성 헬스 화면은 회원분들이 보내 주신 사진이에요. 메뉴 이름은 휴대폰과 앱 버전에 따라 조금 다를 수 있어요.</footer>
+
+</div>
+
+<a class="bar" href="https://pf.kakao.com/_DpsFX/chat" target="_blank" rel="noopener">카카오톡 1:1 문의 →</a>
+
+</body>
+</html>
