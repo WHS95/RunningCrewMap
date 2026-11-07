@@ -39,6 +39,13 @@ const nextConfig = {
       // 런하우스 리그 앱 체험판 — 단독 정적 HTML(public/league/demo.html)을 /league 주소로 연다.
       // 앱 레이아웃(모바일 프레임 · 좌우 패널) 밖에서 자체 화면으로 렌더된다.
       { source: "/league", destination: "/league/demo.html" },
+      // 리그 앱 기록 연동 안내 — 카카오톡 자동응답에 거는 단독 정적 HTML(public/app-connect-guide/*.html).
+      // 원본·생성기는 runhouse-league 저장소 docs/연동-메뉴얼/build-web.py.
+      { source: "/app-connect-guide", destination: "/app-connect-guide/index.html" },
+      {
+        source: "/app-connect-guide/:slug(iphone-applewatch|iphone-smartwatch|iphone-apps|galaxy-samsung|galaxy-smartwatch|galaxy-apps)",
+        destination: "/app-connect-guide/:slug.html",
+      },
       // PostHog 인제스트 역방향 프록시 — 광고 차단기 우회
       {
         source: "/ingest/static/:path*",
