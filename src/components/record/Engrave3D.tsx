@@ -19,6 +19,7 @@ import {
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { TIER_BY_ID, type RecordSku, type RecordTier } from "@/lib/record/tier";
+import { KEYRING_CLIP, KEYRING_H, KEYRING_W, KeyringArt, KeyringRing } from "@/components/record/KeyringArt";
 
 export type EngraveFinish = "black" | "gunmetal" | "steel" | "matte" | "acrylic";
 
@@ -33,7 +34,7 @@ export interface EngraveText {
 
 const DIMS: Record<RecordSku, { w: number; h: number; r: number; t: number }> = {
   // 실제 1차 제품: 투명 아크릴 키링(모서리 컷) + 검정 패널 + 라임 UV 인쇄, NFC 내장
-  keyring: { w: 272, h: 176, r: 8, t: 5 },
+  keyring: { w: KEYRING_W, h: KEYRING_H, r: 0, t: 5 },
   tag: { w: 280, h: 166, r: 18, t: 7 },
   lace: { w: 96, h: 160, r: 48, t: 6 },
   plate: { w: 270, h: 170, r: 6, t: 12 },
@@ -44,8 +45,8 @@ const FINISH: Record<
   { face: string; edge: [string, string]; ink: string; accent: string; shadow: string }
 > = {
   acrylic: {
-    face: "#0E0F0C",
-    edge: ["rgba(220,228,232,.55)", "rgba(190,200,205,.4)"],
+    face: "rgba(214,222,226,.42)",
+    edge: ["rgba(225,232,236,.6)", "rgba(180,190,196,.45)"],
     ink: "#C7FF00",
     accent: "#C7FF00",
     shadow: "0 0 6px rgba(199,255,0,.35)",
@@ -191,6 +192,7 @@ export function Engrave3D({
     setDragging(false);
   };
 
+  const clip = sku === "keyring" ? KEYRING_CLIP : undefined;
   const layerCount = Math.max(6, Math.round(d.t / 0.6));
   const layers = Array.from({ length: layerCount }, (_, i) => -d.t / 2 + (d.t * (i + 0.5)) / layerCount);
   const tierLabel = text.tier ? TIER_BY_ID[text.tier].label : "TIER";
@@ -202,8 +204,9 @@ export function Engrave3D({
     position: "absolute" as const,
     inset: 0,
     borderRadius: d.r,
+    clipPath: clip,
     backgroundColor: f.face,
-    backgroundImage: BRUSH,
+    backgroundImage: sku === "keyring" ? undefined : BRUSH,
     backfaceVisibility: "hidden" as const,
     WebkitBackfaceVisibility: "hidden" as const,
     overflow: "hidden",
@@ -254,20 +257,14 @@ export function Engrave3D({
           <div
             key={i}
             className="absolute inset-0"
-            style={{ borderRadius: d.r, background: f.edge[i % 2], transform: `translateZ(${z.toFixed(2)}px)` }}
+            style={{ borderRadius: d.r, clipPath: clip, background: f.edge[i % 2], transform: `translateZ(${z.toFixed(2)}px)` }}
           />
         ))}
 
         {/* 앞면 */}
         <div style={{ ...faceBase, transform: `translateZ(${d.t / 2}px)` }}>
           {sku === "keyring" && (
-            <KeyringFace
-              hole={hole}
-              accent={f.accent}
-              tierBig={tierLabel.replace("-", "")}
-              time={text.time}
-              name={text.runnerName}
-            />
+            <KeyringArt side="front" tier={tierLabel} time={text.time} name={text.runnerName} bg={bg} />
           )}
           {sku === "tag" && (
             <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: "18px 22px 18px 46px" }}>
@@ -303,13 +300,13 @@ export function Engrave3D({
               <div className="font-mono text-[8.5px] tracking-[0.12em] opacity-85">{text.raceName} · {text.raceDate}</div>
             </div>
           )}
-          <motion.div className="absolute inset-0 pointer-events-none mix-blend-screen" style={{ borderRadius: d.r, backgroundImage: SHEEN, backgroundSize: "300% 100%", backgroundPosition: sheenFront }} />
-          <motion.div className="absolute inset-0 pointer-events-none bg-black" style={{ borderRadius: d.r, opacity: frontShade }} />
+          <motion.div className="absolute inset-0 pointer-events-none mix-blend-screen" style={{ borderRadius: d.r, clipPath: clip, backgroundImage: SHEEN, backgroundSize: "300% 100%", backgroundPosition: sheenFront }} />
+          <motion.div className="absolute inset-0 pointer-events-none bg-black" style={{ borderRadius: d.r, clipPath: clip, opacity: frontShade }} />
         </div>
 
         {/* 뒷면 */}
         <div style={{ ...faceBase, transform: `rotateY(180deg) translateZ(${d.t / 2}px)` }}>
-          {sku === "keyring" && <KeyringBack hole={hole} accent={f.accent} nfc />}
+          {sku === "keyring" && <KeyringArt side="back" tier={tierLabel} time={text.time} name={text.runnerName} bg={bg} />}
           {sku === "tag" && (
             <div className="absolute inset-0 flex flex-col justify-center gap-[7px]" style={{ padding: "20px 46px 20px 24px" }}>
               <div className="absolute rounded-full" style={{ ...hole, right: 15, top: "50%", width: 14, height: 14, marginTop: -7 }} />
@@ -333,9 +330,10 @@ export function Engrave3D({
               <div className="font-mono text-[8px] tracking-[0.18em] opacity-70">{text.certNo}</div>
             </div>
           )}
-          <motion.div className="absolute inset-0 pointer-events-none mix-blend-screen" style={{ borderRadius: d.r, backgroundImage: SHEEN, backgroundSize: "300% 100%", backgroundPosition: sheenBack }} />
-          <motion.div className="absolute inset-0 pointer-events-none bg-black" style={{ borderRadius: d.r, opacity: backShade }} />
+          <motion.div className="absolute inset-0 pointer-events-none mix-blend-screen" style={{ borderRadius: d.r, clipPath: clip, backgroundImage: SHEEN, backgroundSize: "300% 100%", backgroundPosition: sheenBack }} />
+          <motion.div className="absolute inset-0 pointer-events-none bg-black" style={{ borderRadius: d.r, clipPath: clip, opacity: backShade }} />
         </div>
+        {sku === "keyring" && <KeyringRing side="front" />}
       </motion.div>
 
       <div className="absolute left-3 top-3 flex items-center gap-2 pointer-events-none font-mono text-[9px] tracking-[0.2em]">
@@ -376,69 +374,6 @@ export function Engrave3D({
         >
           AUTO · {auto && !reduce ? "ON" : "OFF"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-/** 아크릴 키링 앞면 — 투명 테두리(10px) 안에 검정 패널, 라임 UV 인쇄. 사진 샘플(SUB 3 · RECORD >>> 02:58:36 · HONG GIL DONG) 기준. */
-function KeyringFace({
-  hole,
-  accent,
-  tierBig,
-  time,
-  name,
-}: {
-  hole: React.CSSProperties;
-  accent: string;
-  tierBig: string;
-  time: string;
-  name: string;
-}) {
-  const [word, num] = tierBig.match(/^([A-Z]+)(\d+)?$/)?.slice(1) ?? [tierBig, ""];
-  return (
-    <div className="absolute inset-0" style={{ padding: 10 }}>
-      <div className="absolute rounded-full" style={{ ...hole, left: 14, top: 12, width: 10, height: 10, border: "1px solid rgba(255,255,255,.35)" }} />
-      <div
-        className="relative w-full h-full overflow-hidden"
-        style={{
-          background: "#07080A",
-          // 사진처럼 왼쪽 위·오른쪽 아래 모서리를 비스듬히 깎은 패널
-          clipPath: "polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px)",
-        }}
-      >
-        <div className="absolute left-4 bottom-3 flex flex-col gap-0.5 font-mono" style={{ color: accent }}>
-          <span className="text-[8px] tracking-[0.18em]">RECORD &gt;&gt;&gt;</span>
-          <span className="text-[13px] font-bold tabular-nums leading-none">{time}</span>
-          <span className="text-[9px] tracking-[0.12em] uppercase mt-0.5">{name}</span>
-        </div>
-        <div className="absolute right-4 top-2 flex items-end gap-1 font-mono font-black leading-[0.82] tracking-[-0.04em]" style={{ color: accent }}>
-          <span className="text-[58px]">{word}</span>
-          {num && <span className="text-[58px]">{num}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function KeyringBack({ hole, accent, nfc }: { hole: React.CSSProperties; accent: string; nfc?: boolean }) {
-  return (
-    <div className="absolute inset-0" style={{ padding: 10 }}>
-      <div className="absolute rounded-full" style={{ ...hole, right: 14, top: 12, width: 10, height: 10, border: "1px solid rgba(255,255,255,.35)" }} />
-      <div
-        className="relative w-full h-full flex flex-col items-center justify-center gap-1"
-        style={{
-          background: "#07080A",
-          clipPath: "polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))",
-          color: accent,
-        }}
-      >
-        <svg width="34" height="14" viewBox="0 0 34 14" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M2 12 14 3l9 6" /><path d="M23 9h9" /></svg>
-        <span className="font-mono text-[11px] font-bold tracking-[0.42em] leading-none">RUN</span>
-        <span className="font-mono text-[11px] font-bold tracking-[0.28em] leading-none">HOUSE</span>
-        {nfc && (
-          <span className="absolute bottom-2 right-3 font-mono text-[7px] tracking-[0.2em] opacity-60">NFC · TAP</span>
-        )}
       </div>
     </div>
   );

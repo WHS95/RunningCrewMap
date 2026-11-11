@@ -11,6 +11,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Nfc } from "lucide-react";
 import { RECORD_LIMIT_QTY, RECORD_PRICE_KRW } from "@/lib/record/tier";
+import { KEYRING_CLIP, KEYRING_H, KEYRING_W, KeyringArt, KeyringRing } from "@/components/record/KeyringArt";
 
 const HIDE_KEY = "rh_record_promo_hide_until";
 const SESSION_KEY = "rh_record_promo_closed";
@@ -89,19 +90,13 @@ export function RecordPromoModal({ remaining }: { remaining: number }) {
                 이름 · 기록 · 티어를 각인한 아크릴 키링.
               </p>
 
-              {/* 키링 미니 목업 */}
-              <div className="relative mt-1 mx-auto w-[220px] h-[140px] rounded-[6px] border border-white/30 bg-white/5 p-2" style={{ transform: reduce ? undefined : "rotate(-3deg)" }}>
-                <div className="absolute left-3 top-2.5 w-2.5 h-2.5 rounded-full border border-white/40 bg-black" />
-                <div
-                  className="w-full h-full bg-[#07080A] relative"
-                  style={{ clipPath: "polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)" }}
-                >
-                  <span className="absolute right-3 top-1 font-mono text-[44px] font-black leading-[0.85] tracking-[-0.04em] text-[hsl(var(--lime))]">SUB3</span>
-                  <div className="absolute left-3 bottom-2.5 flex flex-col font-mono text-[hsl(var(--lime))]">
-                    <span className="text-[7px] tracking-[0.18em]">RECORD &gt;&gt;&gt;</span>
-                    <span className="text-[11px] font-bold tabular-nums">02:58:36</span>
-                    <span className="text-[8px] tracking-[0.12em]">HONG GIL DONG</span>
+              {/* 키링 미니 목업 — 실제 제품 아트 */}
+              <div className="relative mx-auto mt-1" style={{ width: 230, height: 150 }}>
+                <div className="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${230 / KEYRING_W}) rotate(-2deg)`, width: KEYRING_W, height: KEYRING_H }}>
+                  <div className="relative" style={{ width: KEYRING_W, height: KEYRING_H, clipPath: KEYRING_CLIP, background: "rgba(214,222,226,.42)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)" }}>
+                    <KeyringArt side="front" tier="SUB-3" time="02:58:36" name="HONG GIL DONG" bg="#0B0C0A" />
                   </div>
+                  <KeyringRing side="front" />
                 </div>
               </div>
 
