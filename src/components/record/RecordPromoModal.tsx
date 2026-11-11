@@ -6,6 +6,7 @@
  * '다시 보지 않기'는 7일, '닫기'는 세션 동안만 숨긴다.
  */
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Nfc } from "lucide-react";
@@ -43,14 +44,16 @@ export function RecordPromoModal({ remaining }: { remaining: number }) {
 
   const soldOut = remaining <= 0;
 
-  return (
+  // PageTransition(framer-motion)이 transform 을 걸어 fixed 가 그 안에 갇힌다 → body 로 포털.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
           role="dialog"
           aria-modal="true"
           aria-labelledby="record-promo-title"
-          className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4"
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 font-sans"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -130,6 +133,7 @@ export function RecordPromoModal({ remaining }: { remaining: number }) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
