@@ -76,7 +76,7 @@ Public pages (root `/`, `/map`, etc.) read crews through the **server** path. Th
 - `hall_of_fame_entries`/`record_orders`는 RLS 활성 + 정책 없음 → service role(`serverSupabase`) 전용. 기록증은 비공개 버킷 `recordCertificates`, 관리자만 signed URL 로 연다. anon 클라이언트로 이 테이블을 읽지 마세요.
 - 본인 링크 `/record/r/<id>?token=<purchase_token>` — id·token 동시 일치(edit_token 패턴). 각인 문구는 승인된 DB 행에서 서버가 만든다(`buildEngraving`); 클라이언트 입력으로 문구를 받지 마세요.
 - **1차는 비노출 개발 링크 운영**: noindex, sitemap·메뉴·`DesktopSidePanel`·홈에 진입점을 넣지 않는다. 홈 진입점은 검토 후 2차.
-- 결제: Groble 결제창. `GROBLE_PAYMENT_URL`(결제창 링크, 상품 FWqHYD)에 `?ref=<record_orders.id>` 를 붙여 보내고, `POST /api/webhooks/groble` 이 `payment.completed`(HMAC `X-Groble-Signature`, 시크릿 `GROBLE_WEBHOOK_SECRET`)를 받아 `payment_status=paid`·`status=confirmed` 로 바꾼다. 멱등 키는 `groble_webhook_events`. 결제 후 이동 페이지 `/record/paid` 는 sessionStorage 로 주문을 잇는다.
+- 결제: Groble 결제창. `GROBLE_PAYMENT_URL`(결제창 링크, 상품 FWqHYD)에 `?ref=<record_orders.id>` 를 붙여 보내고, `POST /api/webhooks/groble` 이 `payment.completed`(HMAC `X-Groble-Signature`, 시크릿 `GROBLE_WEBHOOK_SECRET`)를 받아 `payment_status=paid`·`status=confirmed` 로 바꾼다. 멱등 키는 `groble_webhook_events`. 그로블은 계정당 웹훅 URL 이 하나라 이 엔드포인트가 허브이고, `GROBLE_FORWARD_URL`(커스텀햇 앱 웹훅)로 원문+서명 헤더를 그대로 전달한다(두 앱이 같은 시크릿 사용). 결제 후 이동 페이지 `/record/paid` 는 sessionStorage 로 주문을 잇는다.
 - 상품은 아크릴 키링 1종(`keyring`), 배송비 포함 `RECORD_PRICE_KRW`=20,000원, 한정 `RECORD_LIMIT_QTY`=30(결제 완료 수로 계산). 배송지·이름·연락처는 우리 폼에서 받고(`record_orders.buyer_*`, `shipping_*`), 웹훅의 shipping 블록이 오면 덮어쓴다.
 - NFC 공개 페이지 `/record/c/<cert_no>`: 토큰 없이 인증번호로 연다. 비공개 기록은 티어·기록만.
 - 홈 팝업 `RecordPromoModal` 은 `NEXT_PUBLIC_RECORD_PROMO=on` 일 때만 마운트(1차 비노출 유지).
