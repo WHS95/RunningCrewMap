@@ -103,23 +103,26 @@ export function maskName(name: string): string {
   return `${chars[0]}${"*".repeat(chars.length - 2)}${chars[chars.length - 1]}`;
 }
 
-/** 각인 상품 SKU */
-export type RecordSku = "tag" | "lace" | "plate";
+/** 각인 상품 SKU — 1차는 아크릴 키링 1종. tag/lace/plate 는 시안 단계 값(DB 허용만 유지). */
+export type RecordSku = "keyring" | "tag" | "lace" | "plate";
 
 export const SKUS: Array<{ id: RecordSku; label: string; name: string; desc: string }> = [
-  { id: "tag", label: "RECORD TAG", name: "레코드 태그", desc: "도그태그 펜던트 · 키링" },
-  { id: "lace", label: "LACE TAG", name: "레이스 태그", desc: "레이싱화 슈 태그" },
-  { id: "plate", label: "RECORD PLATE", name: "레코드 플레이트", desc: "데스크 · 메달 플레이트" },
+  { id: "keyring", label: "RECORD KEYRING", name: "레코드 키링", desc: "아크릴 각인 키링 · NFC 내장" },
 ];
 
 export function isRecordSku(v: unknown): v is RecordSku {
-  return v === "tag" || v === "lace" || v === "plate";
+  return v === "keyring" || v === "tag" || v === "lace" || v === "plate";
 }
 
+/** 판매 조건 — 배송비 포함 가격, 한정 수량 */
+export const RECORD_PRICE_KRW = 20000;
+export const RECORD_LIMIT_QTY = 30;
+
 /** 티어 → 3D 뷰어 마감 키 */
-export const TIER_FINISH: Record<RecordTier, "black" | "gunmetal" | "steel" | "matte"> = {
-  sub3: "black",
-  single: "gunmetal",
-  sub4: "steel",
-  sub5: "matte",
+// 1차 아크릴 키링은 티어와 무관하게 같은 마감(검정 패널 + 라임 인쇄). 글자(SUB3/SINGLE/SUB4/SUB5)로 구분한다.
+export const TIER_FINISH: Record<RecordTier, "acrylic"> = {
+  sub3: "acrylic",
+  single: "acrylic",
+  sub4: "acrylic",
+  sub5: "acrylic",
 };

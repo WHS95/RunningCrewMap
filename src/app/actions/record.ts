@@ -20,7 +20,7 @@ import {
   isRecordSku,
   isRecordTier,
   toSeconds,
-  SKUS,
+  RECORD_LIMIT_QTY,
 } from "@/lib/record/tier";
 import type {
   AdminOrderRow,
@@ -248,20 +248,56 @@ export async function setHallVisibility(
 // ===========================================================================
 // 3. 각인 주문 신청 (본인 토큰 · 승인된 기록만)
 // ===========================================================================
-export async function createRecordOrder(input: {
+export interface CreateOrderInput {
   id: string;
   token: string;
   sku: string;
-  contactInstagram: string;
-  memo?: string;
+  buyerName: string;
+  buyerPhone: string;
+  postcode?: string;
+  address: string;
+  addressDetail?: string;
+  contactInstagram?: string;
+  deliveryRequest?: string;
   consent: boolean;
-}): Promise<ActionResult<{ orderId: string }>> {
+}
+
+function normalizePhone(v: string): string {
+  return v.replace(/\D/g, "").slice(0, 11);
+}
+
+/** 결제 완료(paid) 주문 수로 남은 수량을 센다. */
+export async function getRemainingStock(): Promise<number> {
+  const { count } = await serverSupabase
+    .from("record_orders")
+    .select("id", { count: "exact", head: true })
+    .eq("payment_status", "paid");
+  return Math.max(0, RECORD_LIMIT_QTY - (count ?? 0));
+}
+
+/** Groble 결제창 주소. ref 에 우리 주문 id 를 실어 웹훅 sellerReference 로 돌려받는다. */
+function paymentUrlFor(orderId: string): string | null {
+  const base = (process.env.GROBLE_PAYMENT_URL ?? "").trim();
+  if (!base) return null;
+  return `${base}${base.includes("?") ? "&" : "?"}ref=${orderId}`;
+}
+
+export async function createRecordOrder(
+  input: CreateOrderInput
+): Promise<ActionResult<{ orderId: string; paymentUrl: string | null }>> {
   if (!input.consent) {
     return { success: false, error: "개인정보 수집·이용에 동의해 주세요." };
   }
   if (!isRecordSku(input.sku)) return { success: false, error: "상품을 선택해 주세요." };
-  const contact = normalizeInstagram(input.contactInstagram ?? "");
-  if (contact.length < 2) return { success: false, error: "연락받을 인스타그램 아이디를 입력해 주세요." };
+  const buyerName = (input.buyerName ?? "").trim().slice(0, 20);
+  const buyerPhone = normalizePhone(input.buyerPhone ?? "");
+  const address = (input.address ?? "").trim().slice(0, 200);
+  const addressDetail = (input.addressDetail ?? "").trim().slice(0, 100) || null;
+  const postcode = (input.postcode ?? "").replace(/\D/g, "").slice(0, 5) || null;
+  const contact = normalizeInstagram(input.contactInstagram ?? "") || null;
+  if (buyerName.length < 2) return { success: false, error: "받는 분 이름을 입력해 주세요." };
+  if (buyerPhone.length < 10) return { success: false, error: "연락처를 확인해 주세요." };
+  if (address.length < 5) return { success: false, error: "배송지 주소를 입력해 주세요." };
 
   const entry = await getOwnerEntry(input.id, input.token);
   if (!entry) return { success: false, error: "잘못된 링크입니다." };
@@ -269,14 +305,36 @@ export async function createRecordOrder(input: {
   const engraving = buildEngraving(entry);
   if (!engraving) return { success: false, error: "인증이 완료된 기록만 주문할 수 있어요." };
 
-  // 같은 기록으로 열린 신청이 너무 많으면 막는다(중복 클릭·스팸).
-  const { count } = await serverSupabase
+  if ((await getRemainingStock()) <= 0) {
+    return { success: false, error: "한정 수량 30개가 모두 소진됐어요." };
+  }
+
+  // 같은 기록으로 결제 안 된 신청이 이미 있으면 그 주문의 결제창으로 다시 보낸다(중복 생성 방지).
+  const { data: open } = await serverSupabase
     .from("record_orders")
-    .select("id", { count: "exact", head: true })
+    .select("id")
     .eq("entry_id", entry.id)
-    .eq("status", "requested");
-  if ((count ?? 0) >= 3) {
-    return { success: false, error: "이미 접수된 신청이 있어요. 안내 DM을 기다려 주세요." };
+    .eq("status", "requested")
+    .eq("payment_status", "unpaid")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (open) {
+    const openId = (open as { id: string }).id;
+    await serverSupabase
+      .from("record_orders")
+      .update({
+        buyer_name: buyerName,
+        buyer_phone: buyerPhone,
+        shipping_postcode: postcode,
+        shipping_address: address,
+        shipping_detail: addressDetail,
+        delivery_request: (input.deliveryRequest ?? "").trim().slice(0, 100) || null,
+        contact_instagram: contact ?? "",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", openId);
+    return { success: true, orderId: openId, paymentUrl: paymentUrlFor(openId) };
   }
 
   const { data, error } = await serverSupabase
@@ -285,33 +343,58 @@ export async function createRecordOrder(input: {
       entry_id: entry.id,
       sku: input.sku,
       engraving,
-      contact_instagram: contact,
-      memo: (input.memo ?? "").trim().slice(0, 300) || null,
+      contact_instagram: contact ?? "",
+      buyer_name: buyerName,
+      buyer_phone: buyerPhone,
+      shipping_postcode: postcode,
+      shipping_address: address,
+      shipping_detail: addressDetail,
+      delivery_request: (input.deliveryRequest ?? "").trim().slice(0, 100) || null,
     })
     .select("id")
     .single();
   if (error || !data) {
     console.error("[record] order insert failed:", error);
-    return { success: false, error: "주문 신청을 저장하지 못했어요." };
+    return { success: false, error: "주문을 저장하지 못했어요." };
   }
+  const orderId = (data as { id: string }).id;
 
-  const skuInfo = SKUS.find((s) => s.id === input.sku);
   await notifyDiscord({
-    title: "🛒 각인 주문 신청",
+    title: "🛒 각인 키링 주문 (결제 대기)",
     color: 0xf2f2ee,
     fields: [
-      { name: "상품", value: skuInfo?.label ?? input.sku, inline: true },
-      { name: "연락처", value: `@${contact}`, inline: true },
+      { name: "받는 분", value: `${buyerName} · ${buyerPhone}`, inline: true },
+      { name: "주소", value: `${postcode ? `[${postcode}] ` : ""}${address} ${addressDetail ?? ""}` },
       {
         name: "각인",
         value: `${engraving.runnerName} · ${engraving.time} · ${TIER_BY_ID[engraving.tier].label}\n${engraving.raceName} · ${engraving.raceDate} · ${engraving.certNo}`,
       },
-      ...(input.memo ? [{ name: "메모", value: input.memo.slice(0, 300) }] : []),
       { name: "관리", value: `${siteBase()}/admin/record` },
     ],
   });
 
-  return { success: true, orderId: (data as { id: string }).id };
+  return { success: true, orderId, paymentUrl: paymentUrlFor(orderId) };
+}
+
+/** 결제창에서 돌아온 뒤 결제 상태를 본다(웹훅이 늦으면 unpaid 로 보이고, 화면이 다시 조회한다). */
+export async function getOrderPaymentStatus(
+  orderId: string,
+  entryId: string,
+  token: string
+): Promise<ActionResult<{ paymentStatus: string }>> {
+  if (!isUuid(orderId) || !isUuid(entryId) || !isUuid(token)) {
+    return { success: false, error: "잘못된 요청입니다." };
+  }
+  const entry = await getOwnerEntry(entryId, token);
+  if (!entry) return { success: false, error: "잘못된 링크입니다." };
+  const { data } = await serverSupabase
+    .from("record_orders")
+    .select("payment_status")
+    .eq("id", orderId)
+    .eq("entry_id", entry.id)
+    .maybeSingle();
+  if (!data) return { success: false, error: "주문을 찾지 못했어요." };
+  return { success: true, paymentStatus: (data as { payment_status: string }).payment_status };
 }
 
 // ===========================================================================
@@ -351,7 +434,7 @@ export async function listRecordsAdmin(): Promise<
       .limit(300),
     serverSupabase
       .from("record_orders")
-      .select("id, entry_id, sku, engraving, contact_instagram, memo, status, created_at")
+      .select("id, entry_id, sku, engraving, contact_instagram, memo, status, buyer_name, buyer_phone, shipping_postcode, shipping_address, shipping_detail, delivery_request, payment_status, paid_amount, paid_at, created_at")
       .order("created_at", { ascending: false })
       .limit(300),
   ]);
@@ -389,6 +472,15 @@ export async function listRecordsAdmin(): Promise<
       contact_instagram: string;
       memo: string | null;
       status: OrderStatus;
+      buyer_name: string | null;
+      buyer_phone: string | null;
+      shipping_postcode: string | null;
+      shipping_address: string | null;
+      shipping_detail: string | null;
+      delivery_request: string | null;
+      payment_status: AdminOrderRow["paymentStatus"];
+      paid_amount: number | null;
+      paid_at: string | null;
       created_at: string;
     }>
   )
@@ -401,6 +493,15 @@ export async function listRecordsAdmin(): Promise<
       contactInstagram: o.contact_instagram,
       memo: o.memo,
       status: o.status,
+      buyerName: o.buyer_name,
+      buyerPhone: o.buyer_phone,
+      shippingPostcode: o.shipping_postcode,
+      shippingAddress: o.shipping_address,
+      shippingDetail: o.shipping_detail,
+      deliveryRequest: o.delivery_request,
+      paymentStatus: o.payment_status ?? "unpaid",
+      paidAmount: o.paid_amount,
+      paidAt: o.paid_at,
       createdAt: o.created_at,
     }));
 

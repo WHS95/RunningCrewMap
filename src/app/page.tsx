@@ -3,6 +3,8 @@ import { getCrewCount } from "@/lib/server/crews";
 import { marathonService } from "@/lib/services/marathon.service";
 import { listActiveBanners } from "@/app/actions/banner";
 import { HomeContent } from "./home/HomeContent";
+import { RecordPromoModal } from "@/components/record/RecordPromoModal";
+import { getRemainingStock } from "@/app/actions/record";
 
 // Root route is now the landing/home page — promo banner + primary
 // "주변 크루 찾으러 가기" CTA → /map. The interactive map itself lives
@@ -14,6 +16,9 @@ export const metadata: Metadata = {
 };
 
 export default async function LandingPage() {
+  // 기록 각인 한정판 팝업 — env 로 켜기 전까지는 홈에 흔적이 없다(1차 비노출).
+  const promoOn = (process.env.NEXT_PUBLIC_RECORD_PROMO ?? "").trim() === "on";
+  const remaining = promoOn ? await getRemainingStock().catch(() => 0) : 0;
   const [registeredCrews, marathonsThisMonth, banners] = await Promise.all([
     getCrewCount().catch(() => 0),
     Promise.resolve(
@@ -26,6 +31,8 @@ export default async function LandingPage() {
   ]);
 
   return (
+    <>
+    {promoOn && <RecordPromoModal remaining={remaining} />}
     <HomeContent
       registeredCrews={registeredCrews}
       marathonsThisMonth={marathonsThisMonth}
@@ -41,5 +48,6 @@ export default async function LandingPage() {
         bgColor: b.bg_color ?? undefined,
       }))}
     />
+    </>
   );
 }

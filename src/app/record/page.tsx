@@ -28,7 +28,7 @@ export default async function RecordLandingPage() {
         race: e.raceName,
         date: e.raceDate.replaceAll("-", "."),
       }))
-    : TIERS.map((t) => ({ key: t.id, name: t.name, race: `풀코스 ${t.limitLabel} 이내`, date: t.finish }));
+    : TIERS.map((t) => ({ key: t.id, name: t.name, race: `풀코스 ${t.limitLabel} 이내`, date: "RECORD KEYRING" }));
 
   const recent = entries.slice(0, 3);
 
@@ -122,7 +122,7 @@ export default async function RecordLandingPage() {
           href="/record/collection"
           className="w-full flex items-center justify-between px-5 h-12 rounded-[4px] border border-cart-rule text-cart-ink active:scale-[0.98] transition-transform duration-fast ease-apple"
         >
-          <span className="text-[14px] font-semibold">각인 액세서리 둘러보기</span>
+          <span className="text-[14px] font-semibold">각인 키링 둘러보기 · 한정 30</span>
           <span className="font-mono text-[10px] tracking-[0.16em] text-cart-ink-60">3D · 360° →</span>
         </Link>
       </section>
