@@ -45,6 +45,13 @@ const TAB_LABEL: Record<Tab, string> = {
   orders: "주문",
 };
 
+const PAYMENT_LABEL: Record<AdminOrderRow["paymentStatus"], string> = {
+  unpaid: "미결제",
+  paid: "결제 완료",
+  cancel_requested: "취소 요청",
+  refunded: "환불",
+};
+
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   requested: "신청",
   confirmed: "결제 확인",
@@ -87,7 +94,7 @@ export function RecordAdminClient() {
       pending: records.filter((r) => r.status === "pending").length,
       approved: records.filter((r) => r.status === "approved").length,
       rejected: records.filter((r) => r.status === "rejected").length,
-      orders: orders.filter((o) => o.status === "requested").length,
+      orders: orders.filter((o) => o.paymentStatus === "paid" && o.status === "confirmed").length,
     }),
     [records, orders]
   );
@@ -296,8 +303,22 @@ export function RecordAdminClient() {
                 <div className="font-mono text-[11px] text-cart-ink-60">
                   {o.engraving.raceName} · {o.engraving.raceDate} · {o.engraving.certNo}
                 </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn("font-mono text-[9px] font-bold tracking-[0.1em] px-1.5 py-0.5 rounded-[2px]", o.paymentStatus === "paid" ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))]" : "border border-cart-rule text-cart-ink-60")}>
+                    {PAYMENT_LABEL[o.paymentStatus]}{o.paidAmount != null ? ` · ${o.paidAmount.toLocaleString("ko-KR")}원` : ""}
+                  </span>
+                  {o.paidAt && <span className="font-mono text-[10px] text-cart-ink-40">{kstDate(o.paidAt)}</span>}
+                </div>
+                {(o.buyerName || o.shippingAddress) && (
+                  <div className="text-[12px] text-cart-ink leading-relaxed">
+                    {o.buyerName ?? "—"} · <span className="font-mono">{o.buyerPhone ?? "—"}</span>
+                    <br />
+                    {o.shippingPostcode ? `[${o.shippingPostcode}] ` : ""}{o.shippingAddress ?? "—"} {o.shippingDetail ?? ""}
+                    {o.deliveryRequest && <span className="text-cart-ink-60"> · {o.deliveryRequest}</span>}
+                  </div>
+                )}
                 <div className="text-[12px] text-cart-ink-60">
-                  연락 @{o.contactInstagram} · {kstDate(o.createdAt)}
+                  {o.contactInstagram ? `연락 @${o.contactInstagram} · ` : ""}{kstDate(o.createdAt)}
                   {rec?.runnerInstagram && rec.runnerInstagram !== o.contactInstagram && ` · 신청자 @${rec.runnerInstagram}`}
                 </div>
                 {o.memo && <div className="text-[12px] text-cart-ink-60">메모: {o.memo}</div>}

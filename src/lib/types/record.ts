@@ -75,6 +75,8 @@ export interface AdminRecordRow {
   createdAt: string;
 }
 
+export type PaymentStatus = "unpaid" | "paid" | "cancel_requested" | "refunded";
+
 export interface AdminOrderRow {
   id: string;
   entryId: string;
@@ -83,5 +85,14 @@ export interface AdminOrderRow {
   contactInstagram: string;
   memo: string | null;
   status: OrderStatus;
+  buyerName: string | null;
+  buyerPhone: string | null;
+  shippingPostcode: string | null;
+  shippingAddress: string | null;
+  shippingDetail: string | null;
+  deliveryRequest: string | null;
+  paymentStatus: PaymentStatus;
+  paidAmount: number | null;
+  paidAt: string | null;
   createdAt: string;
 }

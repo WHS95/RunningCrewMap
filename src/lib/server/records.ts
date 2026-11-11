@@ -187,3 +187,40 @@ export function buildEngraving(entry: OwnerEntry): EngravingSnapshot | null {
     certNo: entry.certNo,
   };
 }
+
+/** NFC 태그가 여는 공개 기록 페이지용 — 승인된 기록만, 공개 설정을 따른다(비공개면 티어·기록만). */
+export async function getPublicEntryByCertNo(certNo: string): Promise<
+  | { kind: "public"; entry: HallEntry }
+  | { kind: "private"; tier: RecordTier; seconds: number; certNo: string }
+  | null
+> {
+  const cert = certNo.trim().toUpperCase();
+  if (!/^RH-REC-\d{5}$/.test(cert)) return null;
+  const { data, error } = await serverSupabase
+    .from("hall_of_fame_entries")
+    .select(
+      "id, runner_name, name_masked, crew_name, race_name, race_date, race_time, tier, cert_no, hall_public, verification_status, record_orders(status)"
+    )
+    .eq("cert_no", cert)
+    .eq("verification_status", "approved")
+    .maybeSingle();
+  if (error || !data) return null;
+  const r = data as DbHallRow & { hall_public: boolean };
+  if (!isRecordTier(r.tier)) return null;
+  const seconds = intervalToSeconds(r.race_time);
+  if (!r.hall_public) return { kind: "private", tier: r.tier, seconds, certNo: cert };
+  return {
+    kind: "public",
+    entry: {
+      id: r.id,
+      displayName: r.name_masked ? maskName(r.runner_name) : r.runner_name,
+      crewName: r.crew_name,
+      raceName: r.race_name,
+      raceDate: r.race_date,
+      seconds,
+      tier: r.tier,
+      certNo: r.cert_no,
+      engraved: (r.record_orders ?? []).some((o) => ENGRAVED_ORDER_STATUSES.includes(o.status)),
+    },
+  };
+}
