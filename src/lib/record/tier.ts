@@ -127,5 +127,19 @@ export const TIER_FINISH: Record<RecordTier, "acrylic"> = {
   sub5: "acrylic",
 };
 
-/** 커피챗 후원 한 잔 가격(원) — Groble 상품 k6PbFx 와 같아야 한다 */
-export const SUPPORT_PRICE_KRW = 3000;
+/**
+ * 커피챗 후원 — 그로블 결제창은 상품당 가격이 하나라 잔마다 상품이 따로 있다.
+ * price 는 그로블 상품 가격과 같아야 한다. 커피 이름은 가격 비유일 뿐 브랜드와 무관하다.
+ */
+export const SUPPORT_OPTIONS = [
+  { id: "mega", cup: "메가커피", price: 1500, grobleProductId: "QS9tnF" },
+  { id: "cafe", cup: "동네 카페", price: 3000, grobleProductId: "k6PbFx" },
+  { id: "starbucks", cup: "스타벅스", price: 5000, grobleProductId: "EkNZVv" },
+] as const;
+
+export type SupportOptionId = (typeof SUPPORT_OPTIONS)[number]["id"];
+export const DEFAULT_SUPPORT_OPTION: SupportOptionId = "cafe";
+
+export function getSupportOption(id: unknown) {
+  return SUPPORT_OPTIONS.find((o) => o.id === id) ?? null;
+}

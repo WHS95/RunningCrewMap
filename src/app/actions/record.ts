@@ -20,6 +20,7 @@ import {
   isRecordSku,
   isRecordTier,
   toSeconds,
+  getSupportOption,
   RECORD_LIMIT_QTY,
 } from "@/lib/record/tier";
 import type {
@@ -398,15 +399,15 @@ export async function getOrderPaymentStatus(
 }
 
 // ===========================================================================
-// 3-1. 커피챗 후원 (3,000원) — 기록과 선택적으로 연결. 결제는 Groble 결제창(상품 k6PbFx).
+// 3-1. 커피챗 후원 (1,500 · 3,000 · 5,000원) — 기록과 선택적으로 연결. 잔마다 Groble 결제창 상품이 따로 있다.
 // ===========================================================================
-function supportPaymentUrlFor(supportId: string): string | null {
-  const base = (process.env.GROBLE_SUPPORT_PAYMENT_URL ?? "").trim();
-  if (!base) return null;
-  return `${base}${base.includes("?") ? "&" : "?"}ref=${supportId}`;
+function supportPaymentUrlFor(grobleProductId: string, supportId: string): string {
+  return `https://groble.im/payment/${grobleProductId}?ref=${supportId}`;
 }
 
 export interface CreateSupportInput {
+  /** SUPPORT_OPTIONS 의 id (mega · cafe · starbucks) */
+  optionId: string;
   /** 내 결과 링크에서 왔으면 기록 id·token — 결제 완료 시 기록장에 SUPPORTER 표시 */
   entryId?: string;
   token?: string;
@@ -416,7 +417,9 @@ export interface CreateSupportInput {
 
 export async function createSupport(
   input: CreateSupportInput
-): Promise<ActionResult<{ supportId: string; paymentUrl: string | null }>> {
+): Promise<ActionResult<{ supportId: string; paymentUrl: string }>> {
+  const option = getSupportOption(input.optionId);
+  if (!option) return { success: false, error: "후원 금액을 골라 주세요." };
   const name = (input.supporterName ?? "").trim().slice(0, 20) || null;
   const message = (input.message ?? "").trim().slice(0, 200) || null;
 
@@ -427,17 +430,22 @@ export async function createSupport(
     if (entry) entryId = entry.id;
   }
 
-  const { data, error } = await serverSupabase
+  const base = { entry_id: entryId, supporter_name: name, message };
+  let { data, error } = await serverSupabase
     .from("record_supports")
-    .insert({ entry_id: entryId, supporter_name: name, message })
+    .insert({ ...base, option_id: option.id, amount: option.price })
     .select("id")
     .single();
+  // 마이그레이션 2026-11-13(option_id·amount) 적용 전이면 금액 칸 없이 저장한다. 실제 금액은 웹훅 paid_amount 에 남는다.
+  if (error && (error.code === "PGRST204" || error.code === "42703")) {
+    ({ data, error } = await serverSupabase.from("record_supports").insert(base).select("id").single());
+  }
   if (error || !data) {
     console.error("[record] support insert failed:", error);
     return { success: false, error: "후원을 저장하지 못했어요." };
   }
   const supportId = (data as { id: string }).id;
-  return { success: true, supportId, paymentUrl: supportPaymentUrlFor(supportId) };
+  return { success: true, supportId, paymentUrl: supportPaymentUrlFor(option.grobleProductId, supportId) };
 }
 
 /** 결제창에서 돌아온 뒤 — 후원 id 자체가 비밀값(uuid)이라 별도 토큰 없이 상태만 돌려준다. */

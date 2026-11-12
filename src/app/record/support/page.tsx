@@ -1,4 +1,4 @@
-// src/app/record/support/page.tsx — 커피챗 후원(3,000원). 그로블 결제창 상품 k6PbFx 의 진입 페이지.
+// src/app/record/support/page.tsx — 커피챗 후원(1,500 · 3,000 · 5,000원). 그로블 결제창 상품 3개(SUPPORT_OPTIONS)의 진입 페이지.
 // 내 결과 링크(/record/r/<id>?token=)에서 오면 ?id&token 이 붙어 결제 완료 시 기록장에 SUPPORTER 가 붙는다.
 import { RecordShell, RecordSubHeader } from "@/components/record/RecordShell";
 import { SupportClient } from "@/components/record/SupportClient";
@@ -22,7 +22,6 @@ export default async function RecordSupportPage({
       <SupportClient
         paidCount={summary.paidCount}
         linked={linked}
-        paymentReady={Boolean((process.env.GROBLE_SUPPORT_PAYMENT_URL ?? "").trim())}
       />
     </RecordShell>
   );
