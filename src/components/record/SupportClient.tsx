@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Coffee, Loader2 } from "lucide-react";
 import { KickerLabel } from "@/components/design/cartographic";
 import { createSupport } from "@/app/actions/record";
-import { SUPPORT_PRICE_KRW } from "@/lib/record/tier";
+import { DEFAULT_SUPPORT_OPTION, SUPPORT_OPTIONS, type SupportOptionId } from "@/lib/record/tier";
 import { cn } from "@/lib/utils";
 
 export const SUPPORT_SESSION_KEY = "rh_record_support";
@@ -16,13 +16,12 @@ const inputClass =
 export function SupportClient({
   paidCount,
   linked,
-  paymentReady,
 }: {
   paidCount: number;
   linked: { id: string; token: string; runnerName: string } | null;
-  /** GROBLE_SUPPORT_PAYMENT_URL 이 설정돼 결제로 넘길 수 있는지 */
-  paymentReady: boolean;
 }) {
+  const [optionId, setOptionId] = useState<SupportOptionId>(DEFAULT_SUPPORT_OPTION);
+  const option = SUPPORT_OPTIONS.find((o) => o.id === optionId) ?? SUPPORT_OPTIONS[1];
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +31,7 @@ export function SupportClient({
     setError(null);
     startTransition(async () => {
       const res = await createSupport({
+        optionId,
         entryId: linked?.id,
         token: linked?.token,
         supporterName: name,
@@ -39,10 +39,6 @@ export function SupportClient({
       });
       if (!res.success) {
         setError(res.error);
-        return;
-      }
-      if (!res.paymentUrl) {
-        setError("결제 준비 중이에요. 잠시 후 다시 시도해 주세요.");
         return;
       }
       try {
@@ -73,14 +69,33 @@ export function SupportClient({
         </p>
       </div>
 
-      <div className="flex items-center justify-between py-4 border-y border-cart-rule">
-        <span className="flex items-center gap-2.5 text-cart-ink">
-          <Coffee className="w-5 h-5 text-[hsl(var(--lime))]" />
-          <span className="text-[14px] font-semibold">커피 한 잔</span>
-        </span>
-        <span className="font-mono text-[18px] font-bold text-cart-ink tabular-nums">
-          {SUPPORT_PRICE_KRW.toLocaleString("ko-KR")}원
-        </span>
+      <div role="radiogroup" aria-label="후원 금액" className="grid grid-cols-3 gap-2">
+        {SUPPORT_OPTIONS.map((o) => {
+          const on = o.id === optionId;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setOptionId(o.id)}
+              className={cn(
+                "flex flex-col items-start gap-2 rounded-[4px] border px-3 py-3.5 text-left transition-colors duration-fast ease-apple active:scale-[0.98]",
+                on ? "border-[hsl(var(--lime))] bg-[hsl(var(--lime))]/[0.06]" : "border-cart-rule"
+              )}
+            >
+              <Coffee className={cn("w-4 h-4", on ? "text-[hsl(var(--lime))]" : "text-cart-ink-40")} />
+              <span className={cn("text-[13px] font-semibold leading-tight", on ? "text-cart-ink" : "text-cart-ink-60")}>
+                {o.cup}
+                <br />
+                <span className="text-[11px] font-normal text-cart-ink-60">한 잔</span>
+              </span>
+              <span className={cn("font-mono text-[14px] font-bold tabular-nums", on ? "text-cart-ink" : "text-cart-ink-60")}>
+                {o.price.toLocaleString("ko-KR")}원
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex items-baseline justify-between">
@@ -118,19 +133,14 @@ export function SupportClient({
       <button
         type="button"
         onClick={submit}
-        disabled={pending || !paymentReady}
-        className={cn(
-          "w-full flex items-center justify-between px-5 h-[54px] rounded-[4px] active:scale-[0.98] transition-transform duration-fast ease-apple",
-          paymentReady
-            ? "bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))]"
-            : "border border-cart-rule text-cart-ink-40"
-        )}
+        disabled={pending}
+        className="w-full flex items-center justify-between px-5 h-[54px] rounded-[4px] bg-[hsl(var(--lime))] text-[hsl(var(--lime-foreground))] active:scale-[0.98] transition-transform duration-fast ease-apple disabled:opacity-70"
       >
         <span className="text-[15px] font-extrabold flex items-center gap-2">
           {pending && <Loader2 className="w-4 h-4 animate-spin" />}
-          {paymentReady ? "커피 한 잔 후원하기" : "결제 준비 중"}
+          {option.cup} 한 잔 후원하기
         </span>
-        <span className="font-mono text-[11px] tracking-[0.18em]">{SUPPORT_PRICE_KRW.toLocaleString("ko-KR")} KRW →</span>
+        <span className="font-mono text-[11px] tracking-[0.18em]">{option.price.toLocaleString("ko-KR")} KRW →</span>
       </button>
       <p className="text-[11px] leading-relaxed text-cart-ink-40">
         결제는 그로블 결제창에서 진행돼요. 후원은 실물·디지털 제공물이 없는 응원이며, 결제 후 7일 이내 그로블 주문 조회에서 취소할 수 있어요.

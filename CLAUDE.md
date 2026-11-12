@@ -47,7 +47,7 @@ Both `.env` and `.env.local` are used. Server-side Supabase calls fall back from
 - `DISCORD_REGISTRATION_WEBHOOK_URL` — fire-and-forget webhook for crew register/edit events
 - `DISCORD_STORE_WEBHOOK_URL` — 매장 등록/수정 알림 전용. 미설정 시 `DISCORD_REGISTRATION_WEBHOOK_URL`로 fallback.
 - `DISCORD_RECORD_WEBHOOK_URL` — (선택) 기록 인증 신청·각인 주문 신청 알림. 미설정 시 `DISCORD_REGISTRATION_WEBHOOK_URL`로 fallback — Vercel 에 새 env 추가 없이 동작.
-- `GROBLE_PAYMENT_URL` / `GROBLE_SUPPORT_PAYMENT_URL` — 그로블 결제창 링크(키링 FWqHYD / 커피챗 후원 k6PbFx). 미설정이면 해당 버튼이 "결제 준비 중"으로 비활성.
+- `GROBLE_PAYMENT_URL` — 키링 결제창 링크(상품 FWqHYD). 미설정이면 주문 버튼이 "결제 준비 중"으로 비활성. 커피챗 후원 상품 번호는 코드 상수(`SUPPORT_OPTIONS`)라 env 가 필요 없다(`GROBLE_SUPPORT_PAYMENT_URL` 은 더 이상 읽지 않음).
 - `CREW_SESSION_SECRET` — **필수(32자 이상)**. 크루 PIN 세션 쿠키 HMAC 시크릿. 미설정이면 PIN 설정/로그인이 실패하고 `/crew/edit/[id]` 서버 렌더가 깨진다.
 - `STORE_SESSION_SECRET` — 매장 PIN 세션 HMAC 시크릿. 미설정 시 `CREW_SESSION_SECRET` fallback.
 - `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_SITE_URL` — used to build absolute URLs in Discord embeds and edit links
@@ -81,7 +81,7 @@ Public pages (root `/`, `/map`, etc.) read crews through the **server** path. Th
 - 상품은 아크릴 키링 1종(`keyring`), 배송비 포함 `RECORD_PRICE_KRW`=20,000원, 한정 `RECORD_LIMIT_QTY`=30(결제 완료 수로 계산). 배송지·이름·연락처는 우리 폼에서 받고(`record_orders.buyer_*`, `shipping_*`), 웹훅의 shipping 블록이 오면 덮어쓴다.
 - NFC 공개 페이지 `/record/c/<cert_no>`: 토큰 없이 인증번호로 연다. 비공개 기록은 티어·기록만.
 - 홈 팝업 `RecordPromoModal` 은 `NEXT_PUBLIC_RECORD_PROMO=on` 일 때만 마운트(1차 비노출 유지).
-- 커피챗 후원 `/record/support`(3,000원, `SUPPORT_PRICE_KRW`): Groble 결제창 상품 k6PbFx(`GROBLE_SUPPORT_PAYMENT_URL` + `?ref=<record_supports.id>`). 기록 링크(`?id&token`)로 들어오면 `record_supports.entry_id` 에 연결되고, 웹훅 `payment.completed` 가 `record_orders` 에서 못 찾으면 `record_supports` 를 paid 로 바꾼다 → 기록장에 SUPPORTER 배지. 결제 후 이동 `/record/support/thanks`(sessionStorage). 배송·개인정보 폼 없음.
+- 커피챗 후원 `/record/support`: 1,500 · 3,000 · 5,000원 중 선택(`SUPPORT_OPTIONS`, `src/lib/record/tier.ts`). 그로블 결제창은 상품당 가격이 하나라 잔마다 상품이 따로 있다(QS9tnF · k6PbFx · EkNZVv). 결제 링크는 `https://groble.im/payment/<상품>?ref=<record_supports.id>` 로 코드에서 만든다. 가격을 바꾸면 그로블 상품 가격도 같이 바꿔야 한다. 기록 링크(`?id&token`)로 들어오면 `record_supports.entry_id` 에 연결되고, 웹훅 `payment.completed` 가 `record_orders` 에서 못 찾으면 `record_supports` 를 paid 로 바꾼다 → 기록장에 SUPPORTER 배지. 결제 후 이동 `/record/support/thanks`(sessionStorage). 배송·개인정보 폼 없음.
 
 ### Approval queue + self-service edit tokens
 
