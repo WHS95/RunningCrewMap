@@ -26,6 +26,11 @@ export function HallRow({ entry, rank }: { entry: HallEntry; rank: number }) {
               ENGRAVED
             </span>
           )}
+          {entry.supporter && (
+            <span className="shrink-0 font-mono text-[8.5px] font-bold tracking-[0.1em] px-1.5 py-0.5 rounded-[2px] border border-cart-ink-40 text-cart-ink-60">
+              SUPPORTER
+            </span>
+          )}
         </div>
         <span className="text-[11px] text-cart-ink-60 truncate">
           {entry.crewName ? `${entry.crewName} · ` : ""}

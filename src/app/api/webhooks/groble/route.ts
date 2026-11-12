@@ -1,6 +1,6 @@
 // src/app/api/webhooks/groble/route.ts
 // Groble 결제 웹훅. 서명(HMAC-SHA256 of "{timestamp}.{raw_body}") 검증 → 멱등 키로 중복 차단 →
-// payment.completed 면 sellerReference(= 우리 주문 id)로 record_orders 를 결제 완료 처리한다.
+// payment.completed 면 sellerReference(= 우리 주문 id)로 record_orders 를, 없으면 record_supports(커피챗 후원)를 결제 완료 처리한다.
 // 가이드: https://www.groble.im/help/guides/webhook
 //
 // 그로블은 계정당 웹훅 URL 이 하나뿐이라 이 엔드포인트가 허브다. 검증·처리 뒤 원문과 서명 헤더를
@@ -135,10 +135,31 @@ export async function POST(req: NextRequest) {
       console.error("[groble] order update failed:", error);
       return done({ ok: false }, 500);
     }
-    if (!data?.length) return done({ ok: true, unmatched: true });
+    if (!data?.length) {
+      // 키링 주문이 아니면 커피챗 후원(record_supports)일 수 있다. 후원은 배송지가 없어 결제 칸만 적는다.
+      const { data: sup, error: supErr } = await serverSupabase
+        .from("record_supports")
+        .update({
+          payment_status: "paid",
+          groble_merchant_uid: d.merchantUid ?? null,
+          paid_amount: d.pricing?.finalAmount ?? null,
+          paid_at: patch.paid_at,
+          payment_raw: d,
+          ...(d.buyer?.displayName ? { supporter_name: d.buyer.displayName } : {}),
+          updated_at: patch.updated_at,
+        })
+        .eq("id", ref)
+        .select("id");
+      if (supErr) {
+        console.error("[groble] support update failed:", supErr);
+        return done({ ok: false }, 500);
+      }
+      if (!sup?.length) return done({ ok: true, unmatched: true });
+    }
     revalidateTag(RECORDS_CACHE_TAG);
     revalidatePath("/record");
     revalidatePath("/record/hall");
+    revalidatePath("/record/support");
     return done({ ok: true });
   }
 
@@ -152,9 +173,17 @@ export async function POST(req: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", ref);
+      await serverSupabase
+        .from("record_supports")
+        .update({
+          payment_status: eventType === "payment.refunded" ? "refunded" : "cancel_requested",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", ref);
       revalidateTag(RECORDS_CACHE_TAG);
       revalidatePath("/record");
       revalidatePath("/record/hall");
+      revalidatePath("/record/support");
     }
     return done({ ok: true });
   }
