@@ -1,5 +1,6 @@
 // src/app/record/page.tsx — 01 역대 기록장 랜딩 (캔버스 시안 Hall.dc.html)
 import Link from "next/link";
+import { Coffee } from "lucide-react";
 import { KickerLabel } from "@/components/design/cartographic";
 import { RecordShell } from "@/components/record/RecordShell";
 import { ScrollVelocityRow } from "@/components/record/ScrollVelocity";
@@ -124,6 +125,12 @@ export default async function RecordLandingPage() {
         >
           <span className="text-[14px] font-semibold">각인 키링 둘러보기 · 한정 30</span>
           <span className="font-mono text-[10px] tracking-[0.16em] text-cart-ink-60">3D · 360° →</span>
+        </Link>
+        <Link
+          href="/record/support"
+          className="w-full flex items-center justify-center gap-2 h-11 text-[13px] text-cart-ink-60"
+        >
+          <Coffee className="w-4 h-4" /> 커피 한 잔으로 런하우스 응원하기
         </Link>
       </section>
     </RecordShell>

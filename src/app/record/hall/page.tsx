@@ -78,7 +78,7 @@ export default async function RecordHallPage({
         )}
 
         <p className="mt-6 text-[11px] leading-relaxed text-cart-ink-40">
-          공개에 동의한 인증 기록만 보여요. 이름은 기본으로 가려지고, ENGRAVED 는 각인 액세서리를 주문한 기록입니다.
+          공개에 동의한 인증 기록만 보여요. 이름은 기본으로 가려지고, ENGRAVED 는 각인 액세서리를 주문한 기록, SUPPORTER 는 커피챗으로 응원한 기록입니다.
         </p>
       </div>
     </RecordShell>

@@ -17,6 +17,7 @@ import type {
   HallEntry,
   HallStats,
   OwnerEntry,
+  SupportSummary,
   VerificationStatus,
 } from "@/lib/types/record";
 
@@ -26,6 +27,10 @@ const RECORDS_CACHE_TTL_SECS = 60;
 export const RECORD_CERT_BUCKET = "recordCertificates";
 
 const ENGRAVED_ORDER_STATUSES = ["confirmed", "in_production", "shipped"];
+
+function hasPaidSupport(rows?: Array<{ payment_status: string }>): boolean {
+  return (rows ?? []).some((s) => s.payment_status === "paid");
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -45,13 +50,14 @@ interface DbHallRow {
   tier: string | null;
   cert_no: string | null;
   record_orders?: Array<{ status: string }>;
+  record_supports?: Array<{ payment_status: string }>;
 }
 
 async function fetchHallEntries(): Promise<HallEntry[]> {
   const { data, error } = await serverSupabase
     .from("hall_of_fame_entries")
     .select(
-      "id, runner_name, name_masked, crew_name, race_name, race_date, race_time, tier, cert_no, record_orders(status)"
+      "id, runner_name, name_masked, crew_name, race_name, race_date, race_time, tier, cert_no, record_orders(status), record_supports(payment_status)"
     )
     .eq("verification_status", "approved")
     .eq("hall_public", true)
@@ -78,6 +84,7 @@ async function fetchHallEntries(): Promise<HallEntry[]> {
       engraved: (r.record_orders ?? []).some((o) =>
         ENGRAVED_ORDER_STATUSES.includes(o.status)
       ),
+      supporter: hasPaidSupport(r.record_supports),
     }));
 }
 
@@ -199,7 +206,7 @@ export async function getPublicEntryByCertNo(certNo: string): Promise<
   const { data, error } = await serverSupabase
     .from("hall_of_fame_entries")
     .select(
-      "id, runner_name, name_masked, crew_name, race_name, race_date, race_time, tier, cert_no, hall_public, verification_status, record_orders(status)"
+      "id, runner_name, name_masked, crew_name, race_name, race_date, race_time, tier, cert_no, hall_public, verification_status, record_orders(status), record_supports(payment_status)"
     )
     .eq("cert_no", cert)
     .eq("verification_status", "approved")
@@ -221,6 +228,28 @@ export async function getPublicEntryByCertNo(certNo: string): Promise<
       tier: r.tier,
       certNo: r.cert_no,
       engraved: (r.record_orders ?? []).some((o) => ENGRAVED_ORDER_STATUSES.includes(o.status)),
+      supporter: hasPaidSupport(r.record_supports),
     },
   };
 }
+
+// ----- 커피챗 후원 -----
+async function fetchSupportSummary(): Promise<SupportSummary> {
+  const { count, error } = await serverSupabase
+    .from("record_supports")
+    .select("id", { count: "exact", head: true })
+    .eq("payment_status", "paid");
+  if (error) {
+    console.error("[records] support count failed:", error);
+    return { paidCount: 0 };
+  }
+  return { paidCount: count ?? 0 };
+}
+
+const getSupportSummaryCached = unstable_cache(fetchSupportSummary, ["record-support"], {
+  revalidate: RECORDS_CACHE_TTL_SECS,
+  tags: [RECORDS_CACHE_TAG],
+});
+
+/** 결제 완료된 후원 수 — 후원 페이지에 "n잔" 으로 보여준다. */
+export const getSupportSummary = cache(() => getSupportSummaryCached());

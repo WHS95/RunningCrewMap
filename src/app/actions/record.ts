@@ -398,6 +398,63 @@ export async function getOrderPaymentStatus(
 }
 
 // ===========================================================================
+// 3-1. 커피챗 후원 (3,000원) — 기록과 선택적으로 연결. 결제는 Groble 결제창(상품 k6PbFx).
+// ===========================================================================
+function supportPaymentUrlFor(supportId: string): string | null {
+  const base = (process.env.GROBLE_SUPPORT_PAYMENT_URL ?? "").trim();
+  if (!base) return null;
+  return `${base}${base.includes("?") ? "&" : "?"}ref=${supportId}`;
+}
+
+export interface CreateSupportInput {
+  /** 내 결과 링크에서 왔으면 기록 id·token — 결제 완료 시 기록장에 SUPPORTER 표시 */
+  entryId?: string;
+  token?: string;
+  supporterName?: string;
+  message?: string;
+}
+
+export async function createSupport(
+  input: CreateSupportInput
+): Promise<ActionResult<{ supportId: string; paymentUrl: string | null }>> {
+  const name = (input.supporterName ?? "").trim().slice(0, 20) || null;
+  const message = (input.message ?? "").trim().slice(0, 200) || null;
+
+  // 기록 연결은 id·token 이 함께 맞을 때만. 틀리면 연결 없이 후원만 받는다.
+  let entryId: string | null = null;
+  if (input.entryId && input.token) {
+    const entry = await getOwnerEntry(input.entryId, input.token);
+    if (entry) entryId = entry.id;
+  }
+
+  const { data, error } = await serverSupabase
+    .from("record_supports")
+    .insert({ entry_id: entryId, supporter_name: name, message })
+    .select("id")
+    .single();
+  if (error || !data) {
+    console.error("[record] support insert failed:", error);
+    return { success: false, error: "후원을 저장하지 못했어요." };
+  }
+  const supportId = (data as { id: string }).id;
+  return { success: true, supportId, paymentUrl: supportPaymentUrlFor(supportId) };
+}
+
+/** 결제창에서 돌아온 뒤 — 후원 id 자체가 비밀값(uuid)이라 별도 토큰 없이 상태만 돌려준다. */
+export async function getSupportPaymentStatus(
+  supportId: string
+): Promise<ActionResult<{ paymentStatus: string }>> {
+  if (!isUuid(supportId)) return { success: false, error: "잘못된 요청입니다." };
+  const { data } = await serverSupabase
+    .from("record_supports")
+    .select("payment_status")
+    .eq("id", supportId)
+    .maybeSingle();
+  if (!data) return { success: false, error: "후원을 찾지 못했어요." };
+  return { success: true, paymentStatus: (data as { payment_status: string }).payment_status };
+}
+
+// ===========================================================================
 // 4. 어드민
 // ===========================================================================
 interface DbAdminRow {

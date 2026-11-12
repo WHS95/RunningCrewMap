@@ -14,6 +14,8 @@ export interface HallEntry {
   tier: RecordTier;
   certNo: string | null;
   engraved: boolean;
+  /** 결제 완료된 커피챗 후원이 연결된 기록 */
+  supporter: boolean;
 }
 
 export interface HallStats {
@@ -95,4 +97,9 @@ export interface AdminOrderRow {
   paidAmount: number | null;
   paidAt: string | null;
   createdAt: string;
+}
+
+/** 커피챗 후원(3,000원) 한 건 — 후원자에게 보여주는 최소 정보 */
+export interface SupportSummary {
+  paidCount: number;
 }

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Copy, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Coffee, Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { KickerLabel } from "@/components/design/cartographic";
 import { CountUp } from "@/components/record/CountUp";
@@ -241,6 +241,12 @@ export function ResultView({
           className="h-12 inline-flex items-center justify-center rounded-[4px] border border-cart-rule text-[14px] font-semibold text-cart-ink"
         >
           기록장에서 내 기록 보기
+        </Link>
+        <Link
+          href={`/record/support?id=${entry.id}&token=${token}`}
+          className="h-11 inline-flex items-center justify-center gap-2 rounded-[4px] text-[13px] text-cart-ink-60"
+        >
+          <Coffee className="w-4 h-4" /> 커피 한 잔으로 응원 · 기록장에 SUPPORTER 표시
         </Link>
       </div>
     </div>

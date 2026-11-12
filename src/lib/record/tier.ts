@@ -126,3 +126,6 @@ export const TIER_FINISH: Record<RecordTier, "acrylic"> = {
   sub4: "acrylic",
   sub5: "acrylic",
 };
+
+/** 커피챗 후원 한 잔 가격(원) — Groble 상품 k6PbFx 와 같아야 한다 */
+export const SUPPORT_PRICE_KRW = 3000;
