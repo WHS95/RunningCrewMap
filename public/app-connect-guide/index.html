@@ -74,6 +74,13 @@ section { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 1
 .btn { display: flex; justify-content: center; align-items: center; background: var(--ink); color: var(--bg); font-weight: 900; font-size: 21px; min-height: 60px; border-radius: 12px; text-decoration: none; }
 .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: var(--bar-h); padding: 0 16px env(safe-area-inset-bottom, 0px); box-sizing: content-box; background: var(--ink); color: var(--bg); text-decoration: none; font-weight: 900; font-size: 20px; }
 footer { font-size: 15px; color: var(--soft); }
+</style><style>
+section.phone[hidden] { display: none; }
+.phones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.phones a { display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: center; min-height: 88px; border: 2px solid var(--ink); border-radius: 14px; text-decoration: none; font-weight: 900; font-size: 26px; }
+.phones small { font-size: 17px; font-weight: 700; }
+.phones a[aria-current="true"] { background: var(--ink); color: var(--bg); }
+.phones a:focus-visible { outline: 3px solid var(--mark); outline-offset: 3px; }
 </style>
 </head>
 <body>
@@ -81,12 +88,21 @@ footer { font-size: 15px; color: var(--soft); }
 
 <header style="display:flex;flex-direction:column;gap:16px">
   <h1>런하우스 기록 연동 안내</h1>
-  <p>쓰는 휴대폰과 기기를 골라 주세요. 사진 속 <b class="mark">빨간 네모</b>를 순서대로 누르면 돼요.</p>
+  <p>휴대폰을 먼저 고르고, 러닝할 때 쓰는 워치나 앱을 골라 주세요. 사진 속 <b class="mark">빨간 네모</b>를 순서대로 누르면 돼요.</p>
 </header>
 
-<section aria-labelledby="아이폰">
-  <span class="tag">아이폰</span>
-  <h2 id="아이폰">아이폰을 쓰시나요?</h2>
+<section aria-labelledby="pick-h">
+  <span class="tag">1. 휴대폰 고르기</span>
+  <h2 id="pick-h">어떤 휴대폰을 쓰시나요?</h2>
+  <nav class="phones" aria-label="휴대폰 고르기">
+    <a href="#iphone" data-phone="iphone">아이폰</a>
+    <a href="#galaxy" data-phone="galaxy">안드로이드<small>갤럭시 등</small></a>
+  </nav>
+</section>
+
+<section id="iphone" class="phone" aria-labelledby="iphone-h">
+  <span class="tag">2. 워치·앱 고르기</span>
+  <h2 id="iphone-h">러닝할 때 주로 쓰는 워치·앱 선택</h2>
   <nav class="choose" aria-label="아이폰 안내">
     <a href="/app-connect-guide/iphone-applewatch"><b>애플워치</b><span>보기 →</span></a>
     <a href="/app-connect-guide/iphone-smartwatch"><b>러닝 스마트워치</b><span>보기 →</span></a>
@@ -94,13 +110,14 @@ footer { font-size: 15px; color: var(--soft); }
   </nav>
 </section>
 
-<section aria-labelledby="갤럭시">
-  <span class="tag">갤럭시</span>
-  <h2 id="갤럭시">갤럭시를 쓰시나요?</h2>
-  <nav class="choose" aria-label="갤럭시 안내">
+<section id="galaxy" class="phone" aria-labelledby="galaxy-h">
+  <span class="tag">2. 워치·앱 고르기</span>
+  <h2 id="galaxy-h">러닝할 때 주로 쓰는 워치·앱 선택</h2>
+  <nav class="choose" aria-label="안드로이드 안내">
     <a href="/app-connect-guide/galaxy-samsung"><b>갤럭시 워치, 삼성 헬스</b><span>보기 →</span></a>
     <a href="/app-connect-guide/galaxy-smartwatch"><b>러닝 스마트워치</b><span>보기 →</span></a>
     <a href="/app-connect-guide/galaxy-apps"><b>나이키런클럽, 스트라바</b><span>보기 →</span></a>
+    <a href="/app-connect-guide/galaxy-fix"><b>기록 문제 해결</b><span>보기 →</span></a>
   </nav>
 </section>
 
@@ -108,5 +125,19 @@ footer { font-size: 15px; color: var(--soft); }
 
 </div>
 <a class="bar" href="https://pf.kakao.com/_DpsFX/chat" target="_blank" rel="noopener">카카오톡 1:1 문의 →</a>
+<script>
+(function () {
+  var links = document.querySelectorAll('.phones a'), secs = document.querySelectorAll('section.phone');
+  function show(id, scroll) {
+    var ok = id === 'iphone' || id === 'galaxy';
+    secs.forEach(function (s) { s.hidden = !ok || s.id !== id; });
+    links.forEach(function (a) { a.setAttribute('aria-current', String(a.dataset.phone === id)); });
+    if (ok && scroll) document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  links.forEach(function (a) { a.addEventListener('click', function (e) {
+    e.preventDefault(); history.replaceState(null, '', '#' + a.dataset.phone); show(a.dataset.phone, true); }); });
+  show(location.hash.slice(1), false);
+})();
+</script>
 </body>
 </html>
