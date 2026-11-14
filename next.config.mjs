@@ -43,7 +43,7 @@ const nextConfig = {
       // 원본·생성기는 runhouse-league 저장소 docs/연동-메뉴얼/build-web.py.
       { source: "/app-connect-guide", destination: "/app-connect-guide/index.html" },
       {
-        source: "/app-connect-guide/:slug(iphone-applewatch|iphone-smartwatch|iphone-apps|galaxy-samsung|galaxy-smartwatch|galaxy-apps)",
+        source: "/app-connect-guide/:slug(iphone-applewatch|iphone-smartwatch|iphone-apps|galaxy-samsung|galaxy-smartwatch|galaxy-apps|galaxy-fix)",
         destination: "/app-connect-guide/:slug.html",
       },
       // PostHog 인제스트 역방향 프록시 — 광고 차단기 우회
