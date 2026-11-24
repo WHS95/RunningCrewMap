@@ -96,7 +96,6 @@ export default async function RegionDetailPage(
               key={crew.id}
               crew={crew}
               rank={i + 1}
-              regionCode={code as RegionCode}
             />
           ))}
         </div>
