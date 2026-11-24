@@ -28,7 +28,11 @@ function buildOutboundHref(baseHref: string, medium: string): string {
     } catch {
         // localStorage 접근 불가 시 무시
     }
-    return `${baseHref}?${params.toString()}`;
+    // 해시 라우터(…/#/) 주소는 쿼리를 # 앞에 둔다 — 뒤에 붙이면 해시 안으로 들어가 UTM 이 안 잡힌다.
+    const hashAt = baseHref.indexOf("#");
+    const base = hashAt === -1 ? baseHref : baseHref.slice(0, hashAt);
+    const hash = hashAt === -1 ? "" : baseHref.slice(hashAt);
+    return `${base}?${params.toString()}${hash}`;
 }
 
 interface ServiceLink {
@@ -62,7 +66,7 @@ const SERVICES: ServiceLink[] = [
     title: "커스텀 러닝 제품 제작",
     description:
       "크루 로고가 들어간 모자 · 깃발 · 의류 등을 직접 제작 의뢰하세요.",
-    href: "https://runhouse-custom.vercel.app/",
+    href: "https://runhouse-custom-wear.vercel.app/#/",
     utmMedium: "side_panel",
     ctaLabel: "커스텀 주문하기",
   },

@@ -62,6 +62,16 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .stage { display: flex; justify-content: center; }
 .phone { width: 410px; max-width: 100%; height: 864px; border-radius: 58px; padding: 10px; background: var(--frame); box-shadow: 0 30px 60px -24px rgba(0,0,0,0.45); }
 .note { text-align: center; font-size: 12px; color: var(--page-mute); margin-top: 14px; }
+/* 폰 아래: 앱 설치 — 체험해 본 사람이 바로 스토어로 갈 수 있게 */
+.install { max-width: 960px; margin: 28px auto 0; padding: 20px; border-radius: 20px; background: var(--page-card); border: 1px solid var(--page-line); display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.install-copy { flex: 1 1 260px; min-width: 0; }
+.install-copy h2 { margin: 2px 0 4px; font-size: 21px; line-height: 1.35; font-weight: 800; }
+.install-copy p { margin: 0; font-size: 14px; color: var(--page-mute); }
+.stores { flex: 1 1 300px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.store { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; border-radius: 12px; background: var(--page-ink); color: var(--page); text-decoration: none; }
+.store:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.store small { font-size: 12px; opacity: 0.7; }
+.store b { font-size: 16px; font-weight: 800; }
 /* 폰 아래: 자주 헷갈리는 두 가지를 글로도 정리 */
 .more { max-width: 960px; margin: 36px auto 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
 .mcard { min-width: 0; padding: 20px; border-radius: 20px; background: var(--page-card); border: 1px solid var(--page-line); display: flex; flex-direction: column; gap: 14px; }
@@ -260,6 +270,18 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 </header>
 <main class="stage"><div class="phone"><div class="screen" id="p"></div></div></main>
 <p class="note">체험용 화면이에요. 이름과 기록은 모두 예시이고, 어디에도 저장되지 않아요.</p>
+
+<section class="install" aria-labelledby="install-title">
+  <div class="install-copy">
+    <div class="eyebrow">앱 설치</div>
+    <h2 id="install-title">런하우스 리그, 이제 앱으로 써 보세요</h2>
+    <p>앱을 설치하고 크루를 만들거나, 받은 초대 코드로 크루에 들어가요.</p>
+  </div>
+  <div class="stores">
+    <a class="store" href="https://apps.apple.com/kr/app/id6808215626" target="_blank" rel="noopener"><small>아이폰</small><b>App Store</b></a>
+    <a class="store" href="https://play.google.com/store/apps/details?id=com.runhouse.app" target="_blank" rel="noopener"><small>안드로이드</small><b>Google Play</b></a>
+  </div>
+</section>
 
 <section class="more" aria-label="자주 묻는 것">
   <article class="mcard">

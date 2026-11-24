@@ -2,6 +2,7 @@
 import type { MetadataRoute } from "next";
 import { REGION_DEFS } from "@/lib/server/regions";
 import { getVisibleStores } from "@/lib/server/stores";
+import { getCrews } from "@/lib/server/crews";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -12,7 +13,7 @@ export const revalidate = 600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const [stores] = await Promise.all([getVisibleStores()]);
+  const [stores, crews] = await Promise.all([getVisibleStores(), getCrews()]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`,          lastModified: now, changeFrequency: "daily",   priority: 1.0 },
@@ -36,6 +37,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "weekly",
     priority: 0.6,
   }));
-  // Week 2: /crew/[id] 단독 페이지가 생기면 visible crew URL을 추가한다.
-  return [...staticRoutes, ...regionRoutes, ...storeRoutes];
+  // 크루 단독 페이지 — 공개(is_visible) 크루만. 수정 시각을 따로 읽지 않으므로 lastModified 는 넣지 않는다
+  // (틀린 날짜를 주면 검색엔진이 lastmod 전체를 믿지 않는다).
+  const crewRoutes: MetadataRoute.Sitemap = crews.map((c) => ({
+    url: `${BASE_URL}/crew/${c.id}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+  return [...staticRoutes, ...regionRoutes, ...crewRoutes, ...storeRoutes];
 }
