@@ -50,6 +50,7 @@ Both `.env` and `.env.local` are used. Server-side Supabase calls fall back from
 - `GROBLE_PAYMENT_URL` — 키링 결제창 링크(상품 FWqHYD). 미설정이면 주문 버튼이 "결제 준비 중"으로 비활성. 커피챗 후원 상품 번호는 코드 상수(`SUPPORT_OPTIONS`)라 env 가 필요 없다(`GROBLE_SUPPORT_PAYMENT_URL` 은 더 이상 읽지 않음).
 - `CREW_SESSION_SECRET` — **필수(32자 이상)**. 크루 PIN 세션 쿠키 HMAC 시크릿. 미설정이면 PIN 설정/로그인이 실패하고 `/crew/edit/[id]` 서버 렌더가 깨진다.
 - `STORE_SESSION_SECRET` — 매장 PIN 세션 HMAC 시크릿. 미설정 시 `CREW_SESSION_SECRET` fallback.
+- `NEXT_PUBLIC_NAVER_SITE_VERIFICATION` — (선택) 네이버 서치어드바이저 소유 확인 값(`<meta name="naver-site-verification">`의 content). 미설정이면 태그를 내지 않는다. 구글 확인 값은 `layout.tsx`에 고정.
 - `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_SITE_URL` — used to build absolute URLs in Discord embeds and edit links
 
 Server env reads in `src/lib/server/supabase.ts` defensively `.trim()` values — some past `.env` lines had stray whitespace around `=`.

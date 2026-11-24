@@ -32,6 +32,8 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const NAVER_SITE_VERIFICATION = process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION?.trim();
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.runhouse.club"),
   title: {
@@ -93,6 +95,11 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "kTNCTTBcS4y_iB6NN8sjBN4_4NUWgZM3W7C6080WZZg",
+    // 네이버 서치어드바이저 소유 확인 — 값은 Vercel 환경변수 NEXT_PUBLIC_NAVER_SITE_VERIFICATION 에 넣는다.
+    // 비어 있으면 태그를 내지 않는다(빈 content 로 확인이 실패하지 않게).
+    ...(NAVER_SITE_VERIFICATION
+      ? { other: { "naver-site-verification": NAVER_SITE_VERIFICATION } }
+      : {}),
   },
   appleWebApp: {
     capable: true,
