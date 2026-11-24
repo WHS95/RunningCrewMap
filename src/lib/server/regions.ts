@@ -55,14 +55,10 @@ export function getRegionDef(code: string): RegionDef | undefined {
   return REGION_DEFS.find((d) => d.code === code);
 }
 
-/** main_address 우선으로 크루 1개의 지역 코드를 결정. 매칭 실패 시 null. */
-export function regionCodeForCrew(crew: Crew): RegionCode | null {
-  // 주의: main_address 우선. filterCrewsByRegion(region-utils.ts)은
-  // address(=detail_address||main_address) 우선이라 상세주소가 다른 시/도로
-  // 시작하는 데이터에서 잘못 분류됨 — 이 함수는 그 버그를 회피.
-  const address = crew.location.main_address || crew.location.address || "";
-  if (!address) return null;
-  const firstPart = address.split(" ")[0] || "";
+/** 주소 한 줄의 첫 어절(시·도)로 지역 코드를 찾는다. 매칭 실패 시 null. */
+function regionCodeForAddress(address: string): RegionCode | null {
+  const firstPart = address.trim().split(" ")[0] || "";
+  if (!firstPart) return null;
 
   // 광주 동음이의 — "광주시"는 경기, "광주광역시"는 전라
   if (firstPart === "광주시" || firstPart === "광주") {
@@ -77,6 +73,21 @@ export function regionCodeForCrew(crew: Crew): RegionCode | null {
     }
   }
   return null;
+}
+
+/** main_address 우선, 안 되면 상세주소로 크루 1개의 지역 코드를 결정. 매칭 실패 시 null. */
+export function regionCodeForCrew(crew: Crew): RegionCode | null {
+  // 주의: main_address 우선. filterCrewsByRegion(region-utils.ts)은
+  // address(=detail_address||main_address) 우선이라 상세주소가 다른 시/도로
+  // 시작하는 데이터에서 잘못 분류됨 — 이 함수는 그 버그를 회피.
+  //
+  // 다만 main_address 가 "남산"·"산본역"처럼 장소 이름만 적힌 크루가 절반을 넘는다(2026-11-24 기준
+  // 318곳 중 181곳). 이런 크루는 상세주소("경기 군포시 …")로 한 번 더 찾는다 — 안 그러면
+  // 지역 페이지에서 빠져 크루 단독 페이지로 가는 내부 링크가 없다.
+  return (
+    regionCodeForAddress(crew.location.main_address ?? "") ??
+    regionCodeForAddress(crew.location.address ?? "")
+  );
 }
 
 export const getRegionSummaries = cache(async (): Promise<RegionSummary[]> => {
